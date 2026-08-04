@@ -1,0 +1,101 @@
+# TI 2026 Prediction Pipeline Configuration
+
+api:
+  stratz_token: ""  # Set via STRATZ_TOKEN env var
+  opendota_base: "https://api.opendota.com/api"
+  stratz_base: "https://api.stratz.com/graphql"
+  rate_limit_opendota: 1  # seconds between requests
+  rate_limit_stratz: 0.5
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  features_dir: "data/features"
+  
+  # Date ranges for training data
+  train_start: "2023-01-01"
+  train_end: "2026-08-01"
+  patch_cutoff: "2024-01-01"  # Only use matches from this patch onward
+  
+  # Tournament IDs for STRATZ (7 = pro matches)
+  pro_league_tier: 1
+  
+  # Minimum matches per team
+  min_team_matches: 10
+
+features:
+  elo:
+    k_factor: 32
+    initial_rating: 1500
+  
+  glicko:
+    initial_rd: 350
+    initial_vol: 0.06
+  
+  trueskill:
+    mu: 25
+    sigma: 25/3
+  
+  # Decay for inactive teams (days)
+  activity_decay_days: 90
+  
+  # Rolling window for form
+  form_window: 20  # last N matches
+  form_decay: 0.95  # exponential decay
+
+models:
+  # Training parameters
+  cv_folds: 5
+  test_size: 0.2
+  random_state: 42
+  
+  # LightGBM
+  lgbm:
+    n_estimators: 1000
+    learning_rate: 0.05
+    max_depth: 7
+    num_leaves: 63
+    min_child_samples: 20
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.1
+    reg_lambda: 0.1
+  
+  # XGBoost
+  xgb:
+    n_estimators: 1000
+    learning_rate: 0.05
+    max_depth: 6
+    min_child_weight: 5
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+  
+  # CatBoost
+  catboost:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 7
+    l2_leaf_reg: 3
+  
+  # Random Forest
+  rf:
+    n_estimators: 500
+    max_depth: 15
+    min_samples_split: 10
+    min_samples_leaf: 5
+
+simulation:
+  n_simulations: 100000
+  swiss_rounds: 5
+  playoff_teams: 3
+  elimination_advance: 5
+  
+  # Confidence intervals
+  ci_levels: [0.5, 0.8, 0.95]
+
+output:
+  dir: "outputs"
+  save_model: true
+  save_plots: true

@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.joblib
+data/raw/
+data/processed/
+data/features/
+outputs/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.DS_Store
+Thumbs.db
