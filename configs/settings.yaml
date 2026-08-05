@@ -82,11 +82,13 @@ models:
     min_samples_leaf: 5
 
 simulation:
-  n_simulations: 100000
+  n_simulations: 20000
   swiss_rounds: 5
-  playoff_teams: 3
+  wins_to_qualify: 4
+  losses_to_eliminate: 4
+  playoff_teams: 8
   elimination_advance: 5
-  
+
   # Confidence intervals
   ci_levels: [0.5, 0.8, 0.95]
 

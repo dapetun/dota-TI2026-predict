@@ -225,7 +225,7 @@ def step_simulate_tournament(
     # Generate summary
     summary = {
         "tournament": "TI 2026 Group Stage",
-        "format": "16-team Swiss, 5 rounds, Bo3",
+        "format": "16-team Swiss to 4 + ER (5 of 10)",
         "n_simulations": n_simulations,
         "generated_at": datetime.now().isoformat(),
         "predictions": results.to_dict("records"),

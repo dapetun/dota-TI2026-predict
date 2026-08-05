@@ -209,12 +209,14 @@ def build_teams_df() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# Swiss Stage format
+# Swiss Stage format (TI: first to 4 wins / 4 losses, then ER)
 SWISS_CONFIG = {
     "n_rounds": 5,
-    "qualify_top_n": 3,       # Direct to playoffs
-    "elim_bottom_n": 3,       # Immediately eliminated
-    "elimination_round_advance": 5, # From elimination round
+    "wins_to_qualify": 4,
+    "losses_to_eliminate": 4,
+    "elimination_round_advance": 5,  # From Elimination Round into playoffs
+    "qualify_top_n": 3,              # Typical direct 4-0 + 4-1 count
+    "elim_bottom_n": 3,              # Typical direct 0-4 + 1-4 count
 }
 
 

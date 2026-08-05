@@ -1,12 +1,12 @@
 const DATA_URL = "data/predictions.json";
 
 const BOARD_COLUMNS = [
-  { key: "undefeated", title: "3–0 · Undefeated", tone: "ok" },
-  { key: "one_loss", title: "3–1 · One loss", tone: "ok" },
-  { key: "advancing", title: "3–2 · Advancing", tone: "warn" },
-  { key: "borderline", title: "2–3 · Borderline", tone: "warn" },
-  { key: "one_win", title: "1–3 · One win", tone: "bad" },
-  { key: "winless", title: "0–3 · Winless", tone: "bad" },
+  { key: "undefeated", title: "4–0 · Undefeated", tone: "ok" },
+  { key: "one_loss", title: "4–1 · One loss", tone: "ok" },
+  { key: "advance", title: "Проход · Advancing", tone: "warn" },
+  { key: "eliminate", title: "Выбывание · Out", tone: "warn" },
+  { key: "one_win", title: "1–4 · One win", tone: "bad" },
+  { key: "winless", title: "0–4 · Winless", tone: "bad" },
 ];
 
 /** @type {any} */
@@ -46,7 +46,7 @@ function renderBoard(data) {
           <div class="team-pill" title="${t.name}">
             <div>
               <div class="name">${t.short}</div>
-              <div class="meta">${t.record}</div>
+              <div class="meta">${t.record} · P(слот) ${fmtPct(t.slot_pct ?? 0)}</div>
             </div>
             <div class="prob">${fmtPct(t.qualify_pct)}</div>
           </div>`

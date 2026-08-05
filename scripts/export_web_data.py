@@ -1,7 +1,6 @@
 """Export prediction JSON for the static GitHub Pages frontend.
 
-Uses an honest power-ranking Bradley-Terry baseline + Swiss Monte Carlo.
-XGBoost pairwise predictions will replace this once roster features land.
+Uses power-ranking Bradley-Terry + TI Swiss (first to 4) + Elimination Round.
 """
 
 from __future__ import annotations
@@ -13,7 +12,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.simulation.tournament_sim import SwissConfig, simulate_swiss_stage
+from src.simulation.tournament_sim import (
+    FANTASY_BOARD_SLOTS,
+    SwissConfig,
+    assign_fantasy_board,
+    simulate_swiss_stage,
+)
 from src.ti2026.teams import (
     POWER_RANKINGS,
     SWISS_CONFIG,
@@ -67,9 +71,7 @@ def load_model_metrics() -> dict:
 
 def team_payload(team_id: str, row: pd.Series, win_matrix: pd.DataFrame, teams: list[str]) -> dict:
     info = TI2026_TEAMS[team_id]
-    avg_wr = float(
-        np.mean([win_matrix.loc[team_id, t] for t in teams if t != team_id])
-    )
+    avg_wr = float(np.mean([win_matrix.loc[team_id, t] for t in teams if t != team_id]))
     return {
         "id": team_id,
         "name": info["full_name"],
@@ -84,28 +86,30 @@ def team_payload(team_id: str, row: pd.Series, win_matrix: pd.DataFrame, teams: 
         "qualify_pct": float(row["direct_qualification_pct"]),
         "elim_round_pct": float(row["elimination_round_pct"]),
         "eliminated_pct": float(row["eliminated_pct"]),
+        "prob_4_0": float(row["prob_4_0"]),
+        "prob_4_1": float(row["prob_4_1"]),
+        "prob_advance": float(row["prob_advance"]),
+        "prob_eliminate": float(row["prob_eliminate"]),
+        "prob_1_4": float(row["prob_1_4"]),
+        "prob_0_4": float(row["prob_0_4"]),
         "records": {
-            "3-0": float(row["prob_3_0"]),
-            "3-1": float(row["prob_3_1"]),
-            "3-2_or_2-3": float(row["prob_3_2_or_2_3"]),
-            "2-3": float(row["prob_2_3"]),
-            "1-3": float(row["prob_1_3"]),
-            "0-3": float(row["prob_0_3"]),
+            "4-0": float(row["prob_4_0"]),
+            "4-1": float(row["prob_4_1"]),
+            "advance": float(row["prob_advance"]),
+            "eliminate": float(row["prob_eliminate"]),
+            "1-4": float(row["prob_1_4"]),
+            "0-4": float(row["prob_0_4"]),
+            "swiss_3-2": float(row["swiss_3_2"]),
+            "swiss_2-3": float(row["swiss_2_3"]),
         },
-    }
-
-
-def refine_records(row: pd.Series) -> dict:
-    """Map simulation columns to board buckets without inventing fake splits."""
-    return {
-        "undefeated": float(row["prob_3_0"]),          # 3-0
-        "one_loss": float(row["prob_3_1"]),            # 3-1
-        "borderline": float(row["prob_3_2_or_2_3"]),   # 3-2 or 2-3
-        "two_losses_out": float(row["prob_2_3"]),      # 2-3 (also in borderline)
-        "one_win": float(row["prob_1_3"]),             # 1-3
-        "winless": float(row["prob_0_3"]),             # 0-3
-        "qualify": float(row["direct_qualification_pct"]),
-        "eliminated": float(row["eliminated_pct"]),
+        "board": {
+            "undefeated": float(row["prob_4_0"]),
+            "one_loss": float(row["prob_4_1"]),
+            "advance": float(row["prob_advance"]),
+            "eliminate": float(row["prob_eliminate"]),
+            "one_win": float(row["prob_1_4"]),
+            "winless": float(row["prob_0_4"]),
+        },
     }
 
 
@@ -121,54 +125,31 @@ def build_matchups(win_matrix: pd.DataFrame, teams: list[str]) -> list[dict]:
 def main(n_simulations: int = 20000) -> Path:
     teams = get_team_ids()
     win_matrix = build_win_matrix(teams)
-    config = SwissConfig(**SWISS_CONFIG)
-    print(f"Simulating Swiss ({n_simulations:,} runs)...")
+    config = SwissConfig(**{
+        k: v
+        for k, v in SWISS_CONFIG.items()
+        if k in SwissConfig.__dataclass_fields__
+    })
+    print(
+        f"Simulating TI Swiss (first to {config.wins_to_qualify}, "
+        f"{config.n_rounds} rounds, ER→{config.elimination_round_advance}) "
+        f"× {n_simulations:,}..."
+    )
     results = simulate_swiss_stage(
         win_matrix, teams, config, n_simulations=n_simulations, rng_seed=42
     )
 
-    predictions = []
-    for _, row in results.iterrows():
-        team_id = row["team"]
-        payload = team_payload(team_id, row, win_matrix, teams)
-        payload["board"] = refine_records(row)
-        predictions.append(payload)
-
+    predictions = [
+        team_payload(row["team"], row, win_matrix, teams) for _, row in results.iterrows()
+    ]
     predictions.sort(key=lambda x: (-x["qualify_pct"], x["power_rank"]))
+    board = assign_fantasy_board(predictions)
 
-    # Place each team on the Swiss board by most likely terminal bucket
-    board_slots = {
-        "undefeated": [],
-        "one_loss": [],
-        "advancing": [],
-        "borderline": [],
-        "one_win": [],
-        "winless": [],
-    }
-    for p in predictions:
-        rec = p["most_likely_record"]
-        entry = {
-            "id": p["id"],
-            "name": p["name"],
-            "short": p["short"],
-            "prob": p["qualify_pct"] if rec.startswith("3") else p["eliminated_pct"],
-            "record": rec,
-            "qualify_pct": p["qualify_pct"],
-        }
-        if rec == "3-0":
-            board_slots["undefeated"].append(entry)
-        elif rec == "3-1":
-            board_slots["one_loss"].append(entry)
-        elif rec == "3-2":
-            board_slots["advancing"].append(entry)
-        elif rec == "2-3":
-            board_slots["borderline"].append(entry)
-        elif rec == "1-3":
-            board_slots["one_win"].append(entry)
-        elif rec == "0-3":
-            board_slots["winless"].append(entry)
-        else:
-            board_slots["borderline"].append(entry)
+    # Sanity: capacities
+    for key, meta in FANTASY_BOARD_SLOTS.items():
+        got = len(board[key])
+        if got != meta["capacity"]:
+            print(f"WARNING: board[{key}] has {got}, expected {meta['capacity']}")
 
     payload = {
         "meta": {
@@ -179,16 +160,18 @@ def main(n_simulations: int = 20000) -> Path:
             "model_label": "Baseline · power ranking",
             "disclaimer": (
                 "Текущий UI показывает честный baseline (сила из power ranking + "
-                "Monte Carlo Swiss). XGBoost v0.1 уже обучен на матчах, но пока "
-                "недостаточно точен для боевых парных прогнозов (AUC ~0.56)."
+                "Monte Carlo Swiss до 4 побед/поражений + Elimination Round). "
+                "XGBoost v0.1 уже обучен, но пока слаб для боевых парных прогнозов (AUC ~0.56)."
             ),
-            "format": "16-team Swiss, 5 rounds, Bo3",
+            "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
+            "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
-            "version": "0.1.0",
+            "version": "0.1.1",
         },
         "model_metrics": load_model_metrics(),
         "recent_results": TI2026_RECENT_RESULTS,
-        "board": board_slots,
+        "board_meta": FANTASY_BOARD_SLOTS,
+        "board": board,
         "teams": predictions,
         "matchups": build_matchups(win_matrix, teams),
     }
@@ -198,7 +181,6 @@ def main(n_simulations: int = 20000) -> Path:
     with open(out, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    # Compact teams index for future pages
     teams_out = WEB_DATA / "teams.json"
     with open(teams_out, "w", encoding="utf-8") as f:
         json.dump(
@@ -216,6 +198,10 @@ def main(n_simulations: int = 20000) -> Path:
         )
 
     print(f"Wrote {out}")
+    print("Fantasy board:")
+    for key, meta in FANTASY_BOARD_SLOTS.items():
+        names = ", ".join(e["short"] for e in board[key])
+        print(f"  {meta['label']:12s} ({meta['capacity']}): {names}")
     print("Top qualify:")
     for p in predictions[:5]:
         print(f"  {p['power_rank']:2d}. {p['short']:12s} qualify={p['qualify_pct']:5.1f}%")

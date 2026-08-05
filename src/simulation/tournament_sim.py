@@ -1,15 +1,29 @@
-"""Monte Carlo tournament simulation for TI 2026 Swiss Stage."""
+"""Monte Carlo simulation for TI Swiss + Elimination Round.
+
+TI group stage (compendium / prediction board):
+- Swiss: first to 4 wins OR 4 losses, max 5 rounds, Bo3 series.
+- After Swiss: 4-0 / 4-1 advance; 0-4 / 1-4 eliminated;
+  remaining (typically 3-2 and 2-3) play Elimination Round.
+- ER: 5 of ~10 advance to playoffs.
+
+Fantasy board slots (16 teams):
+  4-0 ×1 | 4-1 ×2 | advance ×5 | eliminate ×5 | 1-4 ×2 | 0-4 ×1
+"""
+
+from __future__ import annotations
+
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-from collections import defaultdict
-from dataclasses import dataclass, field
 
 
 @dataclass
 class SwissState:
     """State of a Swiss stage tournament."""
+
     teams: List[str]
     records: Dict[str, Tuple[int, int]] = field(default_factory=dict)
     match_history: List[Tuple[str, str, str]] = field(default_factory=list)
@@ -24,82 +38,73 @@ class SwissState:
 
 @dataclass
 class SwissConfig:
+    """TI Swiss + Elimination Round configuration."""
+
     n_rounds: int = 5
+    wins_to_qualify: int = 4
+    losses_to_eliminate: int = 4
+    elimination_round_advance: int = 5
+    # Kept for backwards-compatible kwargs from older configs.
     qualify_top_n: int = 3
     elim_bottom_n: int = 3
-    elimination_round_advance: int = 5
 
 
-def get_eligible_opponents(
-    state: SwissState,
-    team: str,
-) -> List[str]:
-    """Get teams that can still be paired (same record, no rematches)."""
-    w, l = state.records[team]
-    played = {m[1] if m[0] == team else m[0] for m in state.match_history if team in (m[0], m[1])}
-
-    eligible = []
-    for t in state.teams:
-        if t == team:
-            continue
-        if t in state.eliminated or t in state.qualified:
-            continue
-        if t in played:
-            continue
-        tw, tl = state.records[t]
-        if (tw, tl) == (w, l):
-            eligible.append(t)
-
-    return eligible
+def _series_winner(
+    team_a: str,
+    team_b: str,
+    win_matrix: pd.DataFrame,
+    rng: np.random.Generator,
+) -> str:
+    """Resolve a Bo3 series from map-win probabilities in win_matrix."""
+    if team_a in win_matrix.index and team_b in win_matrix.columns:
+        p_a = float(win_matrix.loc[team_a, team_b])
+    else:
+        p_a = 0.5
+    wins_a = wins_b = 0
+    while wins_a < 2 and wins_b < 2:
+        if rng.random() < p_a:
+            wins_a += 1
+        else:
+            wins_b += 1
+    return team_a if wins_a > wins_b else team_b
 
 
 def simulate_swiss_round(
     state: SwissState,
     win_matrix: pd.DataFrame,
     rng: np.random.Generator,
+    config: SwissConfig,
 ) -> SwissState:
-    """Simulate one round of Swiss."""
-    # Group teams by record
-    record_groups = defaultdict(list)
+    """Simulate one Swiss round with same-record pairing."""
+    record_groups: dict[tuple[int, int], list[str]] = defaultdict(list)
     for team in state.teams:
         if team not in state.eliminated and team not in state.qualified:
             record_groups[state.records[team]].append(team)
 
-    # Sort records for pairing (highest first)
     sorted_records = sorted(record_groups.keys(), key=lambda x: (-x[0], x[1]))
-
-    paired_this_round = set()
+    paired_this_round: set[str] = set()
 
     for record in sorted_records:
-        if record in paired_this_round:
-            continue
-
         teams_in_group = [t for t in record_groups[record] if t not in paired_this_round]
         rng.shuffle(teams_in_group)
 
         while len(teams_in_group) >= 2:
             team_a = teams_in_group.pop(0)
-
-            # Find best opponent
             eligible = [t for t in teams_in_group if t not in paired_this_round]
-
             if not eligible:
                 break
 
-            # Prefer opponents from same record group
-            same_record = [t for t in eligible if state.records[t] == record]
-            if same_record:
-                opponent = rng.choice(same_record)
-            else:
-                opponent = rng.choice(eligible)
+            # Avoid rematches when possible.
+            played = {
+                m[1] if m[0] == team_a else m[0]
+                for m in state.match_history
+                if team_a in (m[0], m[1])
+            }
+            fresh = [t for t in eligible if t not in played]
+            pool = fresh or eligible
+            opponent = rng.choice(pool)
 
-            # Simulate match
-            if team_a in win_matrix.index and opponent in win_matrix.columns:
-                p_a = win_matrix.loc[team_a, opponent]
-            else:
-                p_a = 0.5
-
-            winner = team_a if rng.random() < p_a else opponent
+            winner = _series_winner(team_a, opponent, win_matrix, rng)
             loser = opponent if winner == team_a else team_a
 
             w_w, w_l = state.records[winner]
@@ -112,149 +117,233 @@ def simulate_swiss_round(
             paired_this_round.add(opponent)
             teams_in_group = [t for t in teams_in_group if t not in paired_this_round]
 
-    # Check qualification/elimination after round
     for team in state.teams:
         w, l = state.records[team]
-        if w >= 3:
+        if w >= config.wins_to_qualify:
             state.qualified.add(team)
-        elif l >= 3:
+        elif l >= config.losses_to_eliminate:
             state.eliminated.add(team)
 
     return state
-
-
-def simulate_swiss_stage(
-    win_matrix: pd.DataFrame,
-    team_ids: list,
-    config: SwissConfig = None,
-    n_simulations: int = 100000,
-    rng_seed: int = 42,
-) -> pd.DataFrame:
-    """Run full Swiss stage Monte Carlo simulation."""
-    if config is None:
-        config = SwissConfig()
-
-    rng = np.random.default_rng(rng_seed)
-
-    # Track results
-    final_records = defaultdict(lambda: defaultdict(int))
-    qualification_counts = defaultdict(int)
-    elimination_round_counts = defaultdict(int)
-    eliminated_counts = defaultdict(int)
-    win_counts = defaultdict(lambda: defaultdict(int))
-
-    for sim in range(n_simulations):
-        state = SwissState(teams=list(team_ids))
-
-        for round_num in range(config.n_rounds):
-            state = simulate_swiss_round(state, win_matrix, rng)
-
-        # Record final state
-        for team in team_ids:
-            w, l = state.records[team]
-            final_records[team][(w, l)] += 1
-
-            if team in state.qualified:
-                if w == 3 and l == 0:
-                    qualification_counts[team] += 1  # 3-0
-                elif w == 3 and l == 1:
-                    qualification_counts[team] += 1  # 3-1
-                elif w >= 3:
-                    qualification_counts[team] += 1
-            elif team in state.eliminated:
-                eliminated_counts[team] += 1
-            else:
-                # Made elimination round
-                elimination_round_counts[team] += 1
-
-            for w_final in range(w + 1):
-                win_counts[team][w_final] += 1
-
-    # Aggregate results
-    results = []
-    for team in team_ids:
-        records = final_records[team]
-        total = sum(records.values())
-
-        # Calculate expected wins
-        exp_wins = sum(w * count for (w, l), count in records.items()) / total
-
-        # Most likely record
-        most_likely = max(records.items(), key=lambda x: x[1])[0]
-
-        # Direct qualification probability
-        direct_qual_prob = qualification_counts[team] / total
-
-        # Elimination round probability
-        elim_round_prob = elimination_round_counts[team] / total
-
-        # Fully eliminated probability
-        elim_prob = eliminated_counts[team] / total
-
-        results.append({
-            "team": team,
-            "expected_wins": round(exp_wins, 2),
-            "most_likely_record": f"{most_likely[0]}-{most_likely[1]}",
-            "direct_qualification_pct": round(direct_qual_prob * 100, 1),
-            "elimination_round_pct": round(elim_round_prob * 100, 1),
-            "eliminated_pct": round(elim_prob * 100, 1),
-            "prob_3_0": round(records.get((3, 0), 0) / total * 100, 1),
-            "prob_3_1": round(records.get((3, 1), 0) / total * 100, 1),
-            "prob_3_2_or_2_3": round(
-                (records.get((3, 2), 0) + records.get((2, 3), 0)) / total * 100, 1
-            ),
-            "prob_2_3": round(records.get((2, 3), 0) / total * 100, 1),
-            "prob_1_3": round(records.get((1, 3), 0) / total * 100, 1),
-            "prob_0_3": round(records.get((0, 3), 0) / total * 100, 1),
-        })
-
-    results_df = pd.DataFrame(results)
-    results_df.sort_values("expected_wins", ascending=False, inplace=True)
-    results_df.reset_index(drop=True, inplace=True)
-
-    return results_df
 
 
 def simulate_elimination_round(
     candidates: List[str],
     win_matrix: pd.DataFrame,
     advance_n: int = 5,
-    n_simulations: int = 50000,
+    rng: np.random.Generator | None = None,
+) -> List[str]:
+    """Single-elim style cut: keep winners until advance_n remain."""
+    if rng is None:
+        rng = np.random.default_rng(42)
+    remaining = list(candidates)
+    rng.shuffle(remaining)
+
+    while len(remaining) > advance_n:
+        next_round: list[str] = []
+        i = 0
+        while i < len(remaining):
+            if i + 1 >= len(remaining):
+                next_round.append(remaining[i])
+                break
+            a, b = remaining[i], remaining[i + 1]
+            next_round.append(_series_winner(a, b, win_matrix, rng))
+            i += 2
+        remaining = next_round
+
+    return remaining[:advance_n]
+
+
+def simulate_swiss_stage(
+    win_matrix: pd.DataFrame,
+    team_ids: list,
+    config: SwissConfig | None = None,
+    n_simulations: int = 100000,
     rng_seed: int = 42,
-) -> Dict[str, float]:
-    """Simulate elimination round for middle teams."""
+) -> pd.DataFrame:
+    """Run Swiss + Elimination Round Monte Carlo."""
+    if config is None:
+        config = SwissConfig()
+
     rng = np.random.default_rng(rng_seed)
-    advance_counts = defaultdict(int)
+    final_records: dict[str, dict[tuple[int, int], int]] = defaultdict(lambda: defaultdict(int))
+    slot_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    qualify_counts: dict[str, int] = defaultdict(int)
+    eliminated_counts: dict[str, int] = defaultdict(int)
+    er_advance_counts: dict[str, int] = defaultdict(int)
+    er_elim_counts: dict[str, int] = defaultdict(int)
 
     for _ in range(n_simulations):
-        # Random single-elimination bracket or round-robin
-        # Simplified: each pair plays, top advance_n by win rate
-        wins = defaultdict(int)
-        matches_played = defaultdict(int)
+        state = SwissState(teams=list(team_ids))
 
-        for i, a in enumerate(candidates):
-            for b in candidates[i + 1:]:
-                if a in win_matrix.index and b in win_matrix.columns:
-                    p = win_matrix.loc[a, b]
+        for _round in range(config.n_rounds):
+            active = [
+                t
+                for t in state.teams
+                if t not in state.qualified and t not in state.eliminated
+            ]
+            if len(active) < 2:
+                break
+            state = simulate_swiss_round(state, win_matrix, rng, config)
+
+        er_pool = [
+            t
+            for t in team_ids
+            if t not in state.qualified and t not in state.eliminated
+        ]
+        er_advancers = set(
+            simulate_elimination_round(
+                er_pool,
+                win_matrix,
+                advance_n=config.elimination_round_advance,
+                rng=rng,
+            )
+        ) if er_pool else set()
+
+        for team in team_ids:
+            w, l = state.records[team]
+            final_records[team][(w, l)] += 1
+            rec = f"{w}-{l}"
+
+            if team in state.qualified:
+                qualify_counts[team] += 1
+                if rec == "4-0":
+                    slot_counts[team]["4-0"] += 1
+                elif rec == "4-1":
+                    slot_counts[team]["4-1"] += 1
                 else:
-                    p = 0.5
-
-                if rng.random() < p:
-                    wins[a] += 1
+                    # Rare edge (e.g. 4-2 if config allows more rounds)
+                    slot_counts[team]["advance"] += 1
+            elif team in state.eliminated:
+                eliminated_counts[team] += 1
+                if rec == "0-4":
+                    slot_counts[team]["0-4"] += 1
+                elif rec == "1-4":
+                    slot_counts[team]["1-4"] += 1
                 else:
-                    wins[b] += 1
-                matches_played[a] += 1
-                matches_played[b] += 1
+                    slot_counts[team]["eliminate"] += 1
+            elif team in er_advancers:
+                qualify_counts[team] += 1
+                er_advance_counts[team] += 1
+                slot_counts[team]["advance"] += 1
+            else:
+                eliminated_counts[team] += 1
+                er_elim_counts[team] += 1
+                slot_counts[team]["eliminate"] += 1
 
-        # Sort by win rate
-        rates = []
-        for team in candidates:
-            mp = matches_played[team]
-            wr = wins[team] / mp if mp > 0 else 0.5
-            rates.append((team, wr))
+    results = []
+    for team in team_ids:
+        records = final_records[team]
+        total = sum(records.values()) or 1
+        exp_wins = sum(w * count for (w, l), count in records.items()) / total
+        most_likely = max(records.items(), key=lambda x: x[1])[0]
+        slots = slot_counts[team]
 
-        rates.sort(key=lambda x: -x[1])
-        for team, _ in rates[:advance_n]:
-            advance_counts[team] += 1
+        def pct(key: str) -> float:
+            return round(slots.get(key, 0) / total * 100, 1)
 
-    return {team: count / n_simulations for team, count in advance_counts.items()}
+        def rec_pct(rec: tuple[int, int]) -> float:
+            return round(records.get(rec, 0) / total * 100, 1)
+
+        results.append(
+            {
+                "team": team,
+                "expected_wins": round(exp_wins, 2),
+                "most_likely_record": f"{most_likely[0]}-{most_likely[1]}",
+                "direct_qualification_pct": round(qualify_counts[team] / total * 100, 1),
+                "eliminated_pct": round(eliminated_counts[team] / total * 100, 1),
+                "elimination_round_pct": round(
+                    (er_advance_counts[team] + er_elim_counts[team]) / total * 100, 1
+                ),
+                "prob_4_0": pct("4-0"),
+                "prob_4_1": pct("4-1"),
+                "prob_advance": pct("advance"),
+                "prob_eliminate": pct("eliminate"),
+                "prob_1_4": pct("1-4"),
+                "prob_0_4": pct("0-4"),
+                # Raw Swiss terminal records (before ER remapping)
+                "swiss_4_0": rec_pct((4, 0)),
+                "swiss_4_1": rec_pct((4, 1)),
+                "swiss_3_2": rec_pct((3, 2)),
+                "swiss_2_3": rec_pct((2, 3)),
+                "swiss_1_4": rec_pct((1, 4)),
+                "swiss_0_4": rec_pct((0, 4)),
+            }
+        )
+
+    results_df = pd.DataFrame(results)
+    results_df.sort_values("direct_qualification_pct", ascending=False, inplace=True)
+    results_df.reset_index(drop=True, inplace=True)
+    return results_df
+
+
+# Fantasy / compendium board capacities for TI predictions UI.
+FANTASY_BOARD_SLOTS = {
+    "undefeated": {"label": "4–0", "capacity": 1, "tone": "ok"},
+    "one_loss": {"label": "4–1", "capacity": 2, "tone": "ok"},
+    "advance": {"label": "Проход", "capacity": 5, "tone": "warn"},
+    "eliminate": {"label": "Выбывание", "capacity": 5, "tone": "warn"},
+    "one_win": {"label": "1–4", "capacity": 2, "tone": "bad"},
+    "winless": {"label": "0–4", "capacity": 1, "tone": "bad"},
+}
+
+
+def assign_fantasy_board(predictions: list[dict]) -> dict[str, list[dict]]:
+    """Fill fixed-capacity prediction board from ranked qualify probabilities.
+
+    Order: best teams → 4-0, 4-1, advance; worst → 0-4, 1-4, eliminate.
+    """
+    ranked = sorted(
+        predictions,
+        key=lambda p: (-p["qualify_pct"], p.get("power_rank", 99)),
+    )
+    board: dict[str, list[dict]] = {k: [] for k in FANTASY_BOARD_SLOTS}
+    # Top side
+    order_top = (
+        [("undefeated", 1), ("one_loss", 2), ("advance", 5)]
+    )
+    # Bottom side (worst first into 0-4)
+    order_bottom = (
+        [("winless", 1), ("one_win", 2), ("eliminate", 5)]
+    )
+
+    idx = 0
+    for slot, n in order_top:
+        for _ in range(n):
+            if idx >= len(ranked):
+                break
+            p = ranked[idx]
+            idx += 1
+            board[slot].append(_board_entry(p, slot))
+
+    remaining = ranked[idx:]
+    remaining_rev = list(reversed(remaining))
+    bidx = 0
+    for slot, n in order_bottom:
+        for _ in range(n):
+            if bidx >= len(remaining_rev):
+                break
+            p = remaining_rev[bidx]
+            bidx += 1
+            board[slot].append(_board_entry(p, slot))
+
+    return board
+
+
+def _board_entry(p: dict, slot: str) -> dict:
+    prob_key = {
+        "undefeated": "prob_4_0",
+        "one_loss": "prob_4_1",
+        "advance": "prob_advance",
+        "eliminate": "prob_eliminate",
+        "one_win": "prob_1_4",
+        "winless": "prob_0_4",
+    }[slot]
+    return {
+        "id": p["id"],
+        "name": p["name"],
+        "short": p["short"],
+        "record": FANTASY_BOARD_SLOTS[slot]["label"],
+        "qualify_pct": p["qualify_pct"],
+        "slot_pct": float(p.get(prob_key, 0.0)),
+    }

@@ -2,13 +2,14 @@
   "meta": {
     "title": "TI 2026 Swiss Predictions",
     "subtitle": "Open-source group-stage forecast",
-    "generated_at": "2026-08-05T19:17:03.165926+00:00",
+    "generated_at": "2026-08-05T19:29:01.760904+00:00",
     "model": "baseline_power_ranking_bradley_terry",
     "model_label": "Baseline · power ranking",
-    "disclaimer": "Текущий UI показывает честный baseline (сила из power ranking + Monte Carlo Swiss). XGBoost v0.1 уже обучен на матчах, но пока недостаточно точен для боевых парных прогнозов (AUC ~0.56).",
-    "format": "16-team Swiss, 5 rounds, Bo3",
+    "disclaimer": "Текущий UI показывает честный baseline (сила из power ranking + Monte Carlo Swiss до 4 побед/поражений + Elimination Round). XGBoost v0.1 уже обучен, но пока слаб для боевых парных прогнозов (AUC ~0.56).",
+    "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
+    "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
     "n_simulations": 20000,
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "model_metrics": {
     "walk_forward_avg_logloss": 0.8543,
@@ -77,134 +78,167 @@
       "3rd": "BetBoom"
     }
   },
+  "board_meta": {
+    "undefeated": {
+      "label": "4–0",
+      "capacity": 1,
+      "tone": "ok"
+    },
+    "one_loss": {
+      "label": "4–1",
+      "capacity": 2,
+      "tone": "ok"
+    },
+    "advance": {
+      "label": "Проход",
+      "capacity": 5,
+      "tone": "warn"
+    },
+    "eliminate": {
+      "label": "Выбывание",
+      "capacity": 5,
+      "tone": "warn"
+    },
+    "one_win": {
+      "label": "1–4",
+      "capacity": 2,
+      "tone": "bad"
+    },
+    "winless": {
+      "label": "0–4",
+      "capacity": 1,
+      "tone": "bad"
+    }
+  },
   "board": {
-    "undefeated": [],
-    "one_loss": [
+    "undefeated": [
       {
         "id": "Vision",
         "name": "Team Vision",
         "short": "Vision",
-        "prob": 81.2,
-        "record": "3-1",
-        "qualify_pct": 81.2
-      },
+        "record": "4–0",
+        "qualify_pct": 86.6,
+        "slot_pct": 20.5
+      }
+    ],
+    "one_loss": [
       {
         "id": "BetBoom",
         "name": "BoomBoys",
         "short": "BetBoom",
-        "prob": 79.2,
-        "record": "3-1",
-        "qualify_pct": 79.2
+        "record": "4–1",
+        "qualify_pct": 84.7,
+        "slot_pct": 28.9
       },
       {
         "id": "Yandex",
         "name": "Team Yandex",
         "short": "Yandex",
-        "prob": 77.8,
-        "record": "3-1",
-        "qualify_pct": 77.8
-      },
+        "record": "4–1",
+        "qualify_pct": 81.7,
+        "slot_pct": 26.6
+      }
+    ],
+    "advance": [
       {
         "id": "Aurora",
         "name": "Aurora Gaming",
         "short": "Aurora",
-        "prob": 75.0,
-        "record": "3-1",
-        "qualify_pct": 75.0
+        "record": "Проход",
+        "qualify_pct": 78.5,
+        "slot_pct": 42.3
       },
       {
         "id": "Falcons",
         "name": "Team Falcons",
         "short": "Falcons",
-        "prob": 71.6,
-        "record": "3-1",
-        "qualify_pct": 71.6
+        "record": "Проход",
+        "qualify_pct": 74.9,
+        "slot_pct": 43.3
       },
       {
         "id": "Liquid",
         "name": "Team Liquid",
         "short": "Liquid",
-        "prob": 67.7,
-        "record": "3-1",
-        "qualify_pct": 67.7
-      }
-    ],
-    "advancing": [
+        "record": "Проход",
+        "qualify_pct": 71.0,
+        "slot_pct": 44.6
+      },
       {
         "id": "1w",
         "name": "1w",
         "short": "1w",
-        "prob": 64.3,
-        "record": "3-2",
-        "qualify_pct": 64.3
+        "record": "Проход",
+        "qualify_pct": 65.5,
+        "slot_pct": 44.3
       },
       {
         "id": "Xtreme",
         "name": "Xtreme Gaming",
         "short": "Xtreme",
-        "prob": 59.3,
-        "record": "3-2",
-        "qualify_pct": 59.3
+        "record": "Проход",
+        "qualify_pct": 59.6,
+        "slot_pct": 43.0
       }
     ],
-    "borderline": [
+    "eliminate": [
       {
-        "id": "Spirit",
-        "name": "Team Spirit",
-        "short": "Spirit",
-        "prob": 46.1,
-        "record": "2-3",
-        "qualify_pct": 53.9
+        "id": "GamerLegion",
+        "name": "GamerLegion",
+        "short": "GamerLegion",
+        "record": "Выбывание",
+        "qualify_pct": 19.3,
+        "slot_pct": 51.3
       },
       {
-        "id": "Vici",
-        "name": "Vici Gaming",
-        "short": "Vici",
-        "prob": 52.4,
-        "record": "2-3",
-        "qualify_pct": 47.6
+        "id": "Nigma",
+        "name": "Nigma Galaxy",
+        "short": "Nigma",
+        "record": "Выбывание",
+        "qualify_pct": 28.3,
+        "slot_pct": 53.0
       },
       {
         "id": "OG",
         "name": "OG",
         "short": "OG",
-        "prob": 59.8,
-        "record": "2-3",
-        "qualify_pct": 40.2
+        "record": "Выбывание",
+        "qualify_pct": 37.3,
+        "slot_pct": 50.5
+      },
+      {
+        "id": "Vici",
+        "name": "Vici Gaming",
+        "short": "Vici",
+        "record": "Выбывание",
+        "qualify_pct": 45.7,
+        "slot_pct": 45.9
+      },
+      {
+        "id": "Spirit",
+        "name": "Team Spirit",
+        "short": "Spirit",
+        "record": "Выбывание",
+        "qualify_pct": 53.0,
+        "slot_pct": 41.5
       }
     ],
     "one_win": [
       {
-        "id": "Nigma",
-        "name": "Nigma Galaxy",
-        "short": "Nigma",
-        "prob": 66.9,
-        "record": "1-3",
-        "qualify_pct": 33.1
-      },
-      {
-        "id": "GamerLegion",
-        "name": "GamerLegion",
-        "short": "GamerLegion",
-        "prob": 76.0,
-        "record": "1-3",
-        "qualify_pct": 24.0
+        "id": "Resilience",
+        "name": "Team Resilience",
+        "short": "Resilience",
+        "record": "1–4",
+        "qualify_pct": 3.2,
+        "slot_pct": 52.8
       },
       {
         "id": "LGD",
         "name": "LGD Gaming",
         "short": "LGD",
-        "prob": 84.1,
-        "record": "1-3",
-        "qualify_pct": 15.9
-      },
-      {
-        "id": "Resilience",
-        "name": "Team Resilience",
-        "short": "Resilience",
-        "prob": 92.5,
-        "record": "1-3",
-        "qualify_pct": 7.5
+        "record": "1–4",
+        "qualify_pct": 10.5,
+        "slot_pct": 39.0
       }
     ],
     "winless": [
@@ -212,9 +246,9 @@
         "id": "HULIGANI",
         "name": "HULIGANI",
         "short": "HULIGANI",
-        "prob": 98.4,
-        "record": "0-3",
-        "qualify_pct": 1.6
+        "record": "0–4",
+        "qualify_pct": 0.2,
+        "slot_pct": 65.5
       }
     ]
   },
@@ -234,28 +268,34 @@
       ],
       "power_rank": 1,
       "avg_win_prob": 0.69,
-      "expected_wins": 2.72,
-      "most_likely_record": "3-1",
-      "qualify_pct": 81.2,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 18.8,
+      "expected_wins": 3.39,
+      "most_likely_record": "3-2",
+      "qualify_pct": 86.6,
+      "elim_round_pct": 48.5,
+      "eliminated_pct": 13.4,
+      "prob_4_0": 20.5,
+      "prob_4_1": 30.6,
+      "prob_advance": 35.5,
+      "prob_eliminate": 13.0,
+      "prob_1_4": 0.4,
+      "prob_0_4": 0.0,
       "records": {
-        "3-0": 27.3,
-        "3-1": 31.8,
-        "3-2_or_2-3": 33.2,
-        "2-3": 11.1,
-        "1-3": 6.0,
-        "0-3": 1.7
+        "4-0": 20.5,
+        "4-1": 30.6,
+        "advance": 35.5,
+        "eliminate": 13.0,
+        "1-4": 0.4,
+        "0-4": 0.0,
+        "swiss_3-2": 37.7,
+        "swiss_2-3": 10.8
       },
       "board": {
-        "undefeated": 27.3,
-        "one_loss": 31.8,
-        "borderline": 33.2,
-        "two_losses_out": 11.1,
-        "one_win": 6.0,
-        "winless": 1.7,
-        "qualify": 81.2,
-        "eliminated": 18.8
+        "undefeated": 20.5,
+        "one_loss": 30.6,
+        "advance": 35.5,
+        "eliminate": 13.0,
+        "one_win": 0.4,
+        "winless": 0.0
       }
     },
     {
@@ -273,28 +313,34 @@
       ],
       "power_rank": 2,
       "avg_win_prob": 0.676,
-      "expected_wins": 2.69,
-      "most_likely_record": "3-1",
-      "qualify_pct": 79.2,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 20.8,
+      "expected_wins": 3.33,
+      "most_likely_record": "3-2",
+      "qualify_pct": 84.7,
+      "elim_round_pct": 52.7,
+      "eliminated_pct": 15.3,
+      "prob_4_0": 17.8,
+      "prob_4_1": 28.9,
+      "prob_advance": 38.0,
+      "prob_eliminate": 14.7,
+      "prob_1_4": 0.6,
+      "prob_0_4": 0.0,
       "records": {
-        "3-0": 25.8,
-        "3-1": 30.6,
-        "3-2_or_2-3": 34.9,
-        "2-3": 12.0,
-        "1-3": 6.7,
-        "0-3": 2.0
+        "4-0": 17.8,
+        "4-1": 28.9,
+        "advance": 38.0,
+        "eliminate": 14.7,
+        "1-4": 0.6,
+        "0-4": 0.0,
+        "swiss_3-2": 40.2,
+        "swiss_2-3": 12.5
       },
       "board": {
-        "undefeated": 25.8,
-        "one_loss": 30.6,
-        "borderline": 34.9,
-        "two_losses_out": 12.0,
-        "one_win": 6.7,
-        "winless": 2.0,
-        "qualify": 79.2,
-        "eliminated": 20.8
+        "undefeated": 17.8,
+        "one_loss": 28.9,
+        "advance": 38.0,
+        "eliminate": 14.7,
+        "one_win": 0.6,
+        "winless": 0.0
       }
     },
     {
@@ -312,28 +358,34 @@
       ],
       "power_rank": 3,
       "avg_win_prob": 0.661,
-      "expected_wins": 2.66,
-      "most_likely_record": "3-1",
-      "qualify_pct": 77.8,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 22.2,
+      "expected_wins": 3.25,
+      "most_likely_record": "3-2",
+      "qualify_pct": 81.7,
+      "elim_round_pct": 57.9,
+      "eliminated_pct": 18.3,
+      "prob_4_0": 14.8,
+      "prob_4_1": 26.6,
+      "prob_advance": 40.4,
+      "prob_eliminate": 17.6,
+      "prob_1_4": 0.7,
+      "prob_0_4": 0.0,
       "records": {
-        "3-0": 23.6,
-        "3-1": 29.6,
-        "3-2_or_2-3": 37.2,
-        "2-3": 12.6,
-        "1-3": 7.5,
-        "0-3": 2.1
+        "4-0": 14.8,
+        "4-1": 26.6,
+        "advance": 40.4,
+        "eliminate": 17.6,
+        "1-4": 0.7,
+        "0-4": 0.0,
+        "swiss_3-2": 43.0,
+        "swiss_2-3": 15.0
       },
       "board": {
-        "undefeated": 23.6,
-        "one_loss": 29.6,
-        "borderline": 37.2,
-        "two_losses_out": 12.6,
-        "one_win": 7.5,
-        "winless": 2.1,
-        "qualify": 77.8,
-        "eliminated": 22.2
+        "undefeated": 14.8,
+        "one_loss": 26.6,
+        "advance": 40.4,
+        "eliminate": 17.6,
+        "one_win": 0.7,
+        "winless": 0.0
       }
     },
     {
@@ -351,28 +403,34 @@
       ],
       "power_rank": 4,
       "avg_win_prob": 0.644,
-      "expected_wins": 2.61,
-      "most_likely_record": "3-1",
-      "qualify_pct": 75.0,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 25.0,
+      "expected_wins": 3.16,
+      "most_likely_record": "3-2",
+      "qualify_pct": 78.5,
+      "elim_round_pct": 62.8,
+      "eliminated_pct": 21.5,
+      "prob_4_0": 11.9,
+      "prob_4_1": 24.3,
+      "prob_advance": 42.3,
+      "prob_eliminate": 20.5,
+      "prob_1_4": 1.0,
+      "prob_0_4": 0.0,
       "records": {
-        "3-0": 21.5,
-        "3-1": 29.2,
-        "3-2_or_2-3": 38.3,
-        "2-3": 14.0,
-        "1-3": 8.5,
-        "0-3": 2.5
+        "4-0": 11.9,
+        "4-1": 24.3,
+        "advance": 42.3,
+        "eliminate": 20.5,
+        "1-4": 1.0,
+        "0-4": 0.0,
+        "swiss_3-2": 44.7,
+        "swiss_2-3": 18.1
       },
       "board": {
-        "undefeated": 21.5,
-        "one_loss": 29.2,
-        "borderline": 38.3,
-        "two_losses_out": 14.0,
-        "one_win": 8.5,
-        "winless": 2.5,
-        "qualify": 75.0,
-        "eliminated": 25.0
+        "undefeated": 11.9,
+        "one_loss": 24.3,
+        "advance": 42.3,
+        "eliminate": 20.5,
+        "one_win": 1.0,
+        "winless": 0.0
       }
     },
     {
@@ -390,28 +448,34 @@
       ],
       "power_rank": 5,
       "avg_win_prob": 0.626,
-      "expected_wins": 2.56,
-      "most_likely_record": "3-1",
-      "qualify_pct": 71.6,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 28.4,
+      "expected_wins": 3.08,
+      "most_likely_record": "3-2",
+      "qualify_pct": 74.9,
+      "elim_round_pct": 66.9,
+      "eliminated_pct": 25.1,
+      "prob_4_0": 9.9,
+      "prob_4_1": 21.7,
+      "prob_advance": 43.3,
+      "prob_eliminate": 23.6,
+      "prob_1_4": 1.4,
+      "prob_0_4": 0.1,
       "records": {
-        "3-0": 19.5,
-        "3-1": 27.6,
-        "3-2_or_2-3": 40.1,
-        "2-3": 15.7,
-        "1-3": 9.6,
-        "0-3": 3.1
+        "4-0": 9.9,
+        "4-1": 21.7,
+        "advance": 43.3,
+        "eliminate": 23.6,
+        "1-4": 1.4,
+        "0-4": 0.1,
+        "swiss_3-2": 46.4,
+        "swiss_2-3": 20.6
       },
       "board": {
-        "undefeated": 19.5,
-        "one_loss": 27.6,
-        "borderline": 40.1,
-        "two_losses_out": 15.7,
-        "one_win": 9.6,
-        "winless": 3.1,
-        "qualify": 71.6,
-        "eliminated": 28.4
+        "undefeated": 9.9,
+        "one_loss": 21.7,
+        "advance": 43.3,
+        "eliminate": 23.6,
+        "one_win": 1.4,
+        "winless": 0.1
       }
     },
     {
@@ -429,28 +493,34 @@
       ],
       "power_rank": 6,
       "avg_win_prob": 0.606,
-      "expected_wins": 2.49,
-      "most_likely_record": "3-1",
-      "qualify_pct": 67.7,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 32.3,
+      "expected_wins": 2.97,
+      "most_likely_record": "3-2",
+      "qualify_pct": 71.0,
+      "elim_round_pct": 71.6,
+      "eliminated_pct": 29.0,
+      "prob_4_0": 7.6,
+      "prob_4_1": 18.8,
+      "prob_advance": 44.6,
+      "prob_eliminate": 27.1,
+      "prob_1_4": 1.9,
+      "prob_0_4": 0.1,
       "records": {
-        "3-0": 17.5,
-        "3-1": 25.7,
-        "3-2_or_2-3": 41.9,
-        "2-3": 17.4,
-        "1-3": 11.2,
-        "0-3": 3.7
+        "4-0": 7.6,
+        "4-1": 18.8,
+        "advance": 44.6,
+        "eliminate": 27.1,
+        "1-4": 1.9,
+        "0-4": 0.1,
+        "swiss_3-2": 46.7,
+        "swiss_2-3": 24.9
       },
       "board": {
-        "undefeated": 17.5,
-        "one_loss": 25.7,
-        "borderline": 41.9,
-        "two_losses_out": 17.4,
-        "one_win": 11.2,
-        "winless": 3.7,
-        "qualify": 67.7,
-        "eliminated": 32.3
+        "undefeated": 7.6,
+        "one_loss": 18.8,
+        "advance": 44.6,
+        "eliminate": 27.1,
+        "one_win": 1.9,
+        "winless": 0.1
       }
     },
     {
@@ -468,28 +538,34 @@
       ],
       "power_rank": 7,
       "avg_win_prob": 0.584,
-      "expected_wins": 2.44,
+      "expected_wins": 2.85,
       "most_likely_record": "3-2",
-      "qualify_pct": 64.3,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 35.6,
+      "qualify_pct": 65.5,
+      "elim_round_pct": 76.2,
+      "eliminated_pct": 34.5,
+      "prob_4_0": 6.1,
+      "prob_4_1": 15.1,
+      "prob_advance": 44.3,
+      "prob_eliminate": 31.9,
+      "prob_1_4": 2.5,
+      "prob_0_4": 0.1,
       "records": {
-        "3-0": 15.4,
-        "3-1": 24.3,
-        "3-2_or_2-3": 44.1,
-        "2-3": 19.4,
-        "1-3": 12.0,
-        "0-3": 4.2
+        "4-0": 6.1,
+        "4-1": 15.1,
+        "advance": 44.3,
+        "eliminate": 31.9,
+        "1-4": 2.5,
+        "0-4": 0.1,
+        "swiss_3-2": 45.8,
+        "swiss_2-3": 30.3
       },
       "board": {
-        "undefeated": 15.4,
-        "one_loss": 24.3,
-        "borderline": 44.1,
-        "two_losses_out": 19.4,
-        "one_win": 12.0,
-        "winless": 4.2,
-        "qualify": 64.3,
-        "eliminated": 35.6
+        "undefeated": 6.1,
+        "one_loss": 15.1,
+        "advance": 44.3,
+        "eliminate": 31.9,
+        "one_win": 2.5,
+        "winless": 0.1
       }
     },
     {
@@ -507,28 +583,34 @@
       ],
       "power_rank": 8,
       "avg_win_prob": 0.559,
-      "expected_wins": 2.34,
+      "expected_wins": 2.74,
       "most_likely_record": "3-2",
-      "qualify_pct": 59.3,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 40.7,
+      "qualify_pct": 59.6,
+      "elim_round_pct": 79.5,
+      "eliminated_pct": 40.4,
+      "prob_4_0": 4.7,
+      "prob_4_1": 12.0,
+      "prob_advance": 43.0,
+      "prob_eliminate": 36.5,
+      "prob_1_4": 3.6,
+      "prob_0_4": 0.2,
       "records": {
-        "3-0": 12.5,
-        "3-1": 22.5,
-        "3-2_or_2-3": 45.3,
-        "2-3": 21.0,
-        "1-3": 14.4,
-        "0-3": 5.2
+        "4-0": 4.7,
+        "4-1": 12.0,
+        "advance": 43.0,
+        "eliminate": 36.5,
+        "1-4": 3.6,
+        "0-4": 0.2,
+        "swiss_3-2": 44.5,
+        "swiss_2-3": 35.0
       },
       "board": {
-        "undefeated": 12.5,
-        "one_loss": 22.5,
-        "borderline": 45.3,
-        "two_losses_out": 21.0,
-        "one_win": 14.4,
-        "winless": 5.2,
-        "qualify": 59.3,
-        "eliminated": 40.7
+        "undefeated": 4.7,
+        "one_loss": 12.0,
+        "advance": 43.0,
+        "eliminate": 36.5,
+        "one_win": 3.6,
+        "winless": 0.2
       }
     },
     {
@@ -546,28 +628,34 @@
       ],
       "power_rank": 9,
       "avg_win_prob": 0.531,
-      "expected_wins": 2.25,
+      "expected_wins": 2.59,
       "most_likely_record": "2-3",
-      "qualify_pct": 53.9,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 46.1,
+      "qualify_pct": 53.0,
+      "elim_round_pct": 82.6,
+      "eliminated_pct": 47.0,
+      "prob_4_0": 2.9,
+      "prob_4_1": 9.0,
+      "prob_advance": 41.2,
+      "prob_eliminate": 41.5,
+      "prob_1_4": 5.1,
+      "prob_0_4": 0.4,
       "records": {
-        "3-0": 10.7,
-        "3-1": 20.1,
-        "3-2_or_2-3": 46.3,
-        "2-3": 23.3,
-        "1-3": 16.6,
-        "0-3": 6.2
+        "4-0": 2.9,
+        "4-1": 9.0,
+        "advance": 41.2,
+        "eliminate": 41.5,
+        "1-4": 5.1,
+        "0-4": 0.4,
+        "swiss_3-2": 41.2,
+        "swiss_2-3": 41.5
       },
       "board": {
-        "undefeated": 10.7,
-        "one_loss": 20.1,
-        "borderline": 46.3,
-        "two_losses_out": 23.3,
-        "one_win": 16.6,
-        "winless": 6.2,
-        "qualify": 53.9,
-        "eliminated": 46.1
+        "undefeated": 2.9,
+        "one_loss": 9.0,
+        "advance": 41.2,
+        "eliminate": 41.5,
+        "one_win": 5.1,
+        "winless": 0.4
       }
     },
     {
@@ -585,28 +673,34 @@
       ],
       "power_rank": 10,
       "avg_win_prob": 0.499,
-      "expected_wins": 2.12,
+      "expected_wins": 2.43,
       "most_likely_record": "2-3",
-      "qualify_pct": 47.6,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 52.4,
+      "qualify_pct": 45.7,
+      "elim_round_pct": 83.5,
+      "eliminated_pct": 54.3,
+      "prob_4_0": 2.0,
+      "prob_4_1": 6.1,
+      "prob_advance": 37.7,
+      "prob_eliminate": 45.9,
+      "prob_1_4": 7.8,
+      "prob_0_4": 0.6,
       "records": {
-        "3-0": 8.8,
-        "3-1": 17.1,
-        "3-2_or_2-3": 46.3,
-        "2-3": 24.5,
-        "1-3": 19.8,
-        "0-3": 8.0
+        "4-0": 2.0,
+        "4-1": 6.1,
+        "advance": 37.7,
+        "eliminate": 45.9,
+        "1-4": 7.8,
+        "0-4": 0.6,
+        "swiss_3-2": 35.8,
+        "swiss_2-3": 47.7
       },
       "board": {
-        "undefeated": 8.8,
-        "one_loss": 17.1,
-        "borderline": 46.3,
-        "two_losses_out": 24.5,
-        "one_win": 19.8,
-        "winless": 8.0,
-        "qualify": 47.6,
-        "eliminated": 52.4
+        "undefeated": 2.0,
+        "one_loss": 6.1,
+        "advance": 37.7,
+        "eliminate": 45.9,
+        "one_win": 7.8,
+        "winless": 0.6
       }
     },
     {
@@ -624,28 +718,34 @@
       ],
       "power_rank": 11,
       "avg_win_prob": 0.463,
-      "expected_wins": 1.96,
+      "expected_wins": 2.27,
       "most_likely_record": "2-3",
-      "qualify_pct": 40.2,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 59.8,
+      "qualify_pct": 37.3,
+      "elim_round_pct": 82.9,
+      "eliminated_pct": 62.7,
+      "prob_4_0": 1.0,
+      "prob_4_1": 3.8,
+      "prob_advance": 32.5,
+      "prob_eliminate": 50.5,
+      "prob_1_4": 11.2,
+      "prob_0_4": 1.1,
       "records": {
-        "3-0": 6.6,
-        "3-1": 14.7,
-        "3-2_or_2-3": 45.2,
-        "2-3": 26.2,
-        "1-3": 23.3,
-        "0-3": 10.3
+        "4-0": 1.0,
+        "4-1": 3.8,
+        "advance": 32.5,
+        "eliminate": 50.5,
+        "1-4": 11.2,
+        "0-4": 1.1,
+        "swiss_3-2": 30.4,
+        "swiss_2-3": 52.6
       },
       "board": {
-        "undefeated": 6.6,
-        "one_loss": 14.7,
-        "borderline": 45.2,
-        "two_losses_out": 26.2,
-        "one_win": 23.3,
-        "winless": 10.3,
-        "qualify": 40.2,
-        "eliminated": 59.8
+        "undefeated": 1.0,
+        "one_loss": 3.8,
+        "advance": 32.5,
+        "eliminate": 50.5,
+        "one_win": 11.2,
+        "winless": 1.1
       }
     },
     {
@@ -663,28 +763,34 @@
       ],
       "power_rank": 12,
       "avg_win_prob": 0.421,
-      "expected_wins": 1.81,
-      "most_likely_record": "1-3",
-      "qualify_pct": 33.1,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 66.9,
+      "expected_wins": 2.06,
+      "most_likely_record": "2-3",
+      "qualify_pct": 28.3,
+      "elim_round_pct": 78.7,
+      "eliminated_pct": 71.7,
+      "prob_4_0": 0.5,
+      "prob_4_1": 2.1,
+      "prob_advance": 25.7,
+      "prob_eliminate": 53.0,
+      "prob_1_4": 16.9,
+      "prob_0_4": 1.9,
       "records": {
-        "3-0": 4.9,
-        "3-1": 11.2,
-        "3-2_or_2-3": 44.0,
-        "2-3": 27.0,
-        "1-3": 27.1,
-        "0-3": 12.7
+        "4-0": 0.5,
+        "4-1": 2.1,
+        "advance": 25.7,
+        "eliminate": 53.0,
+        "1-4": 16.9,
+        "0-4": 1.9,
+        "swiss_3-2": 21.6,
+        "swiss_2-3": 57.1
       },
       "board": {
-        "undefeated": 4.9,
-        "one_loss": 11.2,
-        "borderline": 44.0,
-        "two_losses_out": 27.0,
-        "one_win": 27.1,
-        "winless": 12.7,
-        "qualify": 33.1,
-        "eliminated": 66.9
+        "undefeated": 0.5,
+        "one_loss": 2.1,
+        "advance": 25.7,
+        "eliminate": 53.0,
+        "one_win": 16.9,
+        "winless": 1.9
       }
     },
     {
@@ -702,28 +808,34 @@
       ],
       "power_rank": 13,
       "avg_win_prob": 0.371,
-      "expected_wins": 1.57,
-      "most_likely_record": "1-3",
-      "qualify_pct": 24.0,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 76.0,
+      "expected_wins": 1.83,
+      "most_likely_record": "2-3",
+      "qualify_pct": 19.3,
+      "elim_round_pct": 69.5,
+      "eliminated_pct": 80.7,
+      "prob_4_0": 0.2,
+      "prob_4_1": 0.8,
+      "prob_advance": 18.2,
+      "prob_eliminate": 51.3,
+      "prob_1_4": 26.0,
+      "prob_0_4": 3.5,
       "records": {
-        "3-0": 3.3,
-        "3-1": 8.0,
-        "3-2_or_2-3": 39.2,
-        "2-3": 26.5,
-        "1-3": 32.6,
-        "0-3": 17.0
+        "4-0": 0.2,
+        "4-1": 0.8,
+        "advance": 18.2,
+        "eliminate": 51.3,
+        "1-4": 26.0,
+        "0-4": 3.5,
+        "swiss_3-2": 13.6,
+        "swiss_2-3": 55.9
       },
       "board": {
-        "undefeated": 3.3,
-        "one_loss": 8.0,
-        "borderline": 39.2,
-        "two_losses_out": 26.5,
-        "one_win": 32.6,
-        "winless": 17.0,
-        "qualify": 24.0,
-        "eliminated": 76.0
+        "undefeated": 0.2,
+        "one_loss": 0.8,
+        "advance": 18.2,
+        "eliminate": 51.3,
+        "one_win": 26.0,
+        "winless": 3.5
       }
     },
     {
@@ -741,28 +853,34 @@
       ],
       "power_rank": 14,
       "avg_win_prob": 0.31,
-      "expected_wins": 1.32,
-      "most_likely_record": "1-3",
-      "qualify_pct": 15.9,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 84.1,
+      "expected_wins": 1.53,
+      "most_likely_record": "2-3",
+      "qualify_pct": 10.5,
+      "elim_round_pct": 53.1,
+      "eliminated_pct": 89.5,
+      "prob_4_0": 0.1,
+      "prob_4_1": 0.3,
+      "prob_advance": 10.2,
+      "prob_eliminate": 43.0,
+      "prob_1_4": 39.0,
+      "prob_0_4": 7.5,
       "records": {
-        "3-0": 1.8,
-        "3-1": 5.1,
-        "3-2_or_2-3": 32.4,
-        "2-3": 23.5,
-        "1-3": 36.9,
-        "0-3": 23.7
+        "4-0": 0.1,
+        "4-1": 0.3,
+        "advance": 10.2,
+        "eliminate": 43.0,
+        "1-4": 39.0,
+        "0-4": 7.5,
+        "swiss_3-2": 6.8,
+        "swiss_2-3": 46.4
       },
       "board": {
-        "undefeated": 1.8,
-        "one_loss": 5.1,
-        "borderline": 32.4,
-        "two_losses_out": 23.5,
-        "one_win": 36.9,
-        "winless": 23.7,
-        "qualify": 15.9,
-        "eliminated": 84.1
+        "undefeated": 0.1,
+        "one_loss": 0.3,
+        "advance": 10.2,
+        "eliminate": 43.0,
+        "one_win": 39.0,
+        "winless": 7.5
       }
     },
     {
@@ -780,28 +898,34 @@
       ],
       "power_rank": 15,
       "avg_win_prob": 0.233,
-      "expected_wins": 0.96,
-      "most_likely_record": "1-3",
-      "qualify_pct": 7.5,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 92.5,
+      "expected_wins": 1.11,
+      "most_likely_record": "1-4",
+      "qualify_pct": 3.2,
+      "elim_round_pct": 28.1,
+      "eliminated_pct": 96.8,
+      "prob_4_0": 0.0,
+      "prob_4_1": 0.0,
+      "prob_advance": 3.2,
+      "prob_eliminate": 24.9,
+      "prob_1_4": 52.8,
+      "prob_0_4": 19.0,
       "records": {
-        "3-0": 0.7,
-        "3-1": 2.2,
-        "3-2_or_2-3": 22.6,
-        "2-3": 18.0,
-        "1-3": 38.0,
-        "0-3": 36.5
+        "4-0": 0.0,
+        "4-1": 0.0,
+        "advance": 3.2,
+        "eliminate": 24.9,
+        "1-4": 52.8,
+        "0-4": 19.0,
+        "swiss_3-2": 1.8,
+        "swiss_2-3": 26.3
       },
       "board": {
-        "undefeated": 0.7,
-        "one_loss": 2.2,
-        "borderline": 22.6,
-        "two_losses_out": 18.0,
-        "one_win": 38.0,
-        "winless": 36.5,
-        "qualify": 7.5,
-        "eliminated": 92.5
+        "undefeated": 0.0,
+        "one_loss": 0.0,
+        "advance": 3.2,
+        "eliminate": 24.9,
+        "one_win": 52.8,
+        "winless": 19.0
       }
     },
     {
@@ -819,28 +943,34 @@
       ],
       "power_rank": 16,
       "avg_win_prob": 0.129,
-      "expected_wins": 0.5,
-      "most_likely_record": "0-3",
-      "qualify_pct": 1.6,
-      "elim_round_pct": 0.0,
-      "eliminated_pct": 98.4,
+      "expected_wins": 0.4,
+      "most_likely_record": "0-4",
+      "qualify_pct": 0.2,
+      "elim_round_pct": 5.3,
+      "eliminated_pct": 99.8,
+      "prob_4_0": 0.0,
+      "prob_4_1": 0.0,
+      "prob_advance": 0.2,
+      "prob_eliminate": 5.0,
+      "prob_1_4": 29.2,
+      "prob_0_4": 65.5,
       "records": {
-        "3-0": 0.1,
-        "3-1": 0.5,
-        "3-2_or_2-3": 8.8,
-        "2-3": 7.8,
-        "1-3": 29.6,
-        "0-3": 61.0
+        "4-0": 0.0,
+        "4-1": 0.0,
+        "advance": 0.2,
+        "eliminate": 5.0,
+        "1-4": 29.2,
+        "0-4": 65.5,
+        "swiss_3-2": 0.1,
+        "swiss_2-3": 5.2
       },
       "board": {
-        "undefeated": 0.1,
-        "one_loss": 0.5,
-        "borderline": 8.8,
-        "two_losses_out": 7.8,
-        "one_win": 29.6,
-        "winless": 61.0,
-        "qualify": 1.6,
-        "eliminated": 98.4
+        "undefeated": 0.0,
+        "one_loss": 0.0,
+        "advance": 0.2,
+        "eliminate": 5.0,
+        "one_win": 29.2,
+        "winless": 65.5
       }
     }
   ],
