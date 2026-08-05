@@ -214,8 +214,7 @@ SWISS_CONFIG = {
     "n_rounds": 5,
     "qualify_top_n": 3,       # Direct to playoffs
     "elim_bottom_n": 3,       # Immediately eliminated
-    "elimination_advance": 5, # From elimination round
-    "match_format": "Bo3",
+    "elimination_round_advance": 5, # From elimination round
 }
 
 

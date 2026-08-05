@@ -91,7 +91,7 @@ def train_xgboost(X, y, params: dict = None, cv_folds: int = 5):
         "reg_alpha": 0.1,
         "reg_lambda": 1.0,
         "random_state": 42,
-        "use_label_encoder": False,
+
     }
     if params:
         default_params.update(params)

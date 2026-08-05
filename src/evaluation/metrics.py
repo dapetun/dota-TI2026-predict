@@ -1,15 +1,40 @@
 """Model evaluation and backtesting utilities."""
 
-import numpy as np
-import pandas as pd
-from sklearn.metrics import log_loss, accuracy_score, brier_score_loss, roc_auc_score
-from sklearn.model_selection import TimeSeriesSplit
-from typing import Dict, Tuple
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Dict
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
+import numpy as np
+import pandas as pd
+from sklearn.metrics import (
+    accuracy_score,
+    brier_score_loss,
+    log_loss,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+
+
+def classification_metrics(y_true: np.ndarray, y_prob: np.ndarray) -> dict[str, float]:
+    """Compute core probabilistic and threshold metrics."""
+    preds = (y_prob >= 0.5).astype(int)
+    metrics = {
+        "log_loss": float(log_loss(y_true, y_prob, labels=[0, 1])),
+        "brier": float(brier_score_loss(y_true, y_prob)),
+        "accuracy": float(accuracy_score(y_true, preds)),
+        "precision": float(precision_score(y_true, preds, zero_division=0)),
+        "recall": float(recall_score(y_true, preds, zero_division=0)),
+    }
+    metrics["auc_roc"] = (
+        float(roc_auc_score(y_true, y_prob)) if len(np.unique(y_true)) > 1 else 0.5
+    )
+    return metrics
+
 
 
 def walk_forward_validation(

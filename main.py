@@ -244,8 +244,20 @@ def main():
     print("=" * 60)
     start_time = datetime.now()
 
-    # Check if we have data
+    # Iteration 1 default: real OpenDota matchlists → XGBoost
     raw_dir = Path("data/raw")
+    has_matchlists = (
+        any(raw_dir.glob("*_matchlist.json")) or any(raw_dir.glob("*_matches.json"))
+    ) if raw_dir.exists() else False
+
+    if "--legacy" not in sys.argv and has_matchlists:
+        from src.pipeline import run_iteration1
+
+        run_iteration1()
+        elapsed = datetime.now() - start_time
+        print(f"\nPipeline completed in {elapsed.total_seconds():.1f} seconds")
+        return
+
     has_data = any(raw_dir.glob("*.csv")) if raw_dir.exists() else False
 
     if has_data:
@@ -257,45 +269,68 @@ def main():
         win_matrix = step_generate_predictions(models, feature_cols)
         results = step_simulate_tournament(win_matrix, n_simulations=100000)
     else:
-        print("No raw data available. Running with synthetic baseline...")
+        print("No raw data available. Running with Bradley-Terry baseline...")
         print("(Set STRATZ_TOKEN env var or place OpenDota CSVs in data/raw/)\n")
 
-        # Create minimal synthetic features for demonstration
         teams = get_team_ids()
-        features_df = pd.DataFrame({"team_id": teams})
+        n = len(teams)
 
-        for idx, row in features_df.iterrows():
-            team = row["team_id"]
+        # Bradley-Terry model: P(A beats B) = rating_B / (rating_A + rating_B)
+        # Rating derived from power ranking: rank 1 → strength 16, rank 16 → strength 1
+        matrix = np.ones((n, n)) * 0.5
+        strengths = {}
+        for team in teams:
             rank = POWER_RANKINGS.get(team, 16)
-            # Convert rank to synthetic win rate (rank 1 = 0.65, rank 16 = 0.35)
-            features_df.at[idx, "power_ranking"] = rank
-            features_df.at[idx, "synthetic_wr"] = 0.65 - (rank - 1) * 0.02
+            strengths[team] = n - rank + 1  # rank 1 → 16, rank 16 → 1
 
+        for i, t1 in enumerate(teams):
+            for j, t2 in enumerate(teams):
+                if i != j:
+                    matrix[i][j] = strengths[t1] / (strengths[t1] + strengths[t2])
+
+        win_matrix = pd.DataFrame(matrix, index=teams, columns=teams)
+
+        # Also generate synthetic match features for calibration
+        rng = np.random.default_rng(42)
+        synth_matches = []
+        for _ in range(2000):
+            t1, t2 = rng.choice(teams, 2, replace=False)
+            p1 = strengths[t1] / (strengths[t1] + strengths[t2])
+            r1_wr = rng.random() < p1
+            rank1 = POWER_RANKINGS.get(t1, 16)
+            rank2 = POWER_RANKINGS.get(t2, 16)
+            synth_matches.append({
+                "match_id": len(synth_matches),
+                "a_power_ranking": rank1,
+                "b_power_ranking": rank2,
+                "a_synthetic_wr": 0.65 - (rank1 - 1) * 0.02,
+                "b_synthetic_wr": 0.65 - (rank2 - 1) * 0.02,
+                "diff_power_ranking": rank1 - rank2,
+                "diff_synthetic_wr": (0.65 - (rank1 - 1) * 0.02) - (0.65 - (rank2 - 1) * 0.02),
+                "a_elo": 1500 + (16 - rank1) * 30,
+                "b_elo": 1500 + (16 - rank2) * 30,
+                "diff_elo": (16 - rank1) * 30 - (16 - rank2) * 30,
+                "radiant_win": r1_wr,
+            })
+
+        features_df = pd.DataFrame(synth_matches)
         features_file = Path("data/features") / "match_features.csv"
         features_file.parent.mkdir(parents=True, exist_ok=True)
         features_df.to_csv(features_file, index=False)
 
-        print("Running model training on synthetic data...")
+        print("Training on synthetic match data for calibration...")
         models, feature_cols = step_train_models()
 
-        if models:
-            win_matrix = step_generate_predictions(models, feature_cols)
-            results = step_simulate_tournament(win_matrix, n_simulations=10000)
-        else:
-            print("Training skipped. Using power ranking-based probabilities.")
-            # Fallback: use power ranking to estimate win rates
-            n = len(teams)
-            matrix = np.ones((n, n)) * 0.5
-            for i, t1 in enumerate(teams):
-                for j, t2 in enumerate(teams):
-                    if i != j:
-                        r1 = POWER_RANKINGS.get(t1, 16)
-                        r2 = POWER_RANKINGS.get(t2, 16)
-                        # Simple Bradley-Terry model
-                        matrix[i][j] = r2 / (r1 + r2)
+        print("\n=== Win Probability Matrix (Bradley-Terry) ===")
+        print(win_matrix.round(3).to_string())
 
-            win_matrix = pd.DataFrame(matrix, index=teams, columns=teams)
-            results = step_simulate_tournament(win_matrix, n_simulations=10000)
+        print("\n=== Power Ranking Predictions ===")
+        for team in sorted(teams, key=lambda t: -strengths[t]):
+            r = POWER_RANKINGS.get(team, 16)
+            wr_vs_avg = np.mean([win_matrix.loc[team, t] for t in teams if t != team])
+            print(f"  {team:15s} (rank {r:2d})  avg_wr={wr_vs_avg:.1%}")
+
+        results = step_simulate_tournament(win_matrix, n_simulations=100000)
 
     elapsed = datetime.now() - start_time
     print(f"\nPipeline completed in {elapsed.total_seconds():.1f} seconds")

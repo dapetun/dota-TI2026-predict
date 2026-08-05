@@ -11,17 +11,12 @@ data:
   raw_dir: "data/raw"
   processed_dir: "data/processed"
   features_dir: "data/features"
-  
-  # Date ranges for training data
-  train_start: "2023-01-01"
+
+  # Iteration 1: keep full TI history; relevance via sample weights
+  train_start: "2021-01-01"
   train_end: "2026-08-01"
-  patch_cutoff: "2024-01-01"  # Only use matches from this patch onward
-  
-  # Tournament IDs for STRATZ (7 = pro matches)
-  pro_league_tier: 1
-  
-  # Minimum matches per team
-  min_team_matches: 10
+  sample_weight_half_life_days: 90
+  min_team_matches: 5
 
 features:
   elo:
