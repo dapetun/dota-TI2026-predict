@@ -2,56 +2,63 @@
   "meta": {
     "title": "TI 2026 Swiss Predictions",
     "subtitle": "Open-source group-stage forecast",
-    "generated_at": "2026-08-05T19:40:49.371122+00:00",
+    "generated_at": "2026-08-05T20:10:18.001684+00:00",
     "model": "power_ranking_bradley_terry",
     "model_label": "Power ranking",
-    "disclaimer": "Доска Swiss построена на power ranking и Monte Carlo (Swiss до 4 побед/поражений + Elimination Round). XGBoost обучен отдельно; парные прогнозы из модели пока не подключены.",
+    "disclaimer": "Доска Swiss построена на power ranking и Monte Carlo (Swiss до 4 побед/поражений + Elimination Round). XGBoost (team+player) обучен отдельно; парные прогнозы из модели пока не подключены.",
     "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
     "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
     "n_simulations": 20000,
-    "version": "0.1.2"
+    "version": "0.2.0-prod"
   },
   "model_metrics": {
-    "walk_forward_avg_logloss": 0.8543,
-    "walk_forward_avg_auc": 0.564,
-    "leave_one_ti_avg_logloss": 0.9112,
-    "leave_one_ti_avg_auc": 0.58,
+    "walk_forward_avg_logloss": 0.8915,
+    "walk_forward_avg_auc": 0.547,
+    "leave_one_ti_avg_logloss": 0.8949,
+    "leave_one_ti_avg_auc": 0.579,
     "leave_one_ti": [
       {
         "ti": "TI11_2022",
-        "log_loss": 0.8669,
-        "auc": 0.576,
+        "log_loss": 0.8773,
+        "auc": 0.56,
         "n_test": 213
       },
       {
         "ti": "TI12_2023",
-        "log_loss": 0.8186,
-        "auc": 0.604,
+        "log_loss": 0.8074,
+        "auc": 0.61,
         "n_test": 128
       },
       {
         "ti": "TI13_2024",
-        "log_loss": 0.73,
-        "auc": 0.711,
+        "log_loss": 0.7223,
+        "auc": 0.708,
         "n_test": 99
       },
       {
         "ti": "TI14_2025",
-        "log_loss": 1.2294,
-        "auc": 0.43,
+        "log_loss": 1.1723,
+        "auc": 0.438,
         "n_test": 121
       }
     ],
     "top_features": [
+      "r_pl_lan_wr",
       "elo_prob",
+      "diff_pl_lan_wr",
       "diff_wr",
+      "diff_pl_xpm",
+      "r_avg_tier",
       "diff_elo",
-      "d_days_since",
-      "d_gp",
-      "diff_streak",
-      "r_elo",
-      "diff_gp"
-    ]
+      "diff_pl_games"
+    ],
+    "player_coverage": {
+      "n_matches": 2134,
+      "n_matches_with_players": 448,
+      "coverage": 0.21,
+      "n_player_rows": 5480,
+      "n_accounts": 235
+    }
   },
   "recent_results": {
     "EWC_2026": {

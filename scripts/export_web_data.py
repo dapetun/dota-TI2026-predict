@@ -46,27 +46,42 @@ def build_win_matrix(teams: list[str]) -> pd.DataFrame:
 
 def load_model_metrics() -> dict:
     if not METRICS_PATH.exists():
-        return {}
-    with open(METRICS_PATH, encoding="utf-8") as f:
-        raw = json.load(f)
-    wf = raw.get("walk_forward", [])
-    loo = raw.get("leave_one_ti", [])
-    return {
-        "walk_forward_avg_logloss": round(float(np.mean([x["log_loss"] for x in wf])), 4) if wf else None,
-        "walk_forward_avg_auc": round(float(np.mean([x["auc"] for x in wf])), 3) if wf else None,
-        "leave_one_ti_avg_logloss": round(float(np.mean([x["log_loss"] for x in loo])), 4) if loo else None,
-        "leave_one_ti_avg_auc": round(float(np.mean([x["auc"] for x in loo])), 3) if loo else None,
-        "leave_one_ti": [
-            {
-                "ti": x["fold"],
-                "log_loss": round(x["log_loss"], 4),
-                "auc": round(x["auc"], 3),
-                "n_test": x["n_test"],
-            }
-            for x in loo
-        ],
-        "top_features": list(raw.get("feature_importance", {}).keys())[:8],
-    }
+        metrics: dict = {}
+    else:
+        with open(METRICS_PATH, encoding="utf-8") as f:
+            raw = json.load(f)
+        wf = raw.get("walk_forward", [])
+        loo = raw.get("leave_one_ti", [])
+        metrics = {
+            "walk_forward_avg_logloss": round(float(np.mean([x["log_loss"] for x in wf])), 4) if wf else None,
+            "walk_forward_avg_auc": round(float(np.mean([x["auc"] for x in wf])), 3) if wf else None,
+            "leave_one_ti_avg_logloss": round(float(np.mean([x["log_loss"] for x in loo])), 4) if loo else None,
+            "leave_one_ti_avg_auc": round(float(np.mean([x["auc"] for x in loo])), 3) if loo else None,
+            "leave_one_ti": [
+                {
+                    "ti": x["fold"],
+                    "log_loss": round(x["log_loss"], 4),
+                    "auc": round(x["auc"], 3),
+                    "n_test": x["n_test"],
+                }
+                for x in loo
+            ],
+            "top_features": list(raw.get("feature_importance", {}).keys())[:8],
+        }
+
+    try:
+        from src.data_collection.match_details import (
+            load_player_matches,
+            summarize_player_coverage,
+        )
+        from src.data_collection.match_loader import load_raw_matchlists
+
+        matches = load_raw_matchlists(BASE_DIR / "data" / "raw")
+        players = load_player_matches(BASE_DIR / "data" / "raw")
+        metrics["player_coverage"] = summarize_player_coverage(matches, players)
+    except Exception:
+        metrics["player_coverage"] = None
+    return metrics
 
 
 def team_payload(team_id: str, row: pd.Series, win_matrix: pd.DataFrame, teams: list[str]) -> dict:
@@ -161,12 +176,12 @@ def main(n_simulations: int = 20000) -> Path:
             "disclaimer": (
                 "Доска Swiss построена на power ranking и Monte Carlo "
                 "(Swiss до 4 побед/поражений + Elimination Round). "
-                "XGBoost обучен отдельно; парные прогнозы из модели пока не подключены."
+                "XGBoost (team+player) обучен отдельно; парные прогнозы из модели пока не подключены."
             ),
             "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
             "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
-            "version": "0.1.2",
+            "version": "0.2.0-prod",
         },
         "model_metrics": load_model_metrics(),
         "recent_results": TI2026_RECENT_RESULTS,

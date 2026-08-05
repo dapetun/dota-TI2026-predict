@@ -1,51 +1,49 @@
 # Результаты обучения XGBoost (team + player)
 
 Дата прогона: 2026-08-05  
-Ветка: `prod`
+Ветка: `prod`  
+Сайт (локально): `docs/` → http://localhost:8080 · версия данных `0.2.0-prod`
 
 ## Данные
 
 - **2134** матча из 12 турниров (TI10–TI14 + majors 2026)
 - После фильтра `min_games>=5`: **1734** строк
-- Player details: **298** матчей с игроками (**14%** покрытия), 3980 player-rows, 225 account_id
+- Player details: **448** матчей с игроками (**21%** покрытия), 5480 player-rows, 235 account_id
 - Признаков: **50** (25 team + 25 player)
 
-Догрузка details: `python scripts/download_details.py` (resume). Покрытие будет расти фоном.
+Догрузка details: `python scripts/download_details.py` (resume). Покрытие растёт фоном.
 
-## Walk-forward (5 folds)
+## Метрики (последний экспорт в UI)
 
-| Fold | LogLoss | Brier | AUC | Acc |
-|---|---|---|---|---|
-| 1 | 0.901 | 0.320 | 0.506 | 0.516 |
-| 2 | 0.923 | 0.310 | 0.584 | 0.571 |
-| 3 | 0.882 | 0.304 | 0.537 | 0.543 |
-| 4 | 0.859 | 0.297 | 0.563 | 0.536 |
-| 5 | 0.785 | 0.270 | 0.644 | 0.581 |
-| **AVG** | **0.870** | | **0.567** | |
+| Метрика | Значение |
+|---|---|
+| Walk-forward AUC (avg) | **0.547** |
+| Leave-One-TI AUC (avg) | **0.579** |
+| Walk-forward LogLoss | 0.892 |
+| LOO-TI LogLoss | 0.895 |
 
-## Leave-One-TI-Out
+### Leave-One-TI-Out
 
-| Held-out TI | n | LogLoss | Brier | AUC | Acc |
-|---|---|---|---|---|---|
-| TI11 | 213 | 0.877 | 0.305 | 0.560 | 0.516 |
-| TI12 | 128 | 0.807 | 0.281 | 0.610 | 0.578 |
-| TI13 | 99 | 0.722 | 0.237 | 0.708 | 0.677 |
-| TI14 | 121 | 1.172 | 0.392 | 0.438 | 0.455 |
-| **AVG** | | **0.895** | | **0.579** | |
+| Held-out TI | n | LogLoss | AUC |
+|---|---|---|---|
+| TI11 | 213 | 0.877 | 0.560 |
+| TI12 | 128 | 0.807 | 0.610 |
+| TI13 | 99 | 0.722 | 0.708 |
+| TI14 | 121 | 1.172 | 0.438 |
+
+Топ важности (player уже в лидерах): `r_pl_lan_wr`, `elo_prob`, `diff_pl_lan_wr`, `diff_wr`, `diff_pl_xpm`.
 
 ## Сравнение с team-only
 
-| Метрика | Team-only | Team+player (14% coverage) |
+| Метрика | Team-only | Team+player (~21% coverage) |
 |---|---|---|
-| Walk-forward AUC | 0.564 | **0.567** |
-| LOO-TI AUC | 0.580 | 0.579 |
-| TI14 AUC | 0.430 | **0.438** |
+| LOO-TI AUC | ~0.580 | **0.579** |
+| TI14 AUC | ~0.430 | **0.438** |
 
-При низком покрытии details прирост скромный, но player-фичи уже в топе важности:
-`diff_pl_lan_wr`, `diff_pl_games`, `diff_pl_kda`, `diff_pl_hdpm`.
+При низком покрытии details прирост скромный; цель coverage ≥60–70%, затем переобучение и merge в `main` как `v0.2.0`.
 
-## Интерпретация
+## UI
 
-Нужно дотянуть coverage details (цель ≥60–70%), особенно по TI13/TI14 и предшествующим majors, затем переобучить. Следующий этап после покрытия — сыгранность (co-play).
+Доска Swiss — power ranking + Monte Carlo (не pairwise XGBoost). В метаданных сайта: coverage players и версия `0.2.0-prod`. Имена: BoomBoys, Iron Wing, TEAM VISION.
 
 Артефакты локально: `outputs/xgb_v1_metrics.json`, `calibration.png`, `feature_importance.png`.

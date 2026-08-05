@@ -163,11 +163,16 @@ function renderMatchup(data) {
 
 function renderMetrics(data) {
   const m = data.model_metrics || {};
+  const cov = m.player_coverage;
+  const covLabel =
+    cov && cov.coverage != null
+      ? `${Math.round(cov.coverage * 100)}%`
+      : "—";
   const cards = [
     {
       label: "Walk-forward AUC",
       value: m.walk_forward_avg_auc ?? "—",
-      hint: "XGBoost",
+      hint: "XGBoost team+player",
     },
     {
       label: "Leave-One-TI AUC",
@@ -175,14 +180,16 @@ function renderMetrics(data) {
       hint: "Среднее по прошлым TI",
     },
     {
-      label: "Walk-forward LogLoss",
-      value: m.walk_forward_avg_logloss ?? "—",
-      hint: "Чем ниже, тем лучше",
+      label: "Player coverage",
+      value: covLabel,
+      hint: cov
+        ? `${cov.n_matches_with_players || 0} / ${cov.n_matches || "?"} матчей`
+        : "OpenDota details",
     },
     {
       label: "UI source",
       value: "Power ranking",
-      hint: data.meta.model_label,
+      hint: data.meta.model_label || "Swiss Monte Carlo",
     },
   ];
   document.getElementById("metrics-grid").innerHTML = cards
