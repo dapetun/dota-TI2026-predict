@@ -6,13 +6,13 @@
 
 | Реализовано | В планах |
 |---|---|
-| ETL OpenDota matchlists | Полные player details |
-| Elo / form / H2H / tier features | Player model, сыгранность |
-| Walk-forward + Leave-One-TI-Out | Парные прогнозы из XGBoost |
+| ETL OpenDota matchlists + match details | Полное покрытие всех details |
+| Team Elo / form / H2H + player rolling stats | Сыгранность (co-play) |
+| Walk-forward + Leave-One-TI-Out | Парные прогнозы XGBoost в UI |
 | Статичный UI (GitHub Pages) | Draft / hero embeddings |
 
-Текущая модель: **XGBoost** на team-level признаках.  
-Веб-интерфейс сейчас показывает прогнозы Swiss на основе power ranking + Monte Carlo (пока XGBoost не готов к боевым матчапам).
+Текущая модель: **XGBoost** (team + player признаки).  
+Разработка ведётся в ветке `prod`, стабильное — в `main`.
 
 ## Веб-интерфейс
 
@@ -39,6 +39,10 @@ pip install -r requirements.txt
 
 # При необходимости догрузить списки матчей:
 python scripts/download_data.py --list-only
+
+# Догрузить детали матчей (игроки), resume-friendly:
+python scripts/download_details.py
+# или ограничить объём: python scripts/download_details.py --max 300
 
 # ETL → features → XGBoost → метрики
 python scripts/train.py

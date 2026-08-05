@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 
-# Documented feature set for iteration 1 (see docs/FEATURES.md).
+# Documented feature set (see docs/FEATURES.md).
 FEATURE_COLUMNS = [
     "r_elo",
     "d_elo",

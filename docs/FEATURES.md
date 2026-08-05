@@ -23,10 +23,34 @@
 | `tier_weight` | tournament registry | TI=2.0, major=1.5, … | Контекст важности матча | Слабое как фича (важно как sample weight) |
 | `r_days_since` / `d_days_since` | last played ts | дни простоя | Ржавчина / пауза | Слабое–среднее |
 
+## Player features
+
+Строятся по `account_id` из OpenDota match details. История игрока обновляется **после** матча.
+
+| Признак | Источник | Как считается | Зачем | Ожидаемое влияние |
+|---|---|---|---|---|
+| `r_pl_kda` / `d_pl_kda` | player details | mean KDA игроков состава за ≤20 прошлых карт | Индивидуальная форма | Среднее–сильное |
+| `diff_pl_kda` | derived | разница KDA сторон | Перевес скилла | Сильное |
+| `r_pl_gpm` / `d_pl_gpm` | player details | mean GPM состава | Экономика / фарм | Среднее |
+| `diff_pl_gpm` | derived | разница GPM | — | Среднее |
+| `r_pl_xpm` / `d_pl_xpm` | player details | mean XPM | Темп опыта | Среднее |
+| `diff_pl_xpm` | derived | разница XPM | — | Среднее |
+| `r_pl_hdpm` / `d_pl_hdpm` | player details | hero damage / min | Фраг / дамаг | Среднее |
+| `diff_pl_hdpm` | derived | разница HD/min | — | Среднее |
+| `r_pl_tdpm` / `d_pl_tdpm` | player details | tower damage / min | Объектный урон | Слабое–среднее |
+| `diff_pl_tdpm` | derived | разница TD/min | — | Слабое |
+| `r_pl_wr` / `d_pl_wr` | player details | mean WR игроков | Сила состава независимо от тега | Сильное |
+| `diff_pl_wr` | derived | разница WR | — | Сильное |
+| `r_pl_games` / `d_pl_games` | player details | mean число прошлых карт в корпусе | Опыт / cold-start | Слабое–среднее |
+| `diff_pl_games` | derived | разница опыта | — | Слабое |
+| `r_pl_lan_wr` / `d_pl_lan_wr` | player details | WR только на LAN (tier LAN) | LAN-форма к TI | Среднее |
+| `diff_pl_lan_wr` | derived | разница LAN WR | — | Среднее |
+| `has_player_stats` | coverage flag | 1 если есть details | Модель видит пропуски | Служебное |
+
 ## Sample weights
 
 `w = 0.5 ** (age_days / 90) * tier_weight`, затем нормализация среднего к 1.
 
 ## Дальше
 
-Player KDA/GPM, сыгранность, draft, patch embeddings — отдельные этапы.
+Сыгранность (co-play), draft, patch embeddings — отдельные этапы.
