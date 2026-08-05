@@ -1,0 +1,226 @@
+{
+  "Aurora": {
+    "id": "Aurora",
+    "full_name": "Aurora Gaming",
+    "region": "EU",
+    "source": "Direct Invite",
+    "roster": [
+      "Nightfall",
+      "Mikoto",
+      "Ws",
+      "Mira",
+      "kaori"
+    ],
+    "power_rank": 4
+  },
+  "BetBoom": {
+    "id": "BetBoom",
+    "full_name": "BoomBoys",
+    "region": "EU",
+    "source": "Direct Invite",
+    "roster": [
+      "Kiritych~",
+      "gpk",
+      "MieRo",
+      "Save-",
+      "Kataomi`"
+    ],
+    "power_rank": 2
+  },
+  "Falcons": {
+    "id": "Falcons",
+    "full_name": "Team Falcons",
+    "region": "EU",
+    "source": "Direct Invite",
+    "roster": [
+      "skiter",
+      "Malr1ne",
+      "ATF",
+      "Cr1t-",
+      "Sneyking"
+    ],
+    "power_rank": 5
+  },
+  "Liquid": {
+    "id": "Liquid",
+    "full_name": "Team Liquid",
+    "region": "EU",
+    "source": "Direct Invite",
+    "roster": [
+      "miCKe",
+      "Nisha",
+      "Ace",
+      "Boxi",
+      "tOfu"
+    ],
+    "power_rank": 6
+  },
+  "1w": {
+    "id": "1w",
+    "full_name": "1w",
+    "region": "EU",
+    "source": "Direct Invite",
+    "roster": [
+      "Pure",
+      "bzm",
+      "33",
+      "Ari",
+      "Whitemon"
+    ],
+    "power_rank": 7
+  },
+  "Xtreme": {
+    "id": "Xtreme",
+    "full_name": "Xtreme Gaming",
+    "region": "CN",
+    "source": "Direct Invite",
+    "roster": [
+      "Ame",
+      "NothingToSay",
+      "Xxs",
+      "fy",
+      "xNova"
+    ],
+    "power_rank": 8
+  },
+  "Yandex": {
+    "id": "Yandex",
+    "full_name": "Team Yandex",
+    "region": "EU",
+    "source": "Direct Invite",
+    "roster": [
+      "watson",
+      "CHIRA_JUNIOR",
+      "DM",
+      "Saksa",
+      "Malady"
+    ],
+    "power_rank": 3
+  },
+  "Spirit": {
+    "id": "Spirit",
+    "full_name": "Team Spirit",
+    "region": "EU",
+    "source": "EU Qualifier",
+    "roster": [
+      "Yatoro",
+      "Larl",
+      "Collapse",
+      "not me",
+      "rue"
+    ],
+    "power_rank": 9
+  },
+  "Vision": {
+    "id": "Vision",
+    "full_name": "Team Vision",
+    "region": "EU",
+    "source": "EU Qualifier",
+    "roster": [
+      "Satanic",
+      "No[o]ne",
+      "Noticed",
+      "9Class",
+      "Dukalis"
+    ],
+    "power_rank": 1
+  },
+  "HULIGANI": {
+    "id": "HULIGANI",
+    "full_name": "HULIGANI",
+    "region": "EU",
+    "source": "EU Qualifier",
+    "roster": [
+      "ssnovv1",
+      "Mirage",
+      "Vazya",
+      "sayuw",
+      "RESPECT"
+    ],
+    "power_rank": 16
+  },
+  "Nigma": {
+    "id": "Nigma",
+    "full_name": "Nigma Galaxy",
+    "region": "EU",
+    "source": "EU Qualifier",
+    "roster": [
+      "SumaiL",
+      "lorenof",
+      "Davai",
+      "OmaR",
+      "GH"
+    ],
+    "power_rank": 12
+  },
+  "Resilience": {
+    "id": "Resilience",
+    "full_name": "Team Resilience",
+    "region": "CN",
+    "source": "CN Qualifier",
+    "roster": [
+      "Erika",
+      "EchozZ",
+      "niu",
+      "planet",
+      "zzq"
+    ],
+    "power_rank": 15
+  },
+  "Vici": {
+    "id": "Vici",
+    "full_name": "Vici Gaming",
+    "region": "CN",
+    "source": "CN Qualifier",
+    "roster": [
+      "shiro",
+      "Xm",
+      "Bach",
+      "XinQ",
+      "y`"
+    ],
+    "power_rank": 10
+  },
+  "OG": {
+    "id": "OG",
+    "full_name": "OG",
+    "region": "SEA",
+    "source": "SEA Qualifier",
+    "roster": [
+      "Natsumi",
+      "Yopaj",
+      "Raven",
+      "TIMS",
+      "skem"
+    ],
+    "power_rank": 11
+  },
+  "GamerLegion": {
+    "id": "GamerLegion",
+    "full_name": "GamerLegion",
+    "region": "NA",
+    "source": "NA Qualifier",
+    "roster": [
+      "Ghost",
+      "RCY",
+      "Fayde",
+      "Bignum",
+      "Speeed"
+    ],
+    "power_rank": 13
+  },
+  "LGD": {
+    "id": "LGD",
+    "full_name": "LGD Gaming",
+    "region": "SA",
+    "source": "SA Qualifier",
+    "roster": [
+      "Yuma",
+      "TaiLung",
+      "Wisper",
+      "Thiolicor",
+      "KJ"
+    ],
+    "power_rank": 14
+  }
+}

@@ -1,0 +1,1569 @@
+{
+  "meta": {
+    "title": "TI 2026 Swiss Predictions",
+    "subtitle": "Open-source group-stage forecast",
+    "generated_at": "2026-08-05T19:17:03.165926+00:00",
+    "model": "baseline_power_ranking_bradley_terry",
+    "model_label": "Baseline · power ranking",
+    "disclaimer": "Текущий UI показывает честный baseline (сила из power ranking + Monte Carlo Swiss). XGBoost v0.1 уже обучен на матчах, но пока недостаточно точен для боевых парных прогнозов (AUC ~0.56).",
+    "format": "16-team Swiss, 5 rounds, Bo3",
+    "n_simulations": 20000,
+    "version": "0.1.0"
+  },
+  "model_metrics": {
+    "walk_forward_avg_logloss": 0.8543,
+    "walk_forward_avg_auc": 0.564,
+    "leave_one_ti_avg_logloss": 0.9112,
+    "leave_one_ti_avg_auc": 0.58,
+    "leave_one_ti": [
+      {
+        "ti": "TI11_2022",
+        "log_loss": 0.8669,
+        "auc": 0.576,
+        "n_test": 213
+      },
+      {
+        "ti": "TI12_2023",
+        "log_loss": 0.8186,
+        "auc": 0.604,
+        "n_test": 128
+      },
+      {
+        "ti": "TI13_2024",
+        "log_loss": 0.73,
+        "auc": 0.711,
+        "n_test": 99
+      },
+      {
+        "ti": "TI14_2025",
+        "log_loss": 1.2294,
+        "auc": 0.43,
+        "n_test": 121
+      }
+    ],
+    "top_features": [
+      "elo_prob",
+      "diff_wr",
+      "diff_elo",
+      "d_days_since",
+      "d_gp",
+      "diff_streak",
+      "r_elo",
+      "diff_gp"
+    ]
+  },
+  "recent_results": {
+    "EWC_2026": {
+      "1st": "Vision",
+      "2nd": "BetBoom",
+      "3rd": "Yandex",
+      "4th": "Vici"
+    },
+    "DreamLeague_S29": {
+      "1st": "Vision",
+      "2nd": "Aurora",
+      "3rd": "Spirit",
+      "4th": "Falcons"
+    },
+    "PGL_Wallachia_S8": {
+      "1st": "BetBoom",
+      "2nd": "Aurora",
+      "3rd": "Falcons",
+      "4th": "Liquid"
+    },
+    "BLAST_SLAM_VII": {
+      "1st": "Yandex",
+      "2nd": "LGD",
+      "3rd": "BetBoom"
+    }
+  },
+  "board": {
+    "undefeated": [],
+    "one_loss": [
+      {
+        "id": "Vision",
+        "name": "Team Vision",
+        "short": "Vision",
+        "prob": 81.2,
+        "record": "3-1",
+        "qualify_pct": 81.2
+      },
+      {
+        "id": "BetBoom",
+        "name": "BoomBoys",
+        "short": "BetBoom",
+        "prob": 79.2,
+        "record": "3-1",
+        "qualify_pct": 79.2
+      },
+      {
+        "id": "Yandex",
+        "name": "Team Yandex",
+        "short": "Yandex",
+        "prob": 77.8,
+        "record": "3-1",
+        "qualify_pct": 77.8
+      },
+      {
+        "id": "Aurora",
+        "name": "Aurora Gaming",
+        "short": "Aurora",
+        "prob": 75.0,
+        "record": "3-1",
+        "qualify_pct": 75.0
+      },
+      {
+        "id": "Falcons",
+        "name": "Team Falcons",
+        "short": "Falcons",
+        "prob": 71.6,
+        "record": "3-1",
+        "qualify_pct": 71.6
+      },
+      {
+        "id": "Liquid",
+        "name": "Team Liquid",
+        "short": "Liquid",
+        "prob": 67.7,
+        "record": "3-1",
+        "qualify_pct": 67.7
+      }
+    ],
+    "advancing": [
+      {
+        "id": "1w",
+        "name": "1w",
+        "short": "1w",
+        "prob": 64.3,
+        "record": "3-2",
+        "qualify_pct": 64.3
+      },
+      {
+        "id": "Xtreme",
+        "name": "Xtreme Gaming",
+        "short": "Xtreme",
+        "prob": 59.3,
+        "record": "3-2",
+        "qualify_pct": 59.3
+      }
+    ],
+    "borderline": [
+      {
+        "id": "Spirit",
+        "name": "Team Spirit",
+        "short": "Spirit",
+        "prob": 46.1,
+        "record": "2-3",
+        "qualify_pct": 53.9
+      },
+      {
+        "id": "Vici",
+        "name": "Vici Gaming",
+        "short": "Vici",
+        "prob": 52.4,
+        "record": "2-3",
+        "qualify_pct": 47.6
+      },
+      {
+        "id": "OG",
+        "name": "OG",
+        "short": "OG",
+        "prob": 59.8,
+        "record": "2-3",
+        "qualify_pct": 40.2
+      }
+    ],
+    "one_win": [
+      {
+        "id": "Nigma",
+        "name": "Nigma Galaxy",
+        "short": "Nigma",
+        "prob": 66.9,
+        "record": "1-3",
+        "qualify_pct": 33.1
+      },
+      {
+        "id": "GamerLegion",
+        "name": "GamerLegion",
+        "short": "GamerLegion",
+        "prob": 76.0,
+        "record": "1-3",
+        "qualify_pct": 24.0
+      },
+      {
+        "id": "LGD",
+        "name": "LGD Gaming",
+        "short": "LGD",
+        "prob": 84.1,
+        "record": "1-3",
+        "qualify_pct": 15.9
+      },
+      {
+        "id": "Resilience",
+        "name": "Team Resilience",
+        "short": "Resilience",
+        "prob": 92.5,
+        "record": "1-3",
+        "qualify_pct": 7.5
+      }
+    ],
+    "winless": [
+      {
+        "id": "HULIGANI",
+        "name": "HULIGANI",
+        "short": "HULIGANI",
+        "prob": 98.4,
+        "record": "0-3",
+        "qualify_pct": 1.6
+      }
+    ]
+  },
+  "teams": [
+    {
+      "id": "Vision",
+      "name": "Team Vision",
+      "short": "Vision",
+      "region": "EU",
+      "source": "EU Qualifier",
+      "roster": [
+        "Satanic",
+        "No[o]ne",
+        "Noticed",
+        "9Class",
+        "Dukalis"
+      ],
+      "power_rank": 1,
+      "avg_win_prob": 0.69,
+      "expected_wins": 2.72,
+      "most_likely_record": "3-1",
+      "qualify_pct": 81.2,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 18.8,
+      "records": {
+        "3-0": 27.3,
+        "3-1": 31.8,
+        "3-2_or_2-3": 33.2,
+        "2-3": 11.1,
+        "1-3": 6.0,
+        "0-3": 1.7
+      },
+      "board": {
+        "undefeated": 27.3,
+        "one_loss": 31.8,
+        "borderline": 33.2,
+        "two_losses_out": 11.1,
+        "one_win": 6.0,
+        "winless": 1.7,
+        "qualify": 81.2,
+        "eliminated": 18.8
+      }
+    },
+    {
+      "id": "BetBoom",
+      "name": "BoomBoys",
+      "short": "BetBoom",
+      "region": "EU",
+      "source": "Direct Invite",
+      "roster": [
+        "Kiritych~",
+        "gpk",
+        "MieRo",
+        "Save-",
+        "Kataomi`"
+      ],
+      "power_rank": 2,
+      "avg_win_prob": 0.676,
+      "expected_wins": 2.69,
+      "most_likely_record": "3-1",
+      "qualify_pct": 79.2,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 20.8,
+      "records": {
+        "3-0": 25.8,
+        "3-1": 30.6,
+        "3-2_or_2-3": 34.9,
+        "2-3": 12.0,
+        "1-3": 6.7,
+        "0-3": 2.0
+      },
+      "board": {
+        "undefeated": 25.8,
+        "one_loss": 30.6,
+        "borderline": 34.9,
+        "two_losses_out": 12.0,
+        "one_win": 6.7,
+        "winless": 2.0,
+        "qualify": 79.2,
+        "eliminated": 20.8
+      }
+    },
+    {
+      "id": "Yandex",
+      "name": "Team Yandex",
+      "short": "Yandex",
+      "region": "EU",
+      "source": "Direct Invite",
+      "roster": [
+        "watson",
+        "CHIRA_JUNIOR",
+        "DM",
+        "Saksa",
+        "Malady"
+      ],
+      "power_rank": 3,
+      "avg_win_prob": 0.661,
+      "expected_wins": 2.66,
+      "most_likely_record": "3-1",
+      "qualify_pct": 77.8,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 22.2,
+      "records": {
+        "3-0": 23.6,
+        "3-1": 29.6,
+        "3-2_or_2-3": 37.2,
+        "2-3": 12.6,
+        "1-3": 7.5,
+        "0-3": 2.1
+      },
+      "board": {
+        "undefeated": 23.6,
+        "one_loss": 29.6,
+        "borderline": 37.2,
+        "two_losses_out": 12.6,
+        "one_win": 7.5,
+        "winless": 2.1,
+        "qualify": 77.8,
+        "eliminated": 22.2
+      }
+    },
+    {
+      "id": "Aurora",
+      "name": "Aurora Gaming",
+      "short": "Aurora",
+      "region": "EU",
+      "source": "Direct Invite",
+      "roster": [
+        "Nightfall",
+        "Mikoto",
+        "Ws",
+        "Mira",
+        "kaori"
+      ],
+      "power_rank": 4,
+      "avg_win_prob": 0.644,
+      "expected_wins": 2.61,
+      "most_likely_record": "3-1",
+      "qualify_pct": 75.0,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 25.0,
+      "records": {
+        "3-0": 21.5,
+        "3-1": 29.2,
+        "3-2_or_2-3": 38.3,
+        "2-3": 14.0,
+        "1-3": 8.5,
+        "0-3": 2.5
+      },
+      "board": {
+        "undefeated": 21.5,
+        "one_loss": 29.2,
+        "borderline": 38.3,
+        "two_losses_out": 14.0,
+        "one_win": 8.5,
+        "winless": 2.5,
+        "qualify": 75.0,
+        "eliminated": 25.0
+      }
+    },
+    {
+      "id": "Falcons",
+      "name": "Team Falcons",
+      "short": "Falcons",
+      "region": "EU",
+      "source": "Direct Invite",
+      "roster": [
+        "skiter",
+        "Malr1ne",
+        "ATF",
+        "Cr1t-",
+        "Sneyking"
+      ],
+      "power_rank": 5,
+      "avg_win_prob": 0.626,
+      "expected_wins": 2.56,
+      "most_likely_record": "3-1",
+      "qualify_pct": 71.6,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 28.4,
+      "records": {
+        "3-0": 19.5,
+        "3-1": 27.6,
+        "3-2_or_2-3": 40.1,
+        "2-3": 15.7,
+        "1-3": 9.6,
+        "0-3": 3.1
+      },
+      "board": {
+        "undefeated": 19.5,
+        "one_loss": 27.6,
+        "borderline": 40.1,
+        "two_losses_out": 15.7,
+        "one_win": 9.6,
+        "winless": 3.1,
+        "qualify": 71.6,
+        "eliminated": 28.4
+      }
+    },
+    {
+      "id": "Liquid",
+      "name": "Team Liquid",
+      "short": "Liquid",
+      "region": "EU",
+      "source": "Direct Invite",
+      "roster": [
+        "miCKe",
+        "Nisha",
+        "Ace",
+        "Boxi",
+        "tOfu"
+      ],
+      "power_rank": 6,
+      "avg_win_prob": 0.606,
+      "expected_wins": 2.49,
+      "most_likely_record": "3-1",
+      "qualify_pct": 67.7,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 32.3,
+      "records": {
+        "3-0": 17.5,
+        "3-1": 25.7,
+        "3-2_or_2-3": 41.9,
+        "2-3": 17.4,
+        "1-3": 11.2,
+        "0-3": 3.7
+      },
+      "board": {
+        "undefeated": 17.5,
+        "one_loss": 25.7,
+        "borderline": 41.9,
+        "two_losses_out": 17.4,
+        "one_win": 11.2,
+        "winless": 3.7,
+        "qualify": 67.7,
+        "eliminated": 32.3
+      }
+    },
+    {
+      "id": "1w",
+      "name": "1w",
+      "short": "1w",
+      "region": "EU",
+      "source": "Direct Invite",
+      "roster": [
+        "Pure",
+        "bzm",
+        "33",
+        "Ari",
+        "Whitemon"
+      ],
+      "power_rank": 7,
+      "avg_win_prob": 0.584,
+      "expected_wins": 2.44,
+      "most_likely_record": "3-2",
+      "qualify_pct": 64.3,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 35.6,
+      "records": {
+        "3-0": 15.4,
+        "3-1": 24.3,
+        "3-2_or_2-3": 44.1,
+        "2-3": 19.4,
+        "1-3": 12.0,
+        "0-3": 4.2
+      },
+      "board": {
+        "undefeated": 15.4,
+        "one_loss": 24.3,
+        "borderline": 44.1,
+        "two_losses_out": 19.4,
+        "one_win": 12.0,
+        "winless": 4.2,
+        "qualify": 64.3,
+        "eliminated": 35.6
+      }
+    },
+    {
+      "id": "Xtreme",
+      "name": "Xtreme Gaming",
+      "short": "Xtreme",
+      "region": "CN",
+      "source": "Direct Invite",
+      "roster": [
+        "Ame",
+        "NothingToSay",
+        "Xxs",
+        "fy",
+        "xNova"
+      ],
+      "power_rank": 8,
+      "avg_win_prob": 0.559,
+      "expected_wins": 2.34,
+      "most_likely_record": "3-2",
+      "qualify_pct": 59.3,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 40.7,
+      "records": {
+        "3-0": 12.5,
+        "3-1": 22.5,
+        "3-2_or_2-3": 45.3,
+        "2-3": 21.0,
+        "1-3": 14.4,
+        "0-3": 5.2
+      },
+      "board": {
+        "undefeated": 12.5,
+        "one_loss": 22.5,
+        "borderline": 45.3,
+        "two_losses_out": 21.0,
+        "one_win": 14.4,
+        "winless": 5.2,
+        "qualify": 59.3,
+        "eliminated": 40.7
+      }
+    },
+    {
+      "id": "Spirit",
+      "name": "Team Spirit",
+      "short": "Spirit",
+      "region": "EU",
+      "source": "EU Qualifier",
+      "roster": [
+        "Yatoro",
+        "Larl",
+        "Collapse",
+        "not me",
+        "rue"
+      ],
+      "power_rank": 9,
+      "avg_win_prob": 0.531,
+      "expected_wins": 2.25,
+      "most_likely_record": "2-3",
+      "qualify_pct": 53.9,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 46.1,
+      "records": {
+        "3-0": 10.7,
+        "3-1": 20.1,
+        "3-2_or_2-3": 46.3,
+        "2-3": 23.3,
+        "1-3": 16.6,
+        "0-3": 6.2
+      },
+      "board": {
+        "undefeated": 10.7,
+        "one_loss": 20.1,
+        "borderline": 46.3,
+        "two_losses_out": 23.3,
+        "one_win": 16.6,
+        "winless": 6.2,
+        "qualify": 53.9,
+        "eliminated": 46.1
+      }
+    },
+    {
+      "id": "Vici",
+      "name": "Vici Gaming",
+      "short": "Vici",
+      "region": "CN",
+      "source": "CN Qualifier",
+      "roster": [
+        "shiro",
+        "Xm",
+        "Bach",
+        "XinQ",
+        "y`"
+      ],
+      "power_rank": 10,
+      "avg_win_prob": 0.499,
+      "expected_wins": 2.12,
+      "most_likely_record": "2-3",
+      "qualify_pct": 47.6,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 52.4,
+      "records": {
+        "3-0": 8.8,
+        "3-1": 17.1,
+        "3-2_or_2-3": 46.3,
+        "2-3": 24.5,
+        "1-3": 19.8,
+        "0-3": 8.0
+      },
+      "board": {
+        "undefeated": 8.8,
+        "one_loss": 17.1,
+        "borderline": 46.3,
+        "two_losses_out": 24.5,
+        "one_win": 19.8,
+        "winless": 8.0,
+        "qualify": 47.6,
+        "eliminated": 52.4
+      }
+    },
+    {
+      "id": "OG",
+      "name": "OG",
+      "short": "OG",
+      "region": "SEA",
+      "source": "SEA Qualifier",
+      "roster": [
+        "Natsumi",
+        "Yopaj",
+        "Raven",
+        "TIMS",
+        "skem"
+      ],
+      "power_rank": 11,
+      "avg_win_prob": 0.463,
+      "expected_wins": 1.96,
+      "most_likely_record": "2-3",
+      "qualify_pct": 40.2,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 59.8,
+      "records": {
+        "3-0": 6.6,
+        "3-1": 14.7,
+        "3-2_or_2-3": 45.2,
+        "2-3": 26.2,
+        "1-3": 23.3,
+        "0-3": 10.3
+      },
+      "board": {
+        "undefeated": 6.6,
+        "one_loss": 14.7,
+        "borderline": 45.2,
+        "two_losses_out": 26.2,
+        "one_win": 23.3,
+        "winless": 10.3,
+        "qualify": 40.2,
+        "eliminated": 59.8
+      }
+    },
+    {
+      "id": "Nigma",
+      "name": "Nigma Galaxy",
+      "short": "Nigma",
+      "region": "EU",
+      "source": "EU Qualifier",
+      "roster": [
+        "SumaiL",
+        "lorenof",
+        "Davai",
+        "OmaR",
+        "GH"
+      ],
+      "power_rank": 12,
+      "avg_win_prob": 0.421,
+      "expected_wins": 1.81,
+      "most_likely_record": "1-3",
+      "qualify_pct": 33.1,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 66.9,
+      "records": {
+        "3-0": 4.9,
+        "3-1": 11.2,
+        "3-2_or_2-3": 44.0,
+        "2-3": 27.0,
+        "1-3": 27.1,
+        "0-3": 12.7
+      },
+      "board": {
+        "undefeated": 4.9,
+        "one_loss": 11.2,
+        "borderline": 44.0,
+        "two_losses_out": 27.0,
+        "one_win": 27.1,
+        "winless": 12.7,
+        "qualify": 33.1,
+        "eliminated": 66.9
+      }
+    },
+    {
+      "id": "GamerLegion",
+      "name": "GamerLegion",
+      "short": "GamerLegion",
+      "region": "NA",
+      "source": "NA Qualifier",
+      "roster": [
+        "Ghost",
+        "RCY",
+        "Fayde",
+        "Bignum",
+        "Speeed"
+      ],
+      "power_rank": 13,
+      "avg_win_prob": 0.371,
+      "expected_wins": 1.57,
+      "most_likely_record": "1-3",
+      "qualify_pct": 24.0,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 76.0,
+      "records": {
+        "3-0": 3.3,
+        "3-1": 8.0,
+        "3-2_or_2-3": 39.2,
+        "2-3": 26.5,
+        "1-3": 32.6,
+        "0-3": 17.0
+      },
+      "board": {
+        "undefeated": 3.3,
+        "one_loss": 8.0,
+        "borderline": 39.2,
+        "two_losses_out": 26.5,
+        "one_win": 32.6,
+        "winless": 17.0,
+        "qualify": 24.0,
+        "eliminated": 76.0
+      }
+    },
+    {
+      "id": "LGD",
+      "name": "LGD Gaming",
+      "short": "LGD",
+      "region": "SA",
+      "source": "SA Qualifier",
+      "roster": [
+        "Yuma",
+        "TaiLung",
+        "Wisper",
+        "Thiolicor",
+        "KJ"
+      ],
+      "power_rank": 14,
+      "avg_win_prob": 0.31,
+      "expected_wins": 1.32,
+      "most_likely_record": "1-3",
+      "qualify_pct": 15.9,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 84.1,
+      "records": {
+        "3-0": 1.8,
+        "3-1": 5.1,
+        "3-2_or_2-3": 32.4,
+        "2-3": 23.5,
+        "1-3": 36.9,
+        "0-3": 23.7
+      },
+      "board": {
+        "undefeated": 1.8,
+        "one_loss": 5.1,
+        "borderline": 32.4,
+        "two_losses_out": 23.5,
+        "one_win": 36.9,
+        "winless": 23.7,
+        "qualify": 15.9,
+        "eliminated": 84.1
+      }
+    },
+    {
+      "id": "Resilience",
+      "name": "Team Resilience",
+      "short": "Resilience",
+      "region": "CN",
+      "source": "CN Qualifier",
+      "roster": [
+        "Erika",
+        "EchozZ",
+        "niu",
+        "planet",
+        "zzq"
+      ],
+      "power_rank": 15,
+      "avg_win_prob": 0.233,
+      "expected_wins": 0.96,
+      "most_likely_record": "1-3",
+      "qualify_pct": 7.5,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 92.5,
+      "records": {
+        "3-0": 0.7,
+        "3-1": 2.2,
+        "3-2_or_2-3": 22.6,
+        "2-3": 18.0,
+        "1-3": 38.0,
+        "0-3": 36.5
+      },
+      "board": {
+        "undefeated": 0.7,
+        "one_loss": 2.2,
+        "borderline": 22.6,
+        "two_losses_out": 18.0,
+        "one_win": 38.0,
+        "winless": 36.5,
+        "qualify": 7.5,
+        "eliminated": 92.5
+      }
+    },
+    {
+      "id": "HULIGANI",
+      "name": "HULIGANI",
+      "short": "HULIGANI",
+      "region": "EU",
+      "source": "EU Qualifier",
+      "roster": [
+        "ssnovv1",
+        "Mirage",
+        "Vazya",
+        "sayuw",
+        "RESPECT"
+      ],
+      "power_rank": 16,
+      "avg_win_prob": 0.129,
+      "expected_wins": 0.5,
+      "most_likely_record": "0-3",
+      "qualify_pct": 1.6,
+      "elim_round_pct": 0.0,
+      "eliminated_pct": 98.4,
+      "records": {
+        "3-0": 0.1,
+        "3-1": 0.5,
+        "3-2_or_2-3": 8.8,
+        "2-3": 7.8,
+        "1-3": 29.6,
+        "0-3": 61.0
+      },
+      "board": {
+        "undefeated": 0.1,
+        "one_loss": 0.5,
+        "borderline": 8.8,
+        "two_losses_out": 7.8,
+        "one_win": 29.6,
+        "winless": 61.0,
+        "qualify": 1.6,
+        "eliminated": 98.4
+      }
+    }
+  ],
+  "matchups": [
+    {
+      "a": "Aurora",
+      "b": "BetBoom",
+      "p_a": 0.464,
+      "p_b": 0.536
+    },
+    {
+      "a": "Aurora",
+      "b": "Falcons",
+      "p_a": 0.52,
+      "p_b": 0.48
+    },
+    {
+      "a": "Aurora",
+      "b": "Liquid",
+      "p_a": 0.542,
+      "p_b": 0.458
+    },
+    {
+      "a": "Aurora",
+      "b": "1w",
+      "p_a": 0.565,
+      "p_b": 0.435
+    },
+    {
+      "a": "Aurora",
+      "b": "Xtreme",
+      "p_a": 0.591,
+      "p_b": 0.409
+    },
+    {
+      "a": "Aurora",
+      "b": "Yandex",
+      "p_a": 0.481,
+      "p_b": 0.519
+    },
+    {
+      "a": "Aurora",
+      "b": "Spirit",
+      "p_a": 0.619,
+      "p_b": 0.381
+    },
+    {
+      "a": "Aurora",
+      "b": "Vision",
+      "p_a": 0.448,
+      "p_b": 0.552
+    },
+    {
+      "a": "Aurora",
+      "b": "HULIGANI",
+      "p_a": 0.929,
+      "p_b": 0.071
+    },
+    {
+      "a": "Aurora",
+      "b": "Nigma",
+      "p_a": 0.722,
+      "p_b": 0.278
+    },
+    {
+      "a": "Aurora",
+      "b": "Resilience",
+      "p_a": 0.867,
+      "p_b": 0.133
+    },
+    {
+      "a": "Aurora",
+      "b": "Vici",
+      "p_a": 0.65,
+      "p_b": 0.35
+    },
+    {
+      "a": "Aurora",
+      "b": "OG",
+      "p_a": 0.684,
+      "p_b": 0.316
+    },
+    {
+      "a": "Aurora",
+      "b": "GamerLegion",
+      "p_a": 0.765,
+      "p_b": 0.235
+    },
+    {
+      "a": "Aurora",
+      "b": "LGD",
+      "p_a": 0.812,
+      "p_b": 0.188
+    },
+    {
+      "a": "BetBoom",
+      "b": "Falcons",
+      "p_a": 0.556,
+      "p_b": 0.444
+    },
+    {
+      "a": "BetBoom",
+      "b": "Liquid",
+      "p_a": 0.577,
+      "p_b": 0.423
+    },
+    {
+      "a": "BetBoom",
+      "b": "1w",
+      "p_a": 0.6,
+      "p_b": 0.4
+    },
+    {
+      "a": "BetBoom",
+      "b": "Xtreme",
+      "p_a": 0.625,
+      "p_b": 0.375
+    },
+    {
+      "a": "BetBoom",
+      "b": "Yandex",
+      "p_a": 0.517,
+      "p_b": 0.483
+    },
+    {
+      "a": "BetBoom",
+      "b": "Spirit",
+      "p_a": 0.652,
+      "p_b": 0.348
+    },
+    {
+      "a": "BetBoom",
+      "b": "Vision",
+      "p_a": 0.484,
+      "p_b": 0.516
+    },
+    {
+      "a": "BetBoom",
+      "b": "HULIGANI",
+      "p_a": 0.938,
+      "p_b": 0.062
+    },
+    {
+      "a": "BetBoom",
+      "b": "Nigma",
+      "p_a": 0.75,
+      "p_b": 0.25
+    },
+    {
+      "a": "BetBoom",
+      "b": "Resilience",
+      "p_a": 0.882,
+      "p_b": 0.118
+    },
+    {
+      "a": "BetBoom",
+      "b": "Vici",
+      "p_a": 0.682,
+      "p_b": 0.318
+    },
+    {
+      "a": "BetBoom",
+      "b": "OG",
+      "p_a": 0.714,
+      "p_b": 0.286
+    },
+    {
+      "a": "BetBoom",
+      "b": "GamerLegion",
+      "p_a": 0.789,
+      "p_b": 0.211
+    },
+    {
+      "a": "BetBoom",
+      "b": "LGD",
+      "p_a": 0.833,
+      "p_b": 0.167
+    },
+    {
+      "a": "Falcons",
+      "b": "Liquid",
+      "p_a": 0.522,
+      "p_b": 0.478
+    },
+    {
+      "a": "Falcons",
+      "b": "1w",
+      "p_a": 0.545,
+      "p_b": 0.455
+    },
+    {
+      "a": "Falcons",
+      "b": "Xtreme",
+      "p_a": 0.571,
+      "p_b": 0.429
+    },
+    {
+      "a": "Falcons",
+      "b": "Yandex",
+      "p_a": 0.462,
+      "p_b": 0.538
+    },
+    {
+      "a": "Falcons",
+      "b": "Spirit",
+      "p_a": 0.6,
+      "p_b": 0.4
+    },
+    {
+      "a": "Falcons",
+      "b": "Vision",
+      "p_a": 0.429,
+      "p_b": 0.571
+    },
+    {
+      "a": "Falcons",
+      "b": "HULIGANI",
+      "p_a": 0.923,
+      "p_b": 0.077
+    },
+    {
+      "a": "Falcons",
+      "b": "Nigma",
+      "p_a": 0.706,
+      "p_b": 0.294
+    },
+    {
+      "a": "Falcons",
+      "b": "Resilience",
+      "p_a": 0.857,
+      "p_b": 0.143
+    },
+    {
+      "a": "Falcons",
+      "b": "Vici",
+      "p_a": 0.632,
+      "p_b": 0.368
+    },
+    {
+      "a": "Falcons",
+      "b": "OG",
+      "p_a": 0.667,
+      "p_b": 0.333
+    },
+    {
+      "a": "Falcons",
+      "b": "GamerLegion",
+      "p_a": 0.75,
+      "p_b": 0.25
+    },
+    {
+      "a": "Falcons",
+      "b": "LGD",
+      "p_a": 0.8,
+      "p_b": 0.2
+    },
+    {
+      "a": "Liquid",
+      "b": "1w",
+      "p_a": 0.524,
+      "p_b": 0.476
+    },
+    {
+      "a": "Liquid",
+      "b": "Xtreme",
+      "p_a": 0.55,
+      "p_b": 0.45
+    },
+    {
+      "a": "Liquid",
+      "b": "Yandex",
+      "p_a": 0.44,
+      "p_b": 0.56
+    },
+    {
+      "a": "Liquid",
+      "b": "Spirit",
+      "p_a": 0.579,
+      "p_b": 0.421
+    },
+    {
+      "a": "Liquid",
+      "b": "Vision",
+      "p_a": 0.407,
+      "p_b": 0.593
+    },
+    {
+      "a": "Liquid",
+      "b": "HULIGANI",
+      "p_a": 0.917,
+      "p_b": 0.083
+    },
+    {
+      "a": "Liquid",
+      "b": "Nigma",
+      "p_a": 0.688,
+      "p_b": 0.312
+    },
+    {
+      "a": "Liquid",
+      "b": "Resilience",
+      "p_a": 0.846,
+      "p_b": 0.154
+    },
+    {
+      "a": "Liquid",
+      "b": "Vici",
+      "p_a": 0.611,
+      "p_b": 0.389
+    },
+    {
+      "a": "Liquid",
+      "b": "OG",
+      "p_a": 0.647,
+      "p_b": 0.353
+    },
+    {
+      "a": "Liquid",
+      "b": "GamerLegion",
+      "p_a": 0.733,
+      "p_b": 0.267
+    },
+    {
+      "a": "Liquid",
+      "b": "LGD",
+      "p_a": 0.786,
+      "p_b": 0.214
+    },
+    {
+      "a": "1w",
+      "b": "Xtreme",
+      "p_a": 0.526,
+      "p_b": 0.474
+    },
+    {
+      "a": "1w",
+      "b": "Yandex",
+      "p_a": 0.417,
+      "p_b": 0.583
+    },
+    {
+      "a": "1w",
+      "b": "Spirit",
+      "p_a": 0.556,
+      "p_b": 0.444
+    },
+    {
+      "a": "1w",
+      "b": "Vision",
+      "p_a": 0.385,
+      "p_b": 0.615
+    },
+    {
+      "a": "1w",
+      "b": "HULIGANI",
+      "p_a": 0.909,
+      "p_b": 0.091
+    },
+    {
+      "a": "1w",
+      "b": "Nigma",
+      "p_a": 0.667,
+      "p_b": 0.333
+    },
+    {
+      "a": "1w",
+      "b": "Resilience",
+      "p_a": 0.833,
+      "p_b": 0.167
+    },
+    {
+      "a": "1w",
+      "b": "Vici",
+      "p_a": 0.588,
+      "p_b": 0.412
+    },
+    {
+      "a": "1w",
+      "b": "OG",
+      "p_a": 0.625,
+      "p_b": 0.375
+    },
+    {
+      "a": "1w",
+      "b": "GamerLegion",
+      "p_a": 0.714,
+      "p_b": 0.286
+    },
+    {
+      "a": "1w",
+      "b": "LGD",
+      "p_a": 0.769,
+      "p_b": 0.231
+    },
+    {
+      "a": "Xtreme",
+      "b": "Yandex",
+      "p_a": 0.391,
+      "p_b": 0.609
+    },
+    {
+      "a": "Xtreme",
+      "b": "Spirit",
+      "p_a": 0.529,
+      "p_b": 0.471
+    },
+    {
+      "a": "Xtreme",
+      "b": "Vision",
+      "p_a": 0.36,
+      "p_b": 0.64
+    },
+    {
+      "a": "Xtreme",
+      "b": "HULIGANI",
+      "p_a": 0.9,
+      "p_b": 0.1
+    },
+    {
+      "a": "Xtreme",
+      "b": "Nigma",
+      "p_a": 0.643,
+      "p_b": 0.357
+    },
+    {
+      "a": "Xtreme",
+      "b": "Resilience",
+      "p_a": 0.818,
+      "p_b": 0.182
+    },
+    {
+      "a": "Xtreme",
+      "b": "Vici",
+      "p_a": 0.562,
+      "p_b": 0.438
+    },
+    {
+      "a": "Xtreme",
+      "b": "OG",
+      "p_a": 0.6,
+      "p_b": 0.4
+    },
+    {
+      "a": "Xtreme",
+      "b": "GamerLegion",
+      "p_a": 0.692,
+      "p_b": 0.308
+    },
+    {
+      "a": "Xtreme",
+      "b": "LGD",
+      "p_a": 0.75,
+      "p_b": 0.25
+    },
+    {
+      "a": "Yandex",
+      "b": "Spirit",
+      "p_a": 0.636,
+      "p_b": 0.364
+    },
+    {
+      "a": "Yandex",
+      "b": "Vision",
+      "p_a": 0.467,
+      "p_b": 0.533
+    },
+    {
+      "a": "Yandex",
+      "b": "HULIGANI",
+      "p_a": 0.933,
+      "p_b": 0.067
+    },
+    {
+      "a": "Yandex",
+      "b": "Nigma",
+      "p_a": 0.737,
+      "p_b": 0.263
+    },
+    {
+      "a": "Yandex",
+      "b": "Resilience",
+      "p_a": 0.875,
+      "p_b": 0.125
+    },
+    {
+      "a": "Yandex",
+      "b": "Vici",
+      "p_a": 0.667,
+      "p_b": 0.333
+    },
+    {
+      "a": "Yandex",
+      "b": "OG",
+      "p_a": 0.7,
+      "p_b": 0.3
+    },
+    {
+      "a": "Yandex",
+      "b": "GamerLegion",
+      "p_a": 0.778,
+      "p_b": 0.222
+    },
+    {
+      "a": "Yandex",
+      "b": "LGD",
+      "p_a": 0.824,
+      "p_b": 0.176
+    },
+    {
+      "a": "Spirit",
+      "b": "Vision",
+      "p_a": 0.333,
+      "p_b": 0.667
+    },
+    {
+      "a": "Spirit",
+      "b": "HULIGANI",
+      "p_a": 0.889,
+      "p_b": 0.111
+    },
+    {
+      "a": "Spirit",
+      "b": "Nigma",
+      "p_a": 0.615,
+      "p_b": 0.385
+    },
+    {
+      "a": "Spirit",
+      "b": "Resilience",
+      "p_a": 0.8,
+      "p_b": 0.2
+    },
+    {
+      "a": "Spirit",
+      "b": "Vici",
+      "p_a": 0.533,
+      "p_b": 0.467
+    },
+    {
+      "a": "Spirit",
+      "b": "OG",
+      "p_a": 0.571,
+      "p_b": 0.429
+    },
+    {
+      "a": "Spirit",
+      "b": "GamerLegion",
+      "p_a": 0.667,
+      "p_b": 0.333
+    },
+    {
+      "a": "Spirit",
+      "b": "LGD",
+      "p_a": 0.727,
+      "p_b": 0.273
+    },
+    {
+      "a": "Vision",
+      "b": "HULIGANI",
+      "p_a": 0.941,
+      "p_b": 0.059
+    },
+    {
+      "a": "Vision",
+      "b": "Nigma",
+      "p_a": 0.762,
+      "p_b": 0.238
+    },
+    {
+      "a": "Vision",
+      "b": "Resilience",
+      "p_a": 0.889,
+      "p_b": 0.111
+    },
+    {
+      "a": "Vision",
+      "b": "Vici",
+      "p_a": 0.696,
+      "p_b": 0.304
+    },
+    {
+      "a": "Vision",
+      "b": "OG",
+      "p_a": 0.727,
+      "p_b": 0.273
+    },
+    {
+      "a": "Vision",
+      "b": "GamerLegion",
+      "p_a": 0.8,
+      "p_b": 0.2
+    },
+    {
+      "a": "Vision",
+      "b": "LGD",
+      "p_a": 0.842,
+      "p_b": 0.158
+    },
+    {
+      "a": "HULIGANI",
+      "b": "Nigma",
+      "p_a": 0.167,
+      "p_b": 0.833
+    },
+    {
+      "a": "HULIGANI",
+      "b": "Resilience",
+      "p_a": 0.333,
+      "p_b": 0.667
+    },
+    {
+      "a": "HULIGANI",
+      "b": "Vici",
+      "p_a": 0.125,
+      "p_b": 0.875
+    },
+    {
+      "a": "HULIGANI",
+      "b": "OG",
+      "p_a": 0.143,
+      "p_b": 0.857
+    },
+    {
+      "a": "HULIGANI",
+      "b": "GamerLegion",
+      "p_a": 0.2,
+      "p_b": 0.8
+    },
+    {
+      "a": "HULIGANI",
+      "b": "LGD",
+      "p_a": 0.25,
+      "p_b": 0.75
+    },
+    {
+      "a": "Nigma",
+      "b": "Resilience",
+      "p_a": 0.714,
+      "p_b": 0.286
+    },
+    {
+      "a": "Nigma",
+      "b": "Vici",
+      "p_a": 0.417,
+      "p_b": 0.583
+    },
+    {
+      "a": "Nigma",
+      "b": "OG",
+      "p_a": 0.455,
+      "p_b": 0.545
+    },
+    {
+      "a": "Nigma",
+      "b": "GamerLegion",
+      "p_a": 0.556,
+      "p_b": 0.444
+    },
+    {
+      "a": "Nigma",
+      "b": "LGD",
+      "p_a": 0.625,
+      "p_b": 0.375
+    },
+    {
+      "a": "Resilience",
+      "b": "Vici",
+      "p_a": 0.222,
+      "p_b": 0.778
+    },
+    {
+      "a": "Resilience",
+      "b": "OG",
+      "p_a": 0.25,
+      "p_b": 0.75
+    },
+    {
+      "a": "Resilience",
+      "b": "GamerLegion",
+      "p_a": 0.333,
+      "p_b": 0.667
+    },
+    {
+      "a": "Resilience",
+      "b": "LGD",
+      "p_a": 0.4,
+      "p_b": 0.6
+    },
+    {
+      "a": "Vici",
+      "b": "OG",
+      "p_a": 0.538,
+      "p_b": 0.462
+    },
+    {
+      "a": "Vici",
+      "b": "GamerLegion",
+      "p_a": 0.636,
+      "p_b": 0.364
+    },
+    {
+      "a": "Vici",
+      "b": "LGD",
+      "p_a": 0.7,
+      "p_b": 0.3
+    },
+    {
+      "a": "OG",
+      "b": "GamerLegion",
+      "p_a": 0.6,
+      "p_b": 0.4
+    },
+    {
+      "a": "OG",
+      "b": "LGD",
+      "p_a": 0.667,
+      "p_b": 0.333
+    },
+    {
+      "a": "GamerLegion",
+      "b": "LGD",
+      "p_a": 0.571,
+      "p_b": 0.429
+    }
+  ]
+}

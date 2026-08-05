@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TI 2026 Swiss Predictor</title>
+  <meta name="description" content="Открытый прогноз групповой стадии The International 2026" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">TI26</span>
+      <div>
+        <p class="brand-kicker">Open forecast</p>
+        <h1 class="brand-title">Swiss Predictor</h1>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="#board">Доска</a>
+      <a href="#standings">Шансы</a>
+      <a href="#matchup">Матч</a>
+      <a href="#model">Модель</a>
+      <a class="nav-github" href="../" id="repo-link">Репозиторий</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">The International 2026 · Group Stage</p>
+        <h2 class="hero-title">Кто проходит Swiss?</h2>
+        <p class="hero-lead" id="hero-lead">
+          16 команд, 5 раундов, Bo3. Ниже — вероятности квалификации и вылета.
+        </p>
+        <div class="hero-meta" id="hero-meta"></div>
+      </div>
+      <aside class="hero-card" id="disclaimer-card">
+        <p class="card-label">Важно</p>
+        <p id="disclaimer-text">Загрузка…</p>
+      </aside>
+    </section>
+
+    <section class="section" id="board">
+      <div class="section-head">
+        <h3>Swiss board</h3>
+        <p>Команды расставлены по самому вероятному финальному рекорду симуляции.</p>
+      </div>
+      <div class="board" id="swiss-board"></div>
+    </section>
+
+    <section class="section" id="standings">
+      <div class="section-head row">
+        <div>
+          <h3>Шансы команд</h3>
+          <p>Сортировка и быстрый поиск по таблице.</p>
+        </div>
+        <div class="controls">
+          <label class="sr-only" for="sort-by">Сортировка</label>
+          <select id="sort-by">
+            <option value="qualify">По шансу пройти</option>
+            <option value="power">По силе</option>
+            <option value="elim">По шансу вылететь</option>
+            <option value="alpha">A–Z</option>
+          </select>
+          <input id="search" type="search" placeholder="Найти команду…" />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="standings" id="standings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Команда</th>
+              <th>Регион</th>
+              <th>Пройти</th>
+              <th>Вылететь</th>
+              <th>Ожид. побед</th>
+              <th>Рекорд</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="matchup">
+      <div class="section-head">
+        <h3>Кто кого</h3>
+        <p>Парная вероятность победы в серии (Bradley–Terry от power ranking).</p>
+      </div>
+      <div class="matchup">
+        <div class="matchup-pick">
+          <label for="team-a">Команда A</label>
+          <select id="team-a"></select>
+        </div>
+        <div class="matchup-vs" aria-hidden="true">VS</div>
+        <div class="matchup-pick">
+          <label for="team-b">Команда B</label>
+          <select id="team-b"></select>
+        </div>
+      </div>
+      <div class="matchup-result" id="matchup-result"></div>
+    </section>
+
+    <section class="section" id="model">
+      <div class="section-head">
+        <h3>Состояние модели</h3>
+        <p>Итерация 1: XGBoost уже обучен; UI пока на честном baseline.</p>
+      </div>
+      <div class="metrics" id="metrics-grid"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Открытый hobby-проект. Данные — OpenDota. Не финансовый совет.</p>
+    <p id="footer-stamp"></p>
+  </footer>
+
+  <script src="assets/js/app.js" type="module"></script>
+</body>
+</html>

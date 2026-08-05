@@ -10,10 +10,39 @@
 |---|---|
 | ETL OpenDota matchlists | Полные player details по всем матчам |
 | Elo / form / H2H / tier features | Player model, сыгранность |
-| Walk-forward + Leave-One-TI-Out | Ансамбли, Monte Carlo Swiss |
-| Logloss / Brier / AUC / calibration | Draft / hero embeddings |
+| Walk-forward + Leave-One-TI-Out | XGBoost → боевые парные прогнозы |
+| Статичный UI (GitHub Pages) | Draft / hero embeddings |
 
-## Быстрый старт
+## Веб-интерфейс прогнозов
+
+Статика в `docs/` — подходит для **GitHub Pages**.
+
+### Локально
+
+```powershell
+# Обновить JSON прогнозов (baseline + Swiss Monte Carlo)
+python scripts/export_web_data.py
+
+# Поднять сервер (нужен из-за fetch JSON)
+cd docs
+python -m http.server 8080
+```
+
+Открой http://localhost:8080
+
+> Файл `index.html` через `file://` не заработает: браузер блокирует `fetch` к JSON.
+
+### GitHub Pages
+
+1. Push репозитория на GitHub
+2. Settings → Pages → Source: **Deploy from a branch**
+3. Branch: `main`, folder: **/docs**
+4. Сайт будет: `https://<user>.github.io/<repo>/`
+
+UI сейчас показывает **честный baseline** (power ranking + Swiss sim).  
+XGBoost v0.1 уже обучен, но AUC ~0.56 — в интерфейсе это явно подписано.
+
+## Быстрый старт ML
 
 ```bash
 python -m venv .venv
