@@ -156,17 +156,17 @@ def main(n_simulations: int = 20000) -> Path:
             "title": "TI 2026 Swiss Predictions",
             "subtitle": "Open-source group-stage forecast",
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "model": "baseline_power_ranking_bradley_terry",
-            "model_label": "Baseline · power ranking",
+            "model": "power_ranking_bradley_terry",
+            "model_label": "Power ranking",
             "disclaimer": (
-                "Текущий UI показывает честный baseline (сила из power ranking + "
-                "Monte Carlo Swiss до 4 побед/поражений + Elimination Round). "
-                "XGBoost v0.1 уже обучен, но пока слаб для боевых парных прогнозов (AUC ~0.56)."
+                "Доска Swiss построена на power ranking и Monte Carlo "
+                "(Swiss до 4 побед/поражений + Elimination Round). "
+                "XGBoost обучен отдельно; парные прогнозы из модели пока не подключены."
             ),
             "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
             "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
-            "version": "0.1.1",
+            "version": "0.1.2",
         },
         "model_metrics": load_model_metrics(),
         "recent_results": TI2026_RECENT_RESULTS,
@@ -200,11 +200,11 @@ def main(n_simulations: int = 20000) -> Path:
     print(f"Wrote {out}")
     print("Fantasy board:")
     for key, meta in FANTASY_BOARD_SLOTS.items():
-        names = ", ".join(e["short"] for e in board[key])
+        names = ", ".join(e["name"] for e in board[key])
         print(f"  {meta['label']:12s} ({meta['capacity']}): {names}")
     print("Top qualify:")
     for p in predictions[:5]:
-        print(f"  {p['power_rank']:2d}. {p['short']:12s} qualify={p['qualify_pct']:5.1f}%")
+        print(f"  {p['power_rank']:2d}. {p['name']:20s} qualify={p['qualify_pct']:5.1f}%")
     return out
 
 

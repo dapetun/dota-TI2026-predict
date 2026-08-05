@@ -1,4 +1,4 @@
-# Iteration 1 results
+# Результаты обучения XGBoost
 
 Дата прогона: 2026-08-05
 
@@ -7,7 +7,7 @@
 - **2134** матча из 12 турниров (TI10–TI14 + majors 2026)
 - После фильтра `min_games>=5`: **1734** обучающих строк
 - Период: 2021-06-24 … 2026-07-19
-- Признаков: **25** (team-level, без player details)
+- Признаков: **25** (team-level)
 
 ## Walk-forward (5 folds)
 
@@ -32,12 +32,8 @@
 
 ## Интерпретация
 
-Модель **слабо пригодна** для боевых прогнозов TI2026 в текущем виде:
-
-- Чуть лучше монетки на walk-forward / части TI
-- На TI14 провал: team_id Elo не переживает ростер-шаффлы между сезонами
-- Это подтверждает приоритет следующей итерации: **player history + сыгранность**
+Team-level Elo слабо переносит ростер-шаффлы (особенно TI14). Для боевых прогнозов нужны player history и сыгранность.
 
 Топ-признаки: `elo_prob`, `diff_wr`, `diff_elo`, `d_days_since`, `d_gp`.
 
-Артефакты локально: `outputs/xgb_v1_metrics.json`, `calibration.png`, `feature_importance.png`.
+Артефакты: `outputs/xgb_v1_metrics.json`, `calibration.png`, `feature_importance.png`.

@@ -1,4 +1,4 @@
-# Feature catalog (Iteration 1)
+# Feature catalog
 
 Все признаки считаются **до** исхода текущего матча (нет leakage).
 
@@ -23,10 +23,10 @@
 | `tier_weight` | tournament registry | TI=2.0, major=1.5, … | Контекст важности матча | Слабое как фича (важно как sample weight) |
 | `r_days_since` / `d_days_since` | last played ts | дни простоя | Ржавчина / пауза | Слабое–среднее |
 
-## Sample weights (не фичи)
+## Sample weights
 
 `w = 0.5 ** (age_days / 90) * tier_weight`, затем нормализация среднего к 1.
 
-## Вне scope итерации 1
+## Дальше
 
-Player KDA/GPM, сыгранность, draft, patch embeddings — следующие итерации.
+Player KDA/GPM, сыгранность, draft, patch embeddings — отдельные этапы.

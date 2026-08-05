@@ -45,7 +45,7 @@ function renderBoard(data) {
             (t) => `
           <div class="team-pill" title="${t.name}">
             <div>
-              <div class="name">${t.short}</div>
+              <div class="name">${t.name || t.short}</div>
               <div class="meta">${t.record} · P(слот) ${fmtPct(t.slot_pct ?? 0)}</div>
             </div>
             <div class="prob">${fmtPct(t.qualify_pct)}</div>
@@ -167,7 +167,7 @@ function renderMetrics(data) {
     {
       label: "Walk-forward AUC",
       value: m.walk_forward_avg_auc ?? "—",
-      hint: "XGBoost v0.1",
+      hint: "XGBoost",
     },
     {
       label: "Leave-One-TI AUC",
@@ -181,7 +181,7 @@ function renderMetrics(data) {
     },
     {
       label: "UI source",
-      value: "Baseline",
+      value: "Power ranking",
       hint: data.meta.model_label,
     },
   ];

@@ -95,7 +95,7 @@ def _fit_xgb(
     model = xgb.XGBClassifier(**params)
     model.fit(X_train, y_train, sample_weight=sample_weight)
     if calibrate and len(X_train) >= 100:
-        # Isotonic on a time-respecting holdout would be better; for MVP use CV.
+        # Isotonic calibration via CV when sample size allows.
         calibrated = CalibratedClassifierCV(model, method="isotonic", cv=3)
         calibrated.fit(X_train, y_train, sample_weight=sample_weight)
         return calibrated

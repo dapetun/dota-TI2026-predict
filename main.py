@@ -244,16 +244,15 @@ def main():
     print("=" * 60)
     start_time = datetime.now()
 
-    # Iteration 1 default: real OpenDota matchlists → XGBoost
     raw_dir = Path("data/raw")
     has_matchlists = (
         any(raw_dir.glob("*_matchlist.json")) or any(raw_dir.glob("*_matches.json"))
     ) if raw_dir.exists() else False
 
     if "--legacy" not in sys.argv and has_matchlists:
-        from src.pipeline import run_iteration1
+        from src.pipeline import run_training
 
-        run_iteration1()
+        run_training()
         elapsed = datetime.now() - start_time
         print(f"\nPipeline completed in {elapsed.total_seconds():.1f} seconds")
         return

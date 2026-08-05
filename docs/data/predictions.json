@@ -2,14 +2,14 @@
   "meta": {
     "title": "TI 2026 Swiss Predictions",
     "subtitle": "Open-source group-stage forecast",
-    "generated_at": "2026-08-05T19:29:01.760904+00:00",
-    "model": "baseline_power_ranking_bradley_terry",
-    "model_label": "Baseline · power ranking",
-    "disclaimer": "Текущий UI показывает честный baseline (сила из power ranking + Monte Carlo Swiss до 4 побед/поражений + Elimination Round). XGBoost v0.1 уже обучен, но пока слаб для боевых парных прогнозов (AUC ~0.56).",
+    "generated_at": "2026-08-05T19:40:49.371122+00:00",
+    "model": "power_ranking_bradley_terry",
+    "model_label": "Power ranking",
+    "disclaimer": "Доска Swiss построена на power ranking и Monte Carlo (Swiss до 4 побед/поражений + Elimination Round). XGBoost обучен отдельно; парные прогнозы из модели пока не подключены.",
     "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
     "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
     "n_simulations": 20000,
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "model_metrics": {
     "walk_forward_avg_logloss": 0.8543,
@@ -114,7 +114,7 @@
     "undefeated": [
       {
         "id": "Vision",
-        "name": "Team Vision",
+        "name": "TEAM VISION",
         "short": "Vision",
         "record": "4–0",
         "qualify_pct": 86.6,
@@ -166,7 +166,7 @@
       },
       {
         "id": "1w",
-        "name": "1w",
+        "name": "Iron Wing",
         "short": "1w",
         "record": "Проход",
         "qualify_pct": 65.5,
@@ -255,7 +255,7 @@
   "teams": [
     {
       "id": "Vision",
-      "name": "Team Vision",
+      "name": "TEAM VISION",
       "short": "Vision",
       "region": "EU",
       "source": "EU Qualifier",
@@ -525,7 +525,7 @@
     },
     {
       "id": "1w",
-      "name": "1w",
+      "name": "Iron Wing",
       "short": "1w",
       "region": "EU",
       "source": "Direct Invite",

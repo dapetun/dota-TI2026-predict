@@ -1,4 +1,4 @@
-"""Iteration 1 pipeline: ETL → features → XGBoost → evaluation."""
+"""Training pipeline: ETL → features → XGBoost → evaluation."""
 
 from __future__ import annotations
 
@@ -23,15 +23,15 @@ from src.models.xgboost_model import (
 )
 
 
-def run_iteration1(
+def run_training(
     raw_dir: str = "data/raw",
     processed_dir: str = "data/processed",
     features_dir: str = "data/features",
     output_dir: str = "outputs",
 ) -> dict:
-    """Run the minimal production XGBoost prototype end-to-end."""
+    """Run ETL, feature build, XGBoost training and evaluation end-to-end."""
     print("=" * 60)
-    print("Iteration 1: XGBoost MVP")
+    print("TI 2026 — XGBoost training")
     print("=" * 60)
 
     print("\n[1/4] Loading OpenDota matchlists...")
@@ -65,7 +65,7 @@ def run_iteration1(
     X_h = holdout[result.feature_cols]
     y_h = holdout["radiant_win"].to_numpy(dtype=int)
     proba = result.model.predict_proba(X_h)[:, 1]
-    plot_calibration(y_h, {"xgboost_v1": proba}, output_dir)
+    plot_calibration(y_h, {"xgboost": proba}, output_dir)
     cal = calibration_analysis(y_h, proba)
     cal.to_csv(Path(output_dir) / "reliability_curve.csv", index=False)
 
@@ -78,7 +78,7 @@ def run_iteration1(
     plot_feature_importance(base, result.feature_cols, output_dir=output_dir)
 
     print(f"\nSaved metrics -> {metrics_path}")
-    print("Iteration 1 complete.")
+    print("Training complete.")
     return {
         "match_summary": summary,
         "n_features_rows": len(features),

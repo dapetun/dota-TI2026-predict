@@ -5,97 +5,98 @@ from typing import Dict, List
 
 
 # TI 2026 Group Stage: 16 teams
+# Keys are stable internal IDs; full_name is the display / tournament brand.
 TI2026_TEAMS = {
     "Aurora": {
         "full_name": "Aurora Gaming",
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["Nightfall", "Mikoto", "Ws", "Mira", "kaori"],
-        "aliases": ["Aurora Gaming"],
+        "aliases": ["Aurora Gaming", "Aurora"],
     },
     "BetBoom": {
         "full_name": "BoomBoys",
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["Kiritych~", "gpk", "MieRo", "Save-", "Kataomi`"],
-        "aliases": ["BetBoom Team", "BoomBoys"],
+        "aliases": ["BetBoom Team", "BetBoom", "BoomBoys"],
     },
     "Falcons": {
         "full_name": "Team Falcons",
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["skiter", "Malr1ne", "ATF", "Cr1t-", "Sneyking"],
-        "aliases": ["Team Falcons"],
+        "aliases": ["Team Falcons", "Falcons"],
     },
     "Liquid": {
         "full_name": "Team Liquid",
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["miCKe", "Nisha", "Ace", "Boxi", "tOfu"],
-        "aliases": ["Team Liquid"],
+        "aliases": ["Team Liquid", "Liquid"],
     },
     "1w": {
-        "full_name": "1w",
+        "full_name": "Iron Wing",
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["Pure", "bzm", "33", "Ari", "Whitemon"],
-        "aliases": ["Tundra Esports", "Iron Wing"],
+        "aliases": ["Tundra Esports", "1w", "1win", "1win Team", "Iron Wing"],
     },
     "Xtreme": {
         "full_name": "Xtreme Gaming",
         "region": "CN",
         "source": "Direct Invite",
         "roster": ["Ame", "NothingToSay", "Xxs", "fy", "xNova"],
-        "aliases": ["Xtreme Gaming"],
+        "aliases": ["Xtreme Gaming", "Xtreme"],
     },
     "Yandex": {
         "full_name": "Team Yandex",
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["watson", "CHIRA_JUNIOR", "DM", "Saksa", "Malady"],
-        "aliases": ["Team Yandex"],
+        "aliases": ["Team Yandex", "Yandex"],
     },
     "Spirit": {
         "full_name": "Team Spirit",
         "region": "EU",
         "source": "EU Qualifier",
         "roster": ["Yatoro", "Larl", "Collapse", "not me", "rue"],
-        "aliases": ["Team Spirit"],
+        "aliases": ["Team Spirit", "Spirit"],
     },
     "Vision": {
-        "full_name": "Team Vision",
+        "full_name": "TEAM VISION",
         "region": "EU",
         "source": "EU Qualifier",
         "roster": ["Satanic", "No[o]ne", "Noticed", "9Class", "Dukalis"],
-        "aliases": ["PARIVISION", "Team Vision"],
+        "aliases": ["PARIVISION", "Team Vision", "TEAM VISION", "Vision"],
     },
     "HULIGANI": {
         "full_name": "HULIGANI",
         "region": "EU",
         "source": "EU Qualifier",
         "roster": ["ssnovv1", "Mirage", "Vazya", "sayuw", "RESPECT"],
-        "aliases": ["L1GA TEAM"],
+        "aliases": ["L1GA TEAM", "HULIGANI"],
     },
     "Nigma": {
         "full_name": "Nigma Galaxy",
         "region": "EU",
         "source": "EU Qualifier",
         "roster": ["SumaiL", "lorenof", "Davai", "OmaR", "GH"],
-        "aliases": ["Nigma Galaxy"],
+        "aliases": ["Nigma Galaxy", "Nigma"],
     },
     "Resilience": {
         "full_name": "Team Resilience",
         "region": "CN",
         "source": "CN Qualifier",
         "roster": ["Erika", "EchozZ", "niu", "planet", "zzq"],
-        "aliases": ["Team Resilience"],
+        "aliases": ["Team Resilience", "Resilience"],
     },
     "Vici": {
         "full_name": "Vici Gaming",
         "region": "CN",
         "source": "CN Qualifier",
         "roster": ["shiro", "Xm", "Bach", "XinQ", "y`"],
-        "aliases": ["Vici Gaming"],
+        "aliases": ["Vici Gaming", "Vici"],
     },
     "OG": {
         "full_name": "OG",
@@ -116,7 +117,7 @@ TI2026_TEAMS = {
         "region": "SA",
         "source": "SA Qualifier",
         "roster": ["Yuma", "TaiLung", "Wisper", "Thiolicor", "KJ"],
-        "aliases": ["LGD Gaming"],
+        "aliases": ["LGD Gaming", "LGD"],
     },
 }
 
@@ -158,7 +159,7 @@ TI2026_RECENT_RESULTS = {
 }
 
 
-# Power rankings (subjective baseline for missing data)
+# Power rankings (subjective seeding when match history is thin)
 POWER_RANKINGS = {
     "Vision": 1,
     "BetBoom": 2,
@@ -180,7 +181,7 @@ POWER_RANKINGS = {
 
 
 def normalize_team_name(name: str) -> str:
-    """Map any alias to canonical team name."""
+    """Map any alias to canonical team id."""
     return ALIAS_TO_CANONICAL.get(name.lower(), name)
 
 
@@ -192,6 +193,11 @@ def get_team_ids() -> List[str]:
 def get_team_roster(team_id: str) -> List[str]:
     """Get roster for a team."""
     return TI2026_TEAMS.get(team_id, {}).get("roster", [])
+
+
+def get_display_name(team_id: str) -> str:
+    """Tournament / UI display name for a team."""
+    return TI2026_TEAMS.get(team_id, {}).get("full_name", team_id)
 
 
 def build_teams_df() -> pd.DataFrame:
@@ -214,16 +220,16 @@ SWISS_CONFIG = {
     "n_rounds": 5,
     "wins_to_qualify": 4,
     "losses_to_eliminate": 4,
-    "elimination_round_advance": 5,  # From Elimination Round into playoffs
-    "qualify_top_n": 3,              # Typical direct 4-0 + 4-1 count
-    "elim_bottom_n": 3,              # Typical direct 0-4 + 1-4 count
+    "elimination_round_advance": 5,
+    "qualify_top_n": 3,
+    "elim_bottom_n": 3,
 }
 
 
 # Main Event format
 PLAYOFF_CONFIG = {
     "type": "double_elimination",
-    "upper_bracket_rounds": 3,  # QF, SF, WF
-    "lower_bracket_rounds": 5,  # R1, R2, R3, SF, WF
+    "upper_bracket_rounds": 3,
+    "lower_bracket_rounds": 5,
     "grand_final": "Bo5",
 }

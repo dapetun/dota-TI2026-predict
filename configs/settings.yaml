@@ -12,7 +12,7 @@ data:
   processed_dir: "data/processed"
   features_dir: "data/features"
 
-  # Iteration 1: keep full TI history; relevance via sample weights
+  # Full TI history; relevance via sample weights
   train_start: "2021-01-01"
   train_end: "2026-08-01"
   sample_weight_half_life_days: 90

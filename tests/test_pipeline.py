@@ -1,4 +1,4 @@
-"""Unit tests for iteration-1 ETL, features, weights, and validation splits."""
+"""Unit tests for ETL, features, weights, and validation splits."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from src.data_collection.match_loader import load_raw_matchlists, summarize_matc
 from src.features.match_features import FEATURE_COLUMNS, build_match_feature_matrix
 from src.features.sample_weights import compute_sample_weights, exponential_time_weights
 from src.models.xgboost_model import leave_one_ti_splits, walk_forward_splits
+from src.ti2026.teams import TI2026_TEAMS, get_display_name, normalize_team_name
 
 
 @pytest.fixture()
@@ -23,7 +24,6 @@ def tiny_raw(tmp_path: Path) -> Path:
     team_map = {"1": "Team Spirit", "2": "Team Liquid", "3": "Team Falcons"}
     (raw / "team_id_map.json").write_text(json.dumps(team_map), encoding="utf-8")
 
-    # Two tournaments with chronological matches.
     ti10 = []
     t0 = 1_600_000_000
     for i in range(30):
@@ -85,7 +85,6 @@ def test_features_no_leakage_and_columns(tiny_raw: Path):
     for col in FEATURE_COLUMNS:
         assert col in feats.columns
     assert "radiant_win" in feats.columns
-    # Absolute first match: both teams at initial Elo (no prior games).
     assert feats.iloc[0]["r_elo"] == pytest.approx(1500.0)
     assert feats.iloc[0]["d_elo"] == pytest.approx(1500.0)
     assert int(feats.iloc[0]["r_gp"]) == 0
@@ -124,3 +123,14 @@ def test_validation_splits(tiny_raw: Path):
     loo = leave_one_ti_splits(feats, min_train=20, min_test=10)
     names = [name for name, _, _ in loo]
     assert "TI11_2022" in names
+
+
+def test_display_names():
+    assert get_display_name("BetBoom") == "BoomBoys"
+    assert get_display_name("1w") == "Iron Wing"
+    assert get_display_name("Vision") == "TEAM VISION"
+    assert normalize_team_name("BoomBoys") == "BetBoom"
+    assert normalize_team_name("Iron Wing") == "1w"
+    assert normalize_team_name("Tundra Esports") == "1w"
+    assert normalize_team_name("PARIVISION") == "Vision"
+    assert TI2026_TEAMS["Falcons"]["full_name"] == "Team Falcons"
