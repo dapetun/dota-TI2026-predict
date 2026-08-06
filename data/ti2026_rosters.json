@@ -1,0 +1,390 @@
+{
+  "generated_from": "scripts/build_rosters.py",
+  "note": "account_ids from latest OpenDota lineup; override nick_to_account manually if needed",
+  "teams": {
+    "Aurora": {
+      "open_dota_team_id": 9823272,
+      "account_ids": [
+        171262902,
+        312436974,
+        56351509,
+        93817671,
+        103735745
+      ],
+      "nick_to_account": {
+        "Nightfall": 0,
+        "Mikoto": 0,
+        "Ws": 0,
+        "Mira": 0,
+        "kaori": 0
+      },
+      "roster_nicks": [
+        "Nightfall",
+        "Mikoto",
+        "Ws",
+        "Mira",
+        "kaori"
+      ]
+    },
+    "BetBoom": {
+      "open_dota_team_id": 8255888,
+      "account_ids": [
+        172099728,
+        480412663,
+        165564598,
+        317880638,
+        196878136
+      ],
+      "nick_to_account": {
+        "Kiritych~": 0,
+        "gpk": 0,
+        "MieRo": 0,
+        "Save-": 0,
+        "Kataomi`": 0
+      },
+      "roster_nicks": [
+        "Kiritych~",
+        "gpk",
+        "MieRo",
+        "Save-",
+        "Kataomi`"
+      ]
+    },
+    "Falcons": {
+      "open_dota_team_id": 9247354,
+      "account_ids": [
+        10366616,
+        100058342,
+        898455820,
+        183719386,
+        25907144
+      ],
+      "nick_to_account": {
+        "skiter": 0,
+        "Malr1ne": 0,
+        "ATF": 0,
+        "Cr1t-": 0,
+        "Sneyking": 0
+      },
+      "roster_nicks": [
+        "skiter",
+        "Malr1ne",
+        "ATF",
+        "Cr1t-",
+        "Sneyking"
+      ]
+    },
+    "Liquid": {
+      "open_dota_team_id": 2163,
+      "account_ids": [
+        16497807,
+        97590558,
+        201358612,
+        77490514,
+        152962063
+      ],
+      "nick_to_account": {
+        "miCKe": 0,
+        "Nisha": 0,
+        "Ace": 0,
+        "Boxi": 0,
+        "tOfu": 0
+      },
+      "roster_nicks": [
+        "miCKe",
+        "Nisha",
+        "Ace",
+        "Boxi",
+        "tOfu"
+      ]
+    },
+    "1w": {
+      "open_dota_team_id": 10182357,
+      "account_ids": [
+        86698277,
+        346412363,
+        136829091,
+        93618577,
+        331855530
+      ],
+      "nick_to_account": {
+        "Pure": 0,
+        "bzm": 0,
+        "33": 0,
+        "Ari": 0,
+        "Whitemon": 0
+      },
+      "roster_nicks": [
+        "Pure",
+        "bzm",
+        "33",
+        "Ari",
+        "Whitemon"
+      ]
+    },
+    "Xtreme": {
+      "open_dota_team_id": 726228,
+      "account_ids": [
+        320252024,
+        137129583,
+        118134220,
+        157475523,
+        111114687
+      ],
+      "nick_to_account": {
+        "Ame": 0,
+        "NothingToSay": 0,
+        "Xxs": 0,
+        "fy": 0,
+        "xNova": 0
+      },
+      "roster_nicks": [
+        "Ame",
+        "NothingToSay",
+        "Xxs",
+        "fy",
+        "xNova"
+      ]
+    },
+    "Yandex": {
+      "open_dota_team_id": 9895392,
+      "account_ids": [
+        154715080,
+        97658618,
+        126212866,
+        241884166,
+        94155156
+      ],
+      "nick_to_account": {
+        "watson": 0,
+        "CHIRA_JUNIOR": 0,
+        "DM": 0,
+        "Saksa": 0,
+        "Malady": 0
+      },
+      "roster_nicks": [
+        "watson",
+        "CHIRA_JUNIOR",
+        "DM",
+        "Saksa",
+        "Malady"
+      ]
+    },
+    "Spirit": {
+      "open_dota_team_id": 7119388,
+      "account_ids": [
+        321580662,
+        847565596,
+        106305042,
+        218231587,
+        302214028
+      ],
+      "nick_to_account": {
+        "Yatoro": 0,
+        "Larl": 0,
+        "Collapse": 0,
+        "not me": 0,
+        "rue": 0
+      },
+      "roster_nicks": [
+        "Yatoro",
+        "Larl",
+        "Collapse",
+        "not me",
+        "rue"
+      ]
+    },
+    "Vision": {
+      "open_dota_team_id": 9824702,
+      "account_ids": [
+        1044002267,
+        195108598,
+        106573901,
+        164199202,
+        73401082
+      ],
+      "nick_to_account": {
+        "Satanic": 0,
+        "No[o]ne": 0,
+        "Noticed": 0,
+        "9Class": 0,
+        "Dukalis": 0
+      },
+      "roster_nicks": [
+        "Satanic",
+        "No[o]ne",
+        "Noticed",
+        "9Class",
+        "Dukalis"
+      ]
+    },
+    "HULIGANI": {
+      "open_dota_team_id": 8261114,
+      "account_ids": [
+        372105535,
+        126598297,
+        228517469,
+        343084576,
+        103110865
+      ],
+      "nick_to_account": {
+        "ssnovv1": 0,
+        "Mirage": 0,
+        "Vazya": 0,
+        "sayuw": 0,
+        "RESPECT": 0
+      },
+      "roster_nicks": [
+        "ssnovv1",
+        "Mirage",
+        "Vazya",
+        "sayuw",
+        "RESPECT"
+      ]
+    },
+    "Nigma": {
+      "open_dota_team_id": 7554697,
+      "account_ids": [
+        418942836,
+        152168157,
+        140297552,
+        101356886,
+        138880576
+      ],
+      "nick_to_account": {
+        "SumaiL": 0,
+        "lorenof": 0,
+        "Davai": 0,
+        "OmaR": 0,
+        "GH": 0
+      },
+      "roster_nicks": [
+        "SumaiL",
+        "lorenof",
+        "Davai",
+        "OmaR",
+        "GH"
+      ]
+    },
+    "Resilience": {
+      "open_dota_team_id": 8261197,
+      "account_ids": [
+        58429537,
+        193815691,
+        104758571,
+        184138153,
+        392565237
+      ],
+      "nick_to_account": {
+        "Erika": 0,
+        "EchozZ": 0,
+        "niu": 0,
+        "planet": 0,
+        "zzq": 0
+      },
+      "roster_nicks": [
+        "Erika",
+        "EchozZ",
+        "niu",
+        "planet",
+        "zzq"
+      ]
+    },
+    "Vici": {
+      "open_dota_team_id": 8255842,
+      "account_ids": [
+        134556694,
+        400709028,
+        368917218,
+        326327879,
+        214853734
+      ],
+      "nick_to_account": {
+        "shiro": 0,
+        "Xm": 0,
+        "Bach": 0,
+        "XinQ": 0,
+        "y`": 0
+      },
+      "roster_nicks": [
+        "shiro",
+        "Xm",
+        "Bach",
+        "XinQ",
+        "y`"
+      ]
+    },
+    "OG": {
+      "open_dota_team_id": 2586976,
+      "account_ids": [
+        324277900,
+        355168766,
+        100594231,
+        132309493,
+        155494381
+      ],
+      "nick_to_account": {
+        "Natsumi": 0,
+        "Yopaj": 0,
+        "Raven": 0,
+        "TIMS": 0,
+        "skem": 0
+      },
+      "roster_nicks": [
+        "Natsumi",
+        "Yopaj",
+        "Raven",
+        "TIMS",
+        "skem"
+      ]
+    },
+    "GamerLegion": {
+      "open_dota_team_id": 9964962,
+      "account_ids": [
+        206642367,
+        154974246,
+        90423751,
+        191362875,
+        160119017
+      ],
+      "nick_to_account": {
+        "Ghost": 0,
+        "RCY": 0,
+        "Fayde": 0,
+        "Bignum": 0,
+        "Speeed": 0
+      },
+      "roster_nicks": [
+        "Ghost",
+        "RCY",
+        "Fayde",
+        "Bignum",
+        "Speeed"
+      ]
+    },
+    "LGD": {
+      "open_dota_team_id": 15,
+      "account_ids": [
+        320252024,
+        173978074,
+        145957968,
+        150961567,
+        111114687
+      ],
+      "nick_to_account": {
+        "Yuma": 0,
+        "TaiLung": 0,
+        "Wisper": 0,
+        "Thiolicor": 0,
+        "KJ": 0
+      },
+      "roster_nicks": [
+        "Yuma",
+        "TaiLung",
+        "Wisper",
+        "Thiolicor",
+        "KJ"
+      ]
+    }
+  }
+}

@@ -22,6 +22,11 @@ from src.features.player_features import (
     build_player_match_features,
     merge_team_and_player_features,
 )
+from src.features.chemistry_features import (
+    CHEMISTRY_FEATURE_COLUMNS,
+    build_chemistry_features,
+    merge_chemistry_features,
+)
 from src.models.xgboost_model import (
     save_train_result,
     summarize_results,
@@ -35,9 +40,9 @@ def run_training(
     features_dir: str = "data/features",
     output_dir: str = "outputs",
 ) -> dict:
-    """Run ETL, team+player features, XGBoost training and evaluation."""
+    """Run ETL, team+player+chemistry features, XGBoost training and evaluation."""
     print("=" * 60)
-    print("TI 2026 — XGBoost training (team + player)")
+    print("TI 2026 — XGBoost training (team + player + chemistry)")
     print("=" * 60)
 
     print("\n[1/5] Loading OpenDota matchlists...")
@@ -57,11 +62,13 @@ def run_training(
     if not players.empty:
         save_player_matches(players, processed_dir)
 
-    print("\n[3/5] Building team + player features (no leakage)...")
+    print("\n[3/5] Building team + player + chemistry features (no leakage)...")
     team_features = build_match_feature_matrix(matches, min_games=5)
     player_features = build_player_match_features(matches, players)
+    chemistry = build_chemistry_features(matches, players)
     features = merge_team_and_player_features(team_features, player_features)
-    feature_cols = FEATURE_COLUMNS + PLAYER_FEATURE_COLUMNS
+    features = merge_chemistry_features(features, chemistry)
+    feature_cols = FEATURE_COLUMNS + PLAYER_FEATURE_COLUMNS + CHEMISTRY_FEATURE_COLUMNS
     feat_path = save_features(features, features_dir)
     print(
         f"  Features: {len(features)} matches, {len(feature_cols)} columns -> {feat_path}"
@@ -69,6 +76,7 @@ def run_training(
     print(f"  Date range: {features['date'].min()} .. {features['date'].max()}")
     print(f"  Radiant WR: {features['radiant_win'].mean():.3f}")
     print(f"  Rows with player stats: {int(features['has_player_stats'].sum())}")
+    print(f"  Rows with chemistry: {int(features['has_chemistry'].sum())}")
 
     print("\n[4/5] Training XGBoost (walk-forward + Leave-One-TI-Out)...")
     result = train_xgboost_pipeline(features, feature_cols=feature_cols)

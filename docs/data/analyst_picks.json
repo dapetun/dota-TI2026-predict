@@ -1,0 +1,240 @@
+{
+  "source": "Sports.ru",
+  "url": "https://cyber.sports.ru/dota2/blogs/3428857.html",
+  "updated_at": "2026-08-06",
+  "note": "11 полных сеток из скриншотов Compendium UI; Misha/редакция — только текст.",
+  "analysts": [
+    {
+      "id": "ns",
+      "name": "NS",
+      "board": {
+        "BetBoom": "undefeated",
+        "Spirit": "one_loss",
+        "1w": "one_loss",
+        "Nigma": "advance",
+        "Xtreme": "advance",
+        "Vici": "advance",
+        "Vision": "advance",
+        "Aurora": "advance",
+        "Liquid": "eliminate",
+        "OG": "eliminate",
+        "Yandex": "eliminate",
+        "Falcons": "eliminate",
+        "LGD": "eliminate",
+        "HULIGANI": "one_win",
+        "GamerLegion": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "sikle",
+      "name": "sikle",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "BetBoom": "one_loss",
+        "Falcons": "advance",
+        "Spirit": "advance",
+        "Aurora": "advance",
+        "Liquid": "advance",
+        "LGD": "advance",
+        "1w": "eliminate",
+        "Nigma": "eliminate",
+        "Vici": "eliminate",
+        "Xtreme": "eliminate",
+        "GamerLegion": "eliminate",
+        "HULIGANI": "one_win",
+        "OG": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "fishman",
+      "name": "Fishman",
+      "board": {
+        "Falcons": "undefeated",
+        "Yandex": "one_loss",
+        "Vision": "one_loss",
+        "BetBoom": "advance",
+        "Liquid": "advance",
+        "Aurora": "advance",
+        "1w": "advance",
+        "Spirit": "advance",
+        "Xtreme": "eliminate",
+        "Nigma": "eliminate",
+        "LGD": "eliminate",
+        "Vici": "eliminate",
+        "HULIGANI": "eliminate",
+        "GamerLegion": "one_win",
+        "OG": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "arteezy",
+      "name": "Arteezy",
+      "board": {
+        "Vision": "undefeated",
+        "Aurora": "one_loss",
+        "Yandex": "one_loss",
+        "Spirit": "advance",
+        "Falcons": "advance",
+        "BetBoom": "advance",
+        "Liquid": "advance",
+        "1w": "advance",
+        "Vici": "eliminate",
+        "Xtreme": "eliminate",
+        "OG": "eliminate",
+        "GamerLegion": "eliminate",
+        "HULIGANI": "eliminate",
+        "LGD": "one_win",
+        "Nigma": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "topson",
+      "name": "Topson",
+      "board": {
+        "Yandex": "undefeated",
+        "Vision": "one_loss",
+        "BetBoom": "one_loss",
+        "Spirit": "advance",
+        "Liquid": "advance",
+        "Falcons": "advance",
+        "Xtreme": "advance",
+        "Vici": "advance",
+        "Nigma": "eliminate",
+        "LGD": "eliminate",
+        "Aurora": "eliminate",
+        "1w": "eliminate",
+        "OG": "eliminate",
+        "GamerLegion": "one_win",
+        "Resilience": "one_win",
+        "HULIGANI": "winless"
+      }
+    },
+    {
+      "id": "nix",
+      "name": "Nix",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "BetBoom": "one_loss",
+        "Falcons": "advance",
+        "1w": "advance",
+        "Vici": "advance",
+        "Aurora": "advance",
+        "Spirit": "advance",
+        "Nigma": "eliminate",
+        "Liquid": "eliminate",
+        "LGD": "eliminate",
+        "Xtreme": "eliminate",
+        "OG": "eliminate",
+        "GamerLegion": "one_win",
+        "HULIGANI": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "roger",
+      "name": "Roger",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "BetBoom": "one_loss",
+        "1w": "advance",
+        "Liquid": "advance",
+        "Aurora": "advance",
+        "Falcons": "advance",
+        "Spirit": "advance",
+        "Xtreme": "eliminate",
+        "Vici": "eliminate",
+        "LGD": "eliminate",
+        "OG": "eliminate",
+        "Nigma": "eliminate",
+        "GamerLegion": "one_win",
+        "HULIGANI": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "reddit_sim",
+      "name": "Reddit 100k sim",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "BetBoom": "one_loss",
+        "Aurora": "advance",
+        "Spirit": "advance",
+        "1w": "advance",
+        "Vici": "advance",
+        "Liquid": "advance",
+        "Falcons": "eliminate",
+        "LGD": "eliminate",
+        "Nigma": "eliminate",
+        "GamerLegion": "eliminate",
+        "Xtreme": "eliminate",
+        "Resilience": "one_win",
+        "OG": "one_win",
+        "HULIGANI": "winless"
+      }
+    },
+    {
+      "id": "sqreen",
+      "name": "Sqreen",
+      "board": {
+        "Spirit": "undefeated",
+        "Vision": "one_loss",
+        "Yandex": "one_loss",
+        "1w": "advance",
+        "Vici": "advance",
+        "BetBoom": "advance",
+        "Falcons": "advance",
+        "Liquid": "advance",
+        "Xtreme": "eliminate",
+        "OG": "eliminate",
+        "Resilience": "eliminate",
+        "Aurora": "eliminate",
+        "LGD": "eliminate",
+        "Nigma": "one_win",
+        "GamerLegion": "one_win",
+        "HULIGANI": "winless"
+      }
+    },
+    {
+      "id": "onejey",
+      "name": "OneJey",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "Falcons": "one_loss",
+        "BetBoom": "advance",
+        "Vici": "advance",
+        "Spirit": "advance",
+        "1w": "advance",
+        "Xtreme": "advance",
+        "Nigma": "eliminate",
+        "Liquid": "eliminate",
+        "Aurora": "eliminate",
+        "LGD": "eliminate",
+        "OG": "eliminate",
+        "Resilience": "one_win",
+        "GamerLegion": "one_win",
+        "HULIGANI": "winless"
+      }
+    }
+  ],
+  "partial": [
+    {
+      "id": "misha",
+      "name": "Misha",
+      "note": "Топ-3: BetBoom, Spirit, 1w; вылетят Yandex и Falcons"
+    },
+    {
+      "id": "editorial",
+      "name": "Редакция Кибера",
+      "note": "Топ-3: BetBoom, Spirit, 1w; метка на вылет Yandex и Falcons"
+    }
+  ]
+}

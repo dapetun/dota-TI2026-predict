@@ -1,49 +1,65 @@
-# Результаты обучения XGBoost (team + player)
+# Результаты обучения (team + player + chemistry)
 
-Дата прогона: 2026-08-05  
-Ветка: `prod`  
-Сайт (локально): `docs/` → http://localhost:8080 · версия данных `0.2.0-prod`
+Дата: 2026-08-06 · ветка `prod` · coverage **100%** (2134/2134)  
+Признаков: **63** · details: 2234 cached  
+Pairwise Swiss: team + **player/chem snapshot** + `data/ti2026_rosters.json`  
+Blend: LOO weights + **isotonic calibration (LOO eval only, не в production bundle)**
 
-## Данные
+## Сводка (Leave-One-TI / Walk-forward)
 
-- **2134** матча из 12 турниров (TI10–TI14 + majors 2026)
-- После фильтра `min_games>=5`: **1734** строк
-- Player details: **448** матчей с игроками (**21%** покрытия), 5480 player-rows, 235 account_id
-- Признаков: **50** (25 team + 25 player)
+| Модель | LOO AUC | LOO LL | WF AUC | WF LL |
+|---|---|---|---|---|
+| XGBoost | 0.594 | 0.869 | 0.568 | 0.846 |
+| CatBoost | 0.594 | 0.801 | 0.585 | 0.776 |
+| Blend (LOO-tuned) | **0.598** | **0.797** | 0.584 | **0.772** |
 
-Догрузка details: `python scripts/download_details.py` (resume). Покрытие растёт фоном.
+Веса blend по LOO grid: **XGB 0.25 / CatBoost 0.75**. Isotonic на pooled LOO — только для offline-оценки (`train_compare`: `isotonic_loo_evaluated`); pairwise export без calibrator.
 
-## Метрики (последний экспорт в UI)
+## Leave-One-TI (blend)
 
-| Метрика | Значение |
-|---|---|
-| Walk-forward AUC (avg) | **0.547** |
-| Leave-One-TI AUC (avg) | **0.579** |
-| Walk-forward LogLoss | 0.892 |
-| LOO-TI LogLoss | 0.895 |
-
-### Leave-One-TI-Out
-
-| Held-out TI | n | LogLoss | AUC |
+| Held-out | n | LL | AUC |
 |---|---|---|---|
-| TI11 | 213 | 0.877 | 0.560 |
-| TI12 | 128 | 0.807 | 0.610 |
-| TI13 | 99 | 0.722 | 0.708 |
-| TI14 | 121 | 1.172 | 0.438 |
+| TI11 | 213 | 0.821 | 0.561 |
+| TI12 | 128 | 0.733 | 0.611 |
+| TI13 | 99 | 0.686 | **0.729** |
+| TI14 | 121 | 0.948 | **0.490** |
 
-Топ важности (player уже в лидерах): `r_pl_lan_wr`, `elo_prob`, `diff_pl_lan_wr`, `diff_wr`, `diff_pl_xpm`.
+### TI14 (слабый fold)
 
-## Сравнение с team-only
-
-| Метрика | Team-only | Team+player (~21% coverage) |
-|---|---|---|
-| LOO-TI AUC | ~0.580 | **0.579** |
-| TI14 AUC | ~0.430 | **0.438** |
-
-При низком покрытии details прирост скромный; цель coverage ≥60–70%, затем переобучение и merge в `main` как `v0.2.0`.
+- AUC ~0.49 — ниже случайного на hold-out; вероятные факторы: patch/meta drift 2024, разрыв составов vs TI-стиль данных, малый n=121.
+- Эксперимент **LAN-only chemistry** (`build_chemistry_features(..., lan_only=True)`) — для сравнения в `train_compare` (опционально).
+- Per-TI blend weights не внедрены: 4 TI — высокий риск overfit.
 
 ## UI
 
-Доска Swiss — power ranking + Monte Carlo (не pairwise XGBoost). В метаданных сайта: coverage players и версия `0.2.0-prod`. Имена: BoomBoys, Iron Wing, TEAM VISION.
+http://localhost:8080 — Swiss на **blend pairwise**. Переключатель доски: points-optimal / qualify-rank / analyst consensus / fusion.  
+Hero: E[очки], консенсус Sports.ru, fusion. Chip **N/10** на карточках (≥5 аналитиков).
 
-Артефакты локально: `outputs/xgb_v1_metrics.json`, `calibration.png`, `feature_importance.png`.
+## Компендиум: три стратегии + fusion
+
+Battlepass.ru ([TI2026 predictions](https://battlepass.ru/ti2026/predictions)) — суперлинейная таблица Valve (16/16 → 12 000).
+
+| Стратегия | E[верных слотов] | E[очки Valve] |
+|---|---|---|
+| Qualify-rank | 7.40 | **2 305** |
+| Points-optimal (model) | 7.55 | **2 412** |
+| Analyst consensus (Sports.ru 10 сеток) | см. export | см. `predictions.json` |
+| Fusion model+analyst | см. export | см. `meta.fusion_expected_points` |
+
+Отличия model points-optimal vs qualify-rank: OG/HULIGANI (eliminate ↔ 1–4).
+
+### Расхождения model vs analyst consensus
+
+| Тема | Инфлюенсеры (консенсус) | Модель (points-optimal) |
+|---|---|---|
+| 4–0 | Vision (6/10) | Aurora |
+| 4–1 | Yandex + BetBoom | BetBoom + Vision |
+| Проход | Spirit, 1w, Liquid | Spirit, Falcons, LGD, Xtreme, 1w |
+| Выбывание | OG, LGD, Nigma | OG, Yandex, Liquid, Nigma, GamerLegion |
+| 0–4 | Resilience (7/10) | Vici |
+
+## Дальше
+
+Playoff bracket, draft embeddings, live pipeline.
+
+CLI: `train_compare.py` · `export_web_data.py` · `build_rosters.py`

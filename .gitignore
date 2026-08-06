@@ -16,3 +16,11 @@ build/
 Thumbs.db
 catboost_info/
 .cursor/
+data/sportsru_images/
+scripts/test_*.py
+scripts/explore_api.py
+scripts/investigate_api.py
+scripts/check_resolution.py
+scripts/find_league_ids.py
+scripts/verify_leagues.py
+scripts/simulate_swiss.py

@@ -66,6 +66,33 @@ def _has_players(detail: dict | None) -> bool:
     return bool(detail and isinstance(detail.get("players"), list) and detail["players"])
 
 
+def _atomic_write_json(path: Path, payload: dict) -> None:
+    """Write JSON atomically so readers never see a half-written file."""
+    import os
+
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f)
+        f.flush()
+        os.fsync(f.fileno())
+    # Windows may lock the target while another process reads it.
+    last_err: Exception | None = None
+    for attempt in range(8):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError as exc:
+            last_err = exc
+            time.sleep(0.5 * (attempt + 1))
+    # Fallback: overwrite in place (still better than crashing the downloader).
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+        tmp.unlink(missing_ok=True)
+    except Exception as exc:  # noqa: BLE001
+        raise last_err or exc
+
+
 def download_details(
     *,
     max_new: int | None = None,
@@ -117,16 +144,14 @@ def download_details(
                 time.sleep(65)
 
         if (i + 1) % 50 == 0 or (i + 1) == len(needed):
-            with open(details_file, "w", encoding="utf-8") as f:
-                json.dump(existing, f)
+            _atomic_write_json(details_file, existing)
             print(
                 f"  Progress {i + 1}/{len(needed)} | "
                 f"with_players={sum(1 for v in existing.values() if _has_players(v))} | "
                 f"errors={errors}"
             )
 
-    with open(details_file, "w", encoding="utf-8") as f:
-        json.dump(existing, f)
+    _atomic_write_json(details_file, existing)
 
     with_players = sum(1 for v in existing.values() if _has_players(v))
     print(f"Done. cached={len(existing)} with_players={with_players} new={downloaded} errors={errors}")

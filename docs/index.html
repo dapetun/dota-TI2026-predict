@@ -49,9 +49,20 @@
     </section>
 
     <section class="section" id="board">
-      <div class="section-head">
-        <h3>Swiss board</h3>
-        <p>Слоты компендиума: 4–0×1, 4–1×2, проход×5, выбывание×5, 1–4×2, 0–4×1.</p>
+      <div class="section-head row">
+        <div>
+          <h3>Swiss board</h3>
+          <p>Слоты компендиума: 4–0×1, 4–1×2, проход×5, выбывание×5, 1–4×2, 0–4×1.</p>
+        </div>
+        <div class="controls">
+          <label class="sr-only" for="board-strategy">Стратегия доски</label>
+          <select id="board-strategy">
+            <option value="points_optimal">Model · points-optimal</option>
+            <option value="qualify_rank">Qualify-rank</option>
+            <option value="analyst_consensus">Analyst consensus</option>
+            <option value="fusion">Fusion model+analyst</option>
+          </select>
+        </div>
       </div>
       <div class="board" id="swiss-board"></div>
     </section>

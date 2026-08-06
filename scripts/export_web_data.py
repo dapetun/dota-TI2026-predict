@@ -1,6 +1,6 @@
 """Export prediction JSON for the static GitHub Pages frontend.
 
-Uses power-ranking Bradley-Terry + TI Swiss (first to 4) + Elimination Round.
+Prefers blend pairwise win matrix; falls back to power-ranking Bradley-Terry.
 """
 
 from __future__ import annotations
@@ -18,6 +18,17 @@ from src.simulation.tournament_sim import (
     assign_fantasy_board,
     simulate_swiss_stage,
 )
+from src.ti2026.analyst_consensus import (
+    analyst_agreement,
+    analyst_names_for_slot,
+    build_consensus_board,
+    consensus_summary,
+)
+from src.ti2026.compendium_scoring import (
+    compare_board_strategies,
+    optimize_fantasy_board,
+)
+from src.ti2026.fusion import fuse_slot_probabilities, tune_fusion_weight_loo
 from src.ti2026.teams import (
     POWER_RANKINGS,
     SWISS_CONFIG,
@@ -29,9 +40,11 @@ from src.ti2026.teams import (
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DATA = BASE_DIR / "docs" / "data"
 METRICS_PATH = BASE_DIR / "outputs" / "xgb_v1_metrics.json"
+COMPARE_PATH = BASE_DIR / "outputs" / "model_compare.json"
+BLEND_PATH = BASE_DIR / "outputs" / "model_blend_v1.joblib"
 
 
-def build_win_matrix(teams: list[str]) -> pd.DataFrame:
+def build_power_ranking_matrix(teams: list[str]) -> pd.DataFrame:
     """Bradley-Terry from power ranking (rank 1 = strongest)."""
     n = len(teams)
     strengths = {t: n - POWER_RANKINGS.get(t, n) + 1 for t in teams}
@@ -42,6 +55,45 @@ def build_win_matrix(teams: list[str]) -> pd.DataFrame:
                 continue
             matrix[i, j] = strengths[a] / (strengths[a] + strengths[b])
     return pd.DataFrame(matrix, index=teams, columns=teams)
+
+
+def build_export_win_matrix(teams: list[str]) -> tuple[pd.DataFrame, str, str]:
+    """Return (matrix, model_key, model_label). Prefer blend pairwise."""
+    if not BLEND_PATH.exists():
+        return build_power_ranking_matrix(teams), "power_ranking_bradley_terry", "Power ranking"
+
+    try:
+        from src.data_collection.match_details import load_player_matches
+        from src.data_collection.match_loader import load_raw_matchlists
+        from src.ti2026.pairwise import build_model_win_matrix, load_blend_bundle
+
+        matches = load_raw_matchlists(BASE_DIR / "data" / "raw")
+        players = load_player_matches(BASE_DIR / "data" / "raw")
+        bundle = load_blend_bundle(BLEND_PATH)
+        models = bundle["model"]
+        feature_cols = bundle["feature_cols"]
+        blend_weights = (bundle.get("params") or {}).get("weights")
+        matrix = build_model_win_matrix(
+            matches,
+            models,
+            feature_cols,
+            players=players,
+            team_ids=teams,
+            blend_weights=blend_weights,
+        )
+        # If too many teams unresolved, fall back.
+        mapped = int((matrix.values != 0.5).sum() // 2)
+        if mapped < 40:
+            print(f"Pairwise sparse ({mapped} directed edges), falling back to power ranking")
+            return (
+                build_power_ranking_matrix(teams),
+                "power_ranking_bradley_terry",
+                "Power ranking",
+            )
+        return matrix, "blend_pairwise_v1", "Blend pairwise"
+    except Exception as exc:  # noqa: BLE001 — export must not die
+        print(f"Pairwise failed ({exc}); using power ranking")
+        return build_power_ranking_matrix(teams), "power_ranking_bradley_terry", "Power ranking"
 
 
 def load_model_metrics() -> dict:
@@ -81,6 +133,22 @@ def load_model_metrics() -> dict:
         metrics["player_coverage"] = summarize_player_coverage(matches, players)
     except Exception:
         metrics["player_coverage"] = None
+
+    if COMPARE_PATH.exists():
+        try:
+            with open(COMPARE_PATH, encoding="utf-8") as f:
+                cmp = json.load(f)
+            metrics["model_compare"] = cmp.get("models")
+            blend = (cmp.get("models") or {}).get("blend") or {}
+            if blend.get("leave_one_ti_avg_auc") is not None:
+                metrics["blend_leave_one_ti_avg_auc"] = round(
+                    float(blend["leave_one_ti_avg_auc"]), 3
+                )
+                metrics["blend_leave_one_ti_avg_logloss"] = round(
+                    float(blend["leave_one_ti_avg_logloss"]), 4
+                )
+        except Exception:
+            pass
     return metrics
 
 
@@ -128,6 +196,29 @@ def team_payload(team_id: str, row: pd.Series, win_matrix: pd.DataFrame, teams: 
     }
 
 
+def enrich_board_with_analysts(
+    board: dict[str, list[dict]],
+    slot_key: str,
+    team_entry: dict,
+) -> dict:
+    """Add analyst agreement chips to a board entry."""
+    tid = team_entry["id"]
+    n = analyst_agreement(tid, slot_key)
+    names = analyst_names_for_slot(tid, slot_key)
+    team_entry = dict(team_entry)
+    team_entry["analyst_agreement"] = n
+    team_entry["analyst_names"] = names
+    return team_entry
+
+
+def enrich_full_board(board: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    """Attach N/11 analyst metadata to every team pill."""
+    out: dict[str, list[dict]] = {}
+    for slot, entries in board.items():
+        out[slot] = [enrich_board_with_analysts(board, slot, e) for e in entries]
+    return out
+
+
 def build_matchups(win_matrix: pd.DataFrame, teams: list[str]) -> list[dict]:
     rows = []
     for i, a in enumerate(teams):
@@ -139,7 +230,7 @@ def build_matchups(win_matrix: pd.DataFrame, teams: list[str]) -> list[dict]:
 
 def main(n_simulations: int = 20000) -> Path:
     teams = get_team_ids()
-    win_matrix = build_win_matrix(teams)
+    win_matrix, model_key, model_label = build_export_win_matrix(teams)
     config = SwissConfig(**{
         k: v
         for k, v in SWISS_CONFIG.items()
@@ -147,8 +238,8 @@ def main(n_simulations: int = 20000) -> Path:
     })
     print(
         f"Simulating TI Swiss (first to {config.wins_to_qualify}, "
-        f"{config.n_rounds} rounds, ER→{config.elimination_round_advance}) "
-        f"× {n_simulations:,}..."
+        f"{config.n_rounds} rounds, ER->{config.elimination_round_advance}) "
+        f"x {n_simulations:,} [{model_label}]..."
     )
     results = simulate_swiss_stage(
         win_matrix, teams, config, n_simulations=n_simulations, rng_seed=42
@@ -158,7 +249,29 @@ def main(n_simulations: int = 20000) -> Path:
         team_payload(row["team"], row, win_matrix, teams) for _, row in results.iterrows()
     ]
     predictions.sort(key=lambda x: (-x["qualify_pct"], x["power_rank"]))
-    board = assign_fantasy_board(predictions)
+
+    qualify_board = assign_fantasy_board(predictions)
+    points_board = optimize_fantasy_board(predictions)
+    consensus_board = build_consensus_board(predictions)
+    fusion_weight, fusion_pts = tune_fusion_weight_loo(predictions)
+    fused_predictions = fuse_slot_probabilities(predictions, model_weight=fusion_weight)
+    fusion_board = optimize_fantasy_board(fused_predictions)
+
+    board = enrich_full_board(points_board)
+    boards_payload = {
+        "points_optimal": enrich_full_board(points_board),
+        "qualify_rank": enrich_full_board(qualify_board),
+        "analyst_consensus": enrich_full_board(consensus_board),
+        "fusion": enrich_full_board(fusion_board),
+    }
+    board_compare = compare_board_strategies(
+        predictions,
+        extra_boards={
+            "analyst_consensus": consensus_board,
+            "fusion": fusion_board,
+        },
+    )
+    analyst_meta = consensus_summary(predictions)
 
     # Sanity: capacities
     for key, meta in FANTASY_BOARD_SLOTS.items():
@@ -166,23 +279,40 @@ def main(n_simulations: int = 20000) -> Path:
         if got != meta["capacity"]:
             print(f"WARNING: board[{key}] has {got}, expected {meta['capacity']}")
 
+    if model_key.startswith("blend"):
+        disclaimer = (
+            "Доска Swiss: Monte Carlo на pairwise blend (XGB+CatBoost) "
+            "с team Elo/form + snapshot player/chemistry. "
+            "Слоты компендиума подобраны под максимум ожидаемых очков Valve "
+            "(не просто топ по шансу пройти)."
+        )
+    else:
+        disclaimer = (
+            "Доска Swiss построена на power ranking и Monte Carlo "
+            "(Swiss до 4 побед/поражений + Elimination Round)."
+        )
+
     payload = {
         "meta": {
             "title": "TI 2026 Swiss Predictions",
             "subtitle": "Open-source group-stage forecast",
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "model": "power_ranking_bradley_terry",
-            "model_label": "Power ranking",
-            "disclaimer": (
-                "Доска Swiss построена на power ranking и Monte Carlo "
-                "(Swiss до 4 побед/поражений + Elimination Round). "
-                "XGBoost (team+player) обучен отдельно; парные прогнозы из модели пока не подключены."
-            ),
+            "model": model_key,
+            "model_label": model_label,
+            "disclaimer": disclaimer,
             "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
             "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
             "version": "0.2.0-prod",
+            "board_strategy": "points_optimal",
+            "expected_compendium_points": board_compare["points_optimal"]["expected_points"],
+            "expected_correct_slots": board_compare["points_optimal"]["expected_correct"],
+            "board_compare": board_compare,
+            "fusion_model_weight": fusion_weight,
+            "fusion_expected_points": board_compare.get("fusion", {}).get("expected_points"),
         },
+        "analyst": analyst_meta,
+        "boards": boards_payload,
         "model_metrics": load_model_metrics(),
         "recent_results": TI2026_RECENT_RESULTS,
         "board_meta": FANTASY_BOARD_SLOTS,
@@ -213,6 +343,8 @@ def main(n_simulations: int = 20000) -> Path:
         )
 
     print(f"Wrote {out}")
+    print(f"\nCompendium E[points]: {board_compare['points_optimal']['expected_points']:.0f} "
+          f"(qualify-rank: {board_compare['qualify_rank']['expected_points']:.0f})")
     print("Fantasy board:")
     for key, meta in FANTASY_BOARD_SLOTS.items():
         names = ", ".join(e["name"] for e in board[key])

@@ -1,4 +1,6 @@
 const DATA_URL = "data/predictions.json";
+const BOARD_STORAGE_KEY = "ti2026_board_strategy";
+const ANALYST_THRESHOLD = 5;
 
 const BOARD_COLUMNS = [
   { key: "undefeated", title: "4–0 · Undefeated", tone: "ok" },
@@ -7,6 +9,26 @@ const BOARD_COLUMNS = [
   { key: "eliminate", title: "Выбывание · Out", tone: "warn" },
   { key: "one_win", title: "1–4 · One win", tone: "bad" },
   { key: "winless", title: "0–4 · Winless", tone: "bad" },
+];
+
+const VALVE_POINTS_TABLE = [
+  [0, 0],
+  [1, 30],
+  [2, 60],
+  [3, 120],
+  [4, 360],
+  [5, 720],
+  [6, 1200],
+  [7, 1800],
+  [8, 2520],
+  [9, 3360],
+  [10, 4320],
+  [11, 5400],
+  [12, 6600],
+  [13, 7920],
+  [14, 9360],
+  [15, 10920],
+  [16, 12000],
 ];
 
 /** @type {any} */
@@ -22,12 +44,48 @@ function fmtPct(v) {
   return `${Number(v).toFixed(1)}%`;
 }
 
+function valvePointsTooltip() {
+  const rows = VALVE_POINTS_TABLE.map(([k, pts]) => `${k}/16 → ${pts.toLocaleString("ru-RU")}`);
+  return `Очки Valve за точные слоты:\n${rows.join("\n")}`;
+}
+
+function getBoardStrategy() {
+  const sel = document.getElementById("board-strategy");
+  return sel?.value || localStorage.getItem(BOARD_STORAGE_KEY) || "points_optimal";
+}
+
+function activeBoard(data) {
+  const strategy = getBoardStrategy();
+  if (data.boards && data.boards[strategy]) return data.boards[strategy];
+  return data.board;
+}
+
 function renderHero(data) {
   const meta = data.meta;
   document.getElementById("disclaimer-text").textContent = meta.disclaimer;
+  const strategy = getBoardStrategy();
+  const compare = meta.board_compare || {};
+  const stratPts = compare[strategy]?.expected_points;
+  const ptsVal = stratPts ?? meta.expected_compendium_points;
+  const pts =
+    ptsVal != null
+      ? `<span class="chip" title="${valvePointsTooltip()}">E[очки] <strong>${Math.round(ptsVal).toLocaleString("ru-RU")}</strong></span>`
+      : "";
+  const analystPts = data.analyst?.expected_points;
+  const analystChip =
+    analystPts != null
+      ? `<span class="chip">Консенсус <strong>${Math.round(analystPts).toLocaleString("ru-RU")}</strong></span>`
+      : "";
+  const fusion =
+    meta.fusion_expected_points != null
+      ? `<span class="chip">Fusion <strong>${Math.round(meta.fusion_expected_points).toLocaleString("ru-RU")}</strong></span>`
+      : "";
   document.getElementById("hero-meta").innerHTML = `
     <span class="chip"><strong>${meta.model_label}</strong></span>
     <span class="chip">Симуляций <strong>${meta.n_simulations.toLocaleString("ru-RU")}</strong></span>
+    ${pts}
+    ${analystChip}
+    ${fusion}
     <span class="chip">${meta.format}</span>
     <span class="chip">v${meta.version}</span>
   `;
@@ -37,20 +95,29 @@ function renderHero(data) {
 
 function renderBoard(data) {
   const root = document.getElementById("swiss-board");
+  const board = activeBoard(data);
+  const nAnalysts = data.analyst?.n_analysts || 11;
   root.innerHTML = BOARD_COLUMNS.map((col) => {
-    const teams = data.board[col.key] || [];
+    const teams = board[col.key] || [];
     const pills = teams.length
       ? teams
-          .map(
-            (t) => `
-          <div class="team-pill" title="${t.name}">
+          .map((t) => {
+            const agree = t.analyst_agreement ?? 0;
+            const names = (t.analyst_names || []).join(", ");
+            const chip =
+              agree >= ANALYST_THRESHOLD
+                ? `<span class="chip mini" title="${names}">${agree}/${nAnalysts}</span>`
+                : "";
+            const slotPct = t.slot_pct ?? 0;
+            return `
+          <div class="team-pill" title="${t.name}${names ? " · " + names : ""}">
             <div>
-              <div class="name">${t.name || t.short}</div>
-              <div class="meta">${t.record} · P(слот) ${fmtPct(t.slot_pct ?? 0)}</div>
+              <div class="name">${t.name || t.short} ${chip}</div>
+              <div class="meta">${t.record} · P(слот) ${fmtPct(slotPct)}</div>
             </div>
             <div class="prob">${fmtPct(t.qualify_pct)}</div>
-          </div>`
-          )
+          </div>`;
+          })
           .join("")
       : `<p class="meta" style="color:var(--muted);margin:0;font-size:0.85rem">Пока пусто</p>`;
     return `
@@ -168,16 +235,23 @@ function renderMetrics(data) {
     cov && cov.coverage != null
       ? `${Math.round(cov.coverage * 100)}%`
       : "—";
+  const blendAuc = m.blend_leave_one_ti_avg_auc;
+  const compare = data.meta?.board_compare || {};
   const cards = [
     {
-      label: "Walk-forward AUC",
-      value: m.walk_forward_avg_auc ?? "—",
-      hint: "XGBoost team+player",
+      label: "Leave-One-TI AUC",
+      value: blendAuc ?? m.leave_one_ti_avg_auc ?? "—",
+      hint: blendAuc != null ? "Blend XGB+CatBoost" : "XGBoost team+player",
     },
     {
-      label: "Leave-One-TI AUC",
-      value: m.leave_one_ti_avg_auc ?? "—",
-      hint: "Среднее по прошлым TI",
+      label: "E[очки] model",
+      value: compare.points_optimal?.expected_points?.toFixed(0) ?? "—",
+      hint: "Points-optimal board",
+    },
+    {
+      label: "E[очки] consensus",
+      value: data.analyst?.expected_points?.toFixed(0) ?? compare.analyst_consensus?.expected_points?.toFixed(0) ?? "—",
+      hint: `Sports.ru ${data.analyst?.n_analysts || 11} аналитиков`,
     },
     {
       label: "Player coverage",
@@ -185,11 +259,6 @@ function renderMetrics(data) {
       hint: cov
         ? `${cov.n_matches_with_players || 0} / ${cov.n_matches || "?"} матчей`
         : "OpenDota details",
-    },
-    {
-      label: "UI source",
-      value: "Power ranking",
-      hint: data.meta.model_label || "Swiss Monte Carlo",
     },
   ];
   document.getElementById("metrics-grid").innerHTML = cards
@@ -209,6 +278,18 @@ function bind(data) {
   document.getElementById("search").addEventListener("input", () => renderStandings(data));
   document.getElementById("team-a").addEventListener("change", () => renderMatchup(data));
   document.getElementById("team-b").addEventListener("change", () => renderMatchup(data));
+  const boardSel = document.getElementById("board-strategy");
+  if (boardSel) {
+    const saved = localStorage.getItem(BOARD_STORAGE_KEY);
+    if (saved && boardSel.querySelector(`option[value="${saved}"]`)) {
+      boardSel.value = saved;
+    }
+    boardSel.addEventListener("change", () => {
+      localStorage.setItem(BOARD_STORAGE_KEY, boardSel.value);
+      renderHero(data);
+      renderBoard(data);
+    });
+  }
 }
 
 async function main() {

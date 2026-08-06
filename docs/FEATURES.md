@@ -51,6 +51,42 @@
 
 `w = 0.5 ** (age_days / 90) * tier_weight`, затем нормализация среднего к 1.
 
+## Модели
+
+Одинаковая матрица признаков и валидация (walk-forward + Leave-One-TI-Out):
+
+- `scripts/train.py` — XGBoost
+- `scripts/train_compare.py` — XGBoost + CatBoost + LOO-tuned blend (`src/models/ensemble.py`)
+- Isotonic calibration на pooled LOO — offline eval в `train_compare.py` (не в production joblib)
+
+## Pairwise Swiss UI
+
+`src/ti2026/pairwise.py` — матрица P(win) 16×16 из blend на team + player + chemistry snapshot; `simulate_swiss_stage` → P(слот).
+
+## Compendium scoring
+
+`src/ti2026/compendium_scoring.py` — таблица Valve, `optimize_fantasy_board()` (greedy + swap hill-climb), `compare_board_strategies()`.
+
+## Analyst consensus
+
+`docs/data/analyst_picks.json` — 11 сеток Sports.ru; `src/ti2026/analyst_consensus.py` — majority vote, E[очки] консенсуса, agreement N/11.
+
+## Fusion (model + analyst prior)
+
+`src/ti2026/fusion.py` — взвешенная смесь P(slot) модели и голосов аналитиков для MC Swiss.
+
+## Chemistry / co-play
+
+Строятся по составам из match details **до** исхода матча (`src/features/chemistry_features.py`):
+
+| Признак | Смысл |
+|---|---|
+| `r_chem_mean` / `d_*` / `diff_*` | Среднее число совместных карт по парам в пятёрке |
+| `r_chem_min` / `d_*` / `diff_*` | Самая «холодная» пара (слабое звено) |
+| `r_chem_90d` / `d_*` / `diff_*` | То же mean, только пары с общим матчем ≤90 дней |
+| `r_roster_jaccard` / `d_*` / `diff_*` | Непрерывность состава vs прошлый матч того же `team_id` |
+| `has_chemistry` | Есть lineup details |
+
 ## Дальше
 
-Сыгранность (co-play), draft, patch embeddings — отдельные этапы.
+Draft / patch embeddings, playoff bracket, live pipeline.

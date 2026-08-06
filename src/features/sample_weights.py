@@ -42,6 +42,8 @@ def compute_sample_weights(
     time_w = exponential_time_weights(df["start_time"], ref, half_life_days)
     tier_w = df[tier_col].to_numpy(dtype=float) if tier_col in df.columns else np.ones(len(df))
     weights = time_w * tier_w
+    weights = np.nan_to_num(weights, nan=1.0, posinf=1.0, neginf=1e-6)
+    weights = np.maximum(weights, 1e-6)
     # Normalize mean to 1.0 so learning rate scale stays stable.
     mean_w = weights.mean()
     if mean_w > 0:

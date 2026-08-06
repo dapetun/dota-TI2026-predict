@@ -54,7 +54,7 @@ TI2026_TEAMS = {
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["watson", "CHIRA_JUNIOR", "DM", "Saksa", "Malady"],
-        "aliases": ["Team Yandex", "Yandex"],
+        "aliases": ["Team Yandex", "Yandex", "Virtus.pro", "Virtus Pro", "VP"],
     },
     "Spirit": {
         "full_name": "Team Spirit",

@@ -6,13 +6,15 @@
 
 | Реализовано | В планах |
 |---|---|
-| ETL OpenDota matchlists + match details | Полное покрытие всех details |
-| Team Elo / form / H2H + player rolling stats | Сыгранность (co-play) |
-| Walk-forward + Leave-One-TI-Out | Парные прогнозы XGBoost в UI |
-| Статичный UI (GitHub Pages) | Draft / hero embeddings |
+| ETL OpenDota matchlists + match details (100% coverage) | Playoff bracket sim |
+| Team Elo / form / H2H + player + chemistry (63 feat) | Draft / hero embeddings |
+| XGBoost + CatBoost + LOO-tuned blend | Live auto-retrain |
+| Blend pairwise → Swiss Monte Carlo UI | Crowd board |
+| Points-optimal compendium board + analyst consensus | |
+| Статичный UI (GitHub Pages) | |
 
-Текущая модель: **XGBoost** (team + player признаки).  
-Разработка ведётся в ветке `prod`, стабильное — в `main`.
+Текущая модель: **blend pairwise** (XGB 0.25 + CatBoost 0.75, isotonic calibration).  
+Разработка в ветке `prod`, стабильное — в `main`.
 
 ## Веб-интерфейс
 
@@ -30,6 +32,8 @@ python -m http.server 8080
 
 > Через `file://` не работает: браузер блокирует `fetch` к JSON.
 
+UI: Swiss-доска (переключатель model / qualify-rank / analyst consensus), E[очки] компендиума, chip «N/11» по инфлюенсерам Sports.ru.
+
 ## Обучение модели
 
 ```bash
@@ -42,10 +46,15 @@ python scripts/download_data.py --list-only
 
 # Догрузить детали матчей (игроки), resume-friendly:
 python scripts/download_details.py
-# или ограничить объём: python scripts/download_details.py --max 300
 
 # ETL → features → XGBoost → метрики
 python scripts/train.py
+
+# XGB + CatBoost + blend + сравнение метрик
+python scripts/train_compare.py
+
+# Экспорт JSON для UI
+python scripts/export_web_data.py
 
 # Тесты
 pytest -q
@@ -55,9 +64,9 @@ pytest -q
 
 1. Списки матчей крупных турниров (TI10–TI14 + majors 2026).
 2. Словарь команд (`team_id_map.json`).
-3. Ростеры TI 2026 — `src/ti2026/teams.py`.
-4. Признаки матча — Elo до игры, форма, H2H, вес турнира (без утечки будущего).
-5. Детали игроков пока покрывают лишь часть матчей.
+3. Ростеры TI 2026 — `src/ti2026/teams.py`, `data/ti2026_rosters.json`.
+4. Признаки матча — Elo, форма, H2H, player rolling, chemistry (без утечки).
+5. Analyst picks — `docs/data/analyst_picks.json` (Sports.ru).
 
 ## Архитектура
 
@@ -71,8 +80,8 @@ src/
   models/
   evaluation/
   simulation/
-  ti2026/
-scripts/train.py
+  ti2026/         ← pairwise, compendium, analyst consensus, fusion
+scripts/train_compare.py
 scripts/export_web_data.py
 ```
 
@@ -80,6 +89,7 @@ scripts/export_web_data.py
 
 - **Walk-forward** — расширяющееся временное окно.
 - **Leave-One-TI-Out** — обучение на матчах до TI_k, тест на TI_k.
+- Blend weights подбираются по LOO log-loss; isotonic calibration на pooled LOO.
 
 Веса: `exp(-age / half_life_90d) * tier_weight`.
 

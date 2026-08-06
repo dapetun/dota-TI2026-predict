@@ -1,8 +1,7 @@
-"""XGBoost training with temporal and Leave-One-TI-Out validation."""
+"""CatBoost training with the same temporal validation as XGBoost."""
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -10,13 +9,11 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-import xgboost as xgb
-from sklearn.calibration import CalibratedClassifierCV
+from catboost import CatBoostClassifier
 
 from src.features.match_features import FEATURE_COLUMNS
 from src.features.sample_weights import compute_sample_weights
 from src.models.validation import (
-    FoldResult,
     TrainResult,
     evaluate_folds,
     leave_one_ti_splits,
@@ -24,69 +21,52 @@ from src.models.validation import (
     walk_forward_splits,
 )
 
-DEFAULT_XGB_PARAMS: dict[str, Any] = {
-    "objective": "binary:logistic",
-    "eval_metric": "logloss",
-    "n_estimators": 300,
+DEFAULT_CATBOOST_PARAMS: dict[str, Any] = {
+    "iterations": 300,
     "learning_rate": 0.05,
-    "max_depth": 5,
-    "min_child_weight": 5,
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
-    "random_state": 42,
-    "n_jobs": -1,
+    "depth": 5,
+    "l2_leaf_reg": 3.0,
+    "loss_function": "Logloss",
+    "random_seed": 42,
+    "verbose": False,
+    "allow_writing_files": False,
 }
 
 
-def fit_xgboost(
+def fit_catboost(
     X_train: pd.DataFrame,
     y_train: np.ndarray,
     sample_weight: np.ndarray | None,
     params: dict[str, Any] | None = None,
-    calibrate: bool = False,
-) -> Any:
-    """Fit XGBClassifier, optionally with isotonic calibration."""
-    params = {**DEFAULT_XGB_PARAMS, **(params or {})}
-    model = xgb.XGBClassifier(**params)
-    model.fit(X_train, y_train, sample_weight=sample_weight)
-    if calibrate and len(X_train) >= 100:
-        calibrated = CalibratedClassifierCV(model, method="isotonic", cv=3)
-        calibrated.fit(X_train, y_train, sample_weight=sample_weight)
-        return calibrated
+) -> CatBoostClassifier:
+    """Fit CatBoostClassifier with optional sample weights."""
+    params = {**DEFAULT_CATBOOST_PARAMS, **(params or {})}
+    model = CatBoostClassifier(**params)
+    fit_kwargs: dict[str, Any] = {}
+    if sample_weight is not None:
+        fit_kwargs["sample_weight"] = sample_weight
+    model.fit(X_train, y_train, **fit_kwargs)
     return model
 
 
-def _importance_from_model(model: Any, feature_cols: list[str]) -> dict[str, float]:
-    base = model
-    if hasattr(model, "calibrated_classifiers_"):
-        try:
-            base = model.calibrated_classifiers_[0].estimator
-        except Exception:  # noqa: BLE001
-            base = model
-    if not hasattr(base, "feature_importances_"):
-        return {}
+def _importance_from_model(model: CatBoostClassifier, feature_cols: list[str]) -> dict[str, float]:
+    raw = model.get_feature_importance()
     return {
         c: float(v)
-        for c, v in sorted(
-            zip(feature_cols, base.feature_importances_),
-            key=lambda x: -x[1],
-        )
+        for c, v in sorted(zip(feature_cols, raw), key=lambda x: -x[1])
     }
 
 
-def train_xgboost_pipeline(
+def train_catboost_pipeline(
     features_df: pd.DataFrame,
     feature_cols: list[str] | None = None,
     params: dict[str, Any] | None = None,
     half_life_days: float = 90.0,
     n_walk_folds: int = 5,
-    calibrate_final: bool = True,
 ) -> TrainResult:
-    """Train XGBoost with walk-forward + Leave-One-TI-Out, then fit final model."""
+    """Train CatBoost with walk-forward + Leave-One-TI-Out, then fit final model."""
     feature_cols = feature_cols or FEATURE_COLUMNS
-    params = {**DEFAULT_XGB_PARAMS, **(params or {})}
+    params = {**DEFAULT_CATBOOST_PARAMS, **(params or {})}
 
     df = features_df.sort_values("start_time").reset_index(drop=True)
     missing = [c for c in feature_cols if c not in df.columns]
@@ -94,7 +74,7 @@ def train_xgboost_pipeline(
         raise ValueError(f"Missing feature columns: {missing}")
 
     def fit_fn(X, y, w):
-        return fit_xgboost(X, y, w, params=params, calibrate=False)
+        return fit_catboost(X, y, w, params=params)
 
     wf_raw = walk_forward_splits(df, n_splits=n_walk_folds)
     wf_folds = [(i + 1, tr, te) for i, (tr, te) in enumerate(wf_raw)]
@@ -114,7 +94,7 @@ def train_xgboost_pipeline(
         reference_time=float(df["start_time"].max()),
         half_life_days=half_life_days,
     )
-    final_model = fit_xgboost(X, y, weights, params=params, calibrate=calibrate_final)
+    final_model = fit_catboost(X, y, weights, params=params)
 
     return TrainResult(
         model=final_model,
@@ -123,16 +103,16 @@ def train_xgboost_pipeline(
         leave_one_ti=loo_results,
         feature_importance=_importance_from_model(final_model, feature_cols),
         params=params,
-        model_name="xgboost",
+        model_name="catboost",
     )
 
 
-def save_train_result(
+def save_catboost_result(
     result: TrainResult,
     output_dir: str | Path = "outputs",
-    stem: str = "xgb_v1",
+    stem: str = "catboost_v1",
 ) -> Path:
-    """Persist model and metrics JSON."""
+    """Persist CatBoost model and metrics JSON."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     joblib.dump(
@@ -153,6 +133,8 @@ def save_train_result(
     }
     report_path = out / f"{stem}_metrics.json"
     with open(report_path, "w", encoding="utf-8") as f:
+        import json
+
         json.dump(report, f, indent=2)
     return report_path
 

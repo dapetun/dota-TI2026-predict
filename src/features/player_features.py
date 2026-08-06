@@ -223,6 +223,67 @@ def build_player_match_features(
     return pd.DataFrame(rows)
 
 
+def replay_player_states(
+    matches: pd.DataFrame,
+    players: pd.DataFrame,
+) -> dict[int, _PlayerState]:
+    """Replay match history and return final per-account rolling state."""
+    states: dict[int, _PlayerState] = defaultdict(_PlayerState.empty)
+    if matches.empty or players is None or players.empty:
+        return states
+
+    by_match: dict[int, pd.DataFrame] = {}
+    for mid, group in players.groupby("match_id"):
+        by_match[int(mid)] = group
+
+    for _, m in matches.sort_values("start_time").iterrows():
+        group = by_match.get(int(m["match_id"]))
+        if group is None or group.empty:
+            continue
+        for _, prow in group.iterrows():
+            aid = int(prow["account_id"])
+            _append_player_result(states[aid], prow)
+    return states
+
+
+def compose_player_pair_features(
+    radiant_ids: list[int],
+    dire_ids: list[int],
+    states: dict[int, _PlayerState],
+) -> dict[str, float]:
+    """Build PLAYER_FEATURE_COLUMNS for a hypothetical matchup."""
+    r_vec = _team_player_vector(radiant_ids, states)
+    d_vec = _team_player_vector(dire_ids, states)
+    has = bool(radiant_ids and dire_ids)
+    return {
+        "r_pl_kda": r_vec["pl_kda"],
+        "d_pl_kda": d_vec["pl_kda"],
+        "diff_pl_kda": r_vec["pl_kda"] - d_vec["pl_kda"],
+        "r_pl_gpm": r_vec["pl_gpm"],
+        "d_pl_gpm": d_vec["pl_gpm"],
+        "diff_pl_gpm": r_vec["pl_gpm"] - d_vec["pl_gpm"],
+        "r_pl_xpm": r_vec["pl_xpm"],
+        "d_pl_xpm": d_vec["pl_xpm"],
+        "diff_pl_xpm": r_vec["pl_xpm"] - d_vec["pl_xpm"],
+        "r_pl_hdpm": r_vec["pl_hdpm"],
+        "d_pl_hdpm": d_vec["pl_hdpm"],
+        "diff_pl_hdpm": r_vec["pl_hdpm"] - d_vec["pl_hdpm"],
+        "r_pl_tdpm": r_vec["pl_tdpm"],
+        "d_pl_tdpm": d_vec["pl_tdpm"],
+        "diff_pl_tdpm": r_vec["pl_tdpm"] - d_vec["pl_tdpm"],
+        "r_pl_wr": r_vec["pl_wr"],
+        "d_pl_wr": d_vec["pl_wr"],
+        "diff_pl_wr": r_vec["pl_wr"] - d_vec["pl_wr"],
+        "r_pl_games": r_vec["pl_games"],
+        "d_pl_games": d_vec["pl_games"],
+        "diff_pl_games": r_vec["pl_games"] - d_vec["pl_games"],
+        "r_pl_lan_wr": r_vec["pl_lan_wr"],
+        "d_pl_lan_wr": d_vec["pl_lan_wr"],
+        "diff_pl_lan_wr": r_vec["pl_lan_wr"] - d_vec["pl_lan_wr"],
+        "has_player_stats": 1.0 if has else 0.0,
+    }
+
+
 def merge_team_and_player_features(
     team_features: pd.DataFrame,
     player_features: pd.DataFrame,

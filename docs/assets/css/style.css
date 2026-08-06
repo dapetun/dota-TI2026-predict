@@ -170,6 +170,12 @@ body {
   color: var(--muted);
 }
 .chip strong { color: var(--text); font-weight: 600; }
+.chip.mini {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+}
 
 .hero-card {
   background: linear-gradient(180deg, rgba(226, 179, 87, 0.12), rgba(20, 25, 31, 0.9));
