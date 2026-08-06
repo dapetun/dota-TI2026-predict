@@ -152,14 +152,22 @@ function renderStandings(data) {
   const tbody = document.querySelector("#standings-table tbody");
   tbody.innerHTML = teams
     .map((t, i) => {
+      const strength =
+        t.strength_label ||
+        (t.strength_mu != null
+          ? `${Math.round(t.strength_mu)} ± ${Math.round(t.strength_sigma || 0)}`
+          : "—");
+      const home =
+        t.home_lan_elo > 0 ? ` · home +${t.home_lan_elo}` : "";
       return `
       <tr>
         <td>${i + 1}</td>
         <td class="team-cell">
           ${t.name}
-          <span class="sub">${t.source} · rank ${t.power_rank}</span>
+          <span class="sub">${t.source} · rank ${t.power_rank}${home}</span>
         </td>
         <td>${t.region}</td>
+        <td class="strength-cell" title="Elo shrunk ± combined σ">${strength}</td>
         <td>
           <div class="bar">
             <span>${fmtPct(t.qualify_pct)}</span>
@@ -177,6 +185,38 @@ function renderStandings(data) {
       </tr>`;
     })
     .join("");
+}
+
+function heatColor(pct) {
+  const v = Math.max(0, Math.min(100, Number(pct) || 0));
+  const alpha = 0.08 + (v / 100) * 0.55;
+  return `rgba(226, 179, 87, ${alpha.toFixed(3)})`;
+}
+
+function renderHeatmap(data) {
+  const root = document.getElementById("slot-heatmap");
+  if (!root) return;
+  const hm = data.slot_heatmap;
+  if (!hm || !hm.matrix) {
+    root.innerHTML = "<tbody><tr><td>Нет данных heatmap</td></tr></tbody>";
+    return;
+  }
+  const head = `<thead><tr><th>Команда</th>${hm.slots
+    .map((s) => `<th>${s}</th>`)
+    .join("")}</tr></thead>`;
+  const body = hm.matrix
+    .map((row, i) => {
+      const team = hm.teams[i];
+      const cells = row
+        .map(
+          (v) =>
+            `<td style="background:${heatColor(v)}" title="${team.name} · ${v}%">${Number(v).toFixed(1)}</td>`
+        )
+        .join("");
+      return `<tr><th scope="row">${team.short || team.name}</th>${cells}</tr>`;
+    })
+    .join("");
+  root.innerHTML = `${head}<tbody>${body}</tbody>`;
 }
 
 function fillMatchupSelects(data) {
@@ -230,6 +270,11 @@ function renderMatchup(data) {
 
 function renderMetrics(data) {
   const m = data.model_metrics || {};
+  const meta = data.meta || {};
+  const meth = document.getElementById("methodology-text");
+  if (meth && meta.methodology) {
+    meth.textContent = meta.methodology;
+  }
   const cov = m.player_coverage;
   const covLabel =
     cov && cov.coverage != null
@@ -244,14 +289,17 @@ function renderMetrics(data) {
       hint: blendAuc != null ? "Blend XGB+CatBoost" : "XGBoost team+player",
     },
     {
+      label: "Корпус",
+      value:
+        meta.n_maps != null
+          ? `${meta.n_maps}`
+          : cov?.n_matches ?? "—",
+      hint: meta.n_leagues != null ? `${meta.n_leagues} лиг` : "maps",
+    },
+    {
       label: "E[очки] model",
       value: compare.points_optimal?.expected_points?.toFixed(0) ?? "—",
       hint: "Points-optimal board",
-    },
-    {
-      label: "E[очки] consensus",
-      value: data.analyst?.expected_points?.toFixed(0) ?? compare.analyst_consensus?.expected_points?.toFixed(0) ?? "—",
-      hint: `Sports.ru ${data.analyst?.n_analysts || 11} аналитиков`,
     },
     {
       label: "Player coverage",
@@ -299,6 +347,7 @@ async function main() {
     renderBoard(DATA);
     fillMatchupSelects(DATA);
     renderStandings(DATA);
+    renderHeatmap(DATA);
     renderMatchup(DATA);
     renderMetrics(DATA);
     bind(DATA);

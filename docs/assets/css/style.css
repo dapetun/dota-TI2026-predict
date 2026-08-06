@@ -396,6 +396,37 @@ body {
 }
 .metric .hint { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
 
+.strength-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.heatmap-wrap { overflow-x: auto; }
+.heatmap {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.heatmap th, .heatmap td {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.heatmap thead th {
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-weight: 600;
+}
+.heatmap tbody th {
+  text-align: left;
+  background: rgba(20, 25, 31, 0.8);
+  font-weight: 600;
+}
+.heatmap td { transition: background 0.2s ease; }
+
 .site-footer {
   padding: 2.5rem 0 2rem;
   color: var(--muted);

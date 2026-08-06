@@ -1,65 +1,66 @@
-# Результаты обучения (team + player + chemistry)
+# Результаты обучения (v0.3)
 
-Дата: 2026-08-06 · ветка `prod` · coverage **100%** (2134/2134)  
-Признаков: **63** · details: 2234 cached  
-Pairwise Swiss: team + **player/chem snapshot** + `data/ti2026_rosters.json`  
-Blend: LOO weights + **isotonic calibration (LOO eval only, не в production bundle)**
+Дата: 2026-08-06 · ветка `prod` · meta **0.3.0-prod**  
+Официальные даты TI ([tirules](https://www.dota2.com/esports/ti15/tirules)): Group Stage **13–16 Aug** Online; Main Event **20–23 Aug** Shanghai.  
+Корпус: **65 лиг**, **8709** уникальных карт (было 12 / 2134)  
+Признаков: **88** · feature rows: **7285** (min_gp≥5)  
+Player/chem coverage: **24.5%** (2134/8709) — OpenDota `/matches/{id}` сейчас часто timeout;  
+докачка resume-friendly: `python scripts/download_details.py` (цель ≥80%).  
+Team stitch: **19** team_id remapped (Jaccard≥0.6)  
+Half-life: sample **210d** · form **~40d** · tier ti/major/qual/online  
+Blend: XGB **0.25** / CatBoost **0.75** · isotonic только offline LOO
 
 ## Сводка (Leave-One-TI / Walk-forward)
 
 | Модель | LOO AUC | LOO LL | WF AUC | WF LL |
 |---|---|---|---|---|
-| XGBoost | 0.594 | 0.869 | 0.568 | 0.846 |
-| CatBoost | 0.594 | 0.801 | 0.585 | 0.776 |
-| Blend (LOO-tuned) | **0.598** | **0.797** | 0.584 | **0.772** |
+| XGBoost | 0.585 | 0.767 | 0.622 | 0.720 |
+| CatBoost | 0.597 | 0.730 | 0.623 | 0.692 |
+| Blend (LOO-tuned) | **0.599** | **0.725** | **0.628** | **0.688** |
 
-Веса blend по LOO grid: **XGB 0.25 / CatBoost 0.75**. Isotonic на pooled LOO — только для offline-оценки (`train_compare`: `isotonic_loo_evaluated`); pairwise export без calibrator.
+vs v0.2 blend: LOO AUC 0.598→0.599 (плоско), LOO LL 0.797→**0.725**, WF AUC 0.584→**0.628**.
 
 ## Leave-One-TI (blend)
 
 | Held-out | n | LL | AUC |
 |---|---|---|---|
-| TI11 | 213 | 0.821 | 0.561 |
-| TI12 | 128 | 0.733 | 0.611 |
-| TI13 | 99 | 0.686 | **0.729** |
-| TI14 | 121 | 0.948 | **0.490** |
+| TI11 | 213 | 0.830 | 0.533 |
+| TI12 | 141 | 0.696 | 0.590 |
+| TI13 | 121 | 0.616 | **0.720** |
+| TI14 | 144 | 0.759 | **0.553** |
 
-### TI14 (слабый fold)
+### TI14
 
-- AUC ~0.49 — ниже случайного на hold-out; вероятные факторы: patch/meta drift 2024, разрыв составов vs TI-стиль данных, малый n=121.
-- Эксперимент **LAN-only chemistry** (`build_chemistry_features(..., lan_only=True)`) — для сравнения в `train_compare` (опционально).
-- Per-TI blend weights не внедрены: 4 TI — высокий риск overfit.
+AUC **0.553** (было ~0.490) — выше случайного; расширенный корпус majors/quals + uncertainty/chem 2.0 стабилизировали fold.
+
+## Топ-признаки (сигнал v0.3)
+
+CatBoost: `diff_opp_avg_elo`, `min_gp`, `chem_pair_wr`, `pl_uncertainty`, `roster_stability_60d`.  
+XGBoost: `diff_elo`, `elo_prob`, `diff_opp_avg_elo`, `pl_uncertainty`.
 
 ## UI
 
-http://localhost:8080 — Swiss на **blend pairwise**. Переключатель доски: points-optimal / qualify-rank / analyst consensus / fusion.  
-Hero: E[очки], консенсус Sports.ru, fusion. Chip **N/10** на карточках (≥5 аналитиков).
+http://localhost:8080 — Swiss на blend pairwise.  
+Сила **μ ± σ** (Elo shrink + Glicko RD) · home LAN +30 (CN) в meta, не в μ GS · heatmap 16×6 · fusion default model_weight≈0.65.
 
-## Компендиум: три стратегии + fusion
+## Ablation / заметки
 
-Battlepass.ru ([TI2026 predictions](https://battlepass.ru/ti2026/predictions)) — суперлинейная таблица Valve (16/16 → 12 000).
+- LOO AUC не упал >0.01 vs v0.2 при 4× корпусе; LL и WF AUC заметно лучше.
+- Player coverage низкая из‑за таймаутов OpenDota details; team Elo/Glicko уже на полном корпусе.
+- `lan_only_chemistry` — флаг в `train_compare(..., lan_only_chemistry=True)`.
+- Market prior — stub в `multisource.market_slot_prior_stub` (P2).
 
-| Стратегия | E[верных слотов] | E[очки Valve] |
-|---|---|---|
-| Qualify-rank | 7.40 | **2 305** |
-| Points-optimal (model) | 7.55 | **2 412** |
-| Analyst consensus (Sports.ru 10 сеток) | см. export | см. `predictions.json` |
-| Fusion model+analyst | см. export | см. `meta.fusion_expected_points` |
+## Компендиум (export 0.3.0-prod)
 
-Отличия model points-optimal vs qualify-rank: OG/HULIGANI (eliminate ↔ 1–4).
+| Стратегия | E[очки Valve] (approx) |
+|---|---|
+| Points-optimal | ~4080 |
+| Qualify-rank | ~4052 |
 
-### Расхождения model vs analyst consensus
-
-| Тема | Инфлюенсеры (консенсус) | Модель (points-optimal) |
-|---|---|---|
-| 4–0 | Vision (6/10) | Aurora |
-| 4–1 | Yandex + BetBoom | BetBoom + Vision |
-| Проход | Spirit, 1w, Liquid | Spirit, Falcons, LGD, Xtreme, 1w |
-| Выбывание | OG, LGD, Nigma | OG, Yandex, Liquid, Nigma, GamerLegion |
-| 0–4 | Resilience (7/10) | Vici |
+Сила в UI: `strength_mu ± strength_sigma`; heatmap в `slot_heatmap`.
 
 ## Дальше
 
-Playoff bracket, draft embeddings, live pipeline.
+Докачать details ≥80% coverage → retrain; playoff bracket; market prior.
 
-CLI: `train_compare.py` · `export_web_data.py` · `build_rosters.py`
+CLI: `discover_leagues.py` · `download_data.py` · `download_details.py` · `train_compare.py` · `export_web_data.py` · `build_rosters.py`

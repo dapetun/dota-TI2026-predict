@@ -4,7 +4,7 @@ TI group stage (compendium / prediction board):
 - Swiss: first to 4 wins OR 4 losses, max 5 rounds, Bo3 series.
 - After Swiss: 4-0 / 4-1 advance; 0-4 / 1-4 eliminated;
   remaining (typically 3-2 and 2-3) play Elimination Round.
-- ER: 5 of ~10 advance to playoffs.
+- ER: 3-2 choose among 2-3 (5 Bo3); winners advance (5 of 10).
 
 Fantasy board slots (16 teams):
   4-0 ×1 | 4-1 ×2 | advance ×5 | eliminate ×5 | 1-4 ×2 | 0-4 ×1
@@ -127,18 +127,61 @@ def simulate_swiss_round(
     return state
 
 
+def _team_strength(team: str, win_matrix: pd.DataFrame) -> float:
+    """Mean map-win probability vs other indexed opponents (MC ranking proxy)."""
+    if team not in win_matrix.index:
+        return 0.5
+    row = win_matrix.loc[team]
+    others = [c for c in win_matrix.columns if c != team]
+    if not others:
+        return 0.5
+    return float(row[others].mean())
+
+
 def simulate_elimination_round(
     candidates: List[str],
     win_matrix: pd.DataFrame,
     advance_n: int = 5,
     rng: np.random.Generator | None = None,
+    records: Dict[str, Tuple[int, int]] | None = None,
 ) -> List[str]:
-    """Single-elim style cut: keep winners until advance_n remain."""
+    """Elimination Round: ranked 3-2 teams each play a chosen 2-3 opponent.
+
+    Official TI rules: best 3-2 picks any remaining 2-3, then next-best, etc.
+    MC approximation: order 3-2 by strength; each picks the weakest remaining 2-3.
+    Winners advance (typically 5 of 10). Falls back to random pairing if records
+    are missing or the 3-2 / 2-3 split is incomplete.
+    """
     if rng is None:
         rng = np.random.default_rng(42)
+
+    if records is not None:
+        three_two = [t for t in candidates if records.get(t) == (3, 2)]
+        two_three = [t for t in candidates if records.get(t) == (2, 3)]
+        leftover = [
+            t for t in candidates if t not in three_two and t not in two_three
+        ]
+        if three_two and two_three and not leftover:
+            three_two = sorted(
+                three_two,
+                key=lambda t: _team_strength(t, win_matrix),
+                reverse=True,
+            )
+            remaining_23 = list(two_three)
+            winners: list[str] = []
+            for picker in three_two:
+                if not remaining_23:
+                    break
+                remaining_23.sort(key=lambda t: _team_strength(t, win_matrix))
+                opponent = remaining_23.pop(0)
+                winners.append(_series_winner(picker, opponent, win_matrix, rng))
+            # Extra 3-2 without a 2-3 foe (should not happen in standard 16-team Swiss).
+            for picker in three_two[len(winners) :]:
+                winners.append(picker)
+            return winners[:advance_n]
+
     remaining = list(candidates)
     rng.shuffle(remaining)
-
     while len(remaining) > advance_n:
         next_round: list[str] = []
         i = 0
@@ -150,7 +193,6 @@ def simulate_elimination_round(
             next_round.append(_series_winner(a, b, win_matrix, rng))
             i += 2
         remaining = next_round
-
     return remaining[:advance_n]
 
 
@@ -197,6 +239,7 @@ def simulate_swiss_stage(
                 win_matrix,
                 advance_n=config.elimination_round_advance,
                 rng=rng,
+                records=state.records,
             )
         ) if er_pool else set()
 

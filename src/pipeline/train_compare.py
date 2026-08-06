@@ -29,6 +29,9 @@ from src.features.chemistry_features import (
     build_chemistry_features,
     merge_chemistry_features,
 )
+from src.features.sample_weights import RATING_HALF_LIFE_DAYS
+from src.features.team_stitching import apply_team_stitch, build_team_stitch_map
+from src.ti2026.multisource import PATCH_741_START_TS
 from src.models.catboost_model import save_catboost_result, train_catboost_pipeline
 from src.models.ensemble import summarize_blend, train_blend_pipeline, tune_blend_weights_loo
 from src.models.validation import FoldResult, leave_one_ti_splits
@@ -52,10 +55,14 @@ def run_model_compare(
     processed_dir: str = "data/processed",
     features_dir: str = "data/features",
     output_dir: str = "outputs",
+    *,
+    stitch_teams: bool = True,
+    lan_only_chemistry: bool = False,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
 ) -> dict:
     """Train XGB + CatBoost + blend; write comparison metrics."""
     print("=" * 60)
-    print("TI 2026 — model compare (XGB / CatBoost / blend)")
+    print("TI 2026 — model compare (XGB / CatBoost / blend) v0.3")
     print("=" * 60)
 
     matches = load_raw_matchlists(raw_dir)
@@ -63,9 +70,16 @@ def run_model_compare(
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     if matches.empty:
         raise FileNotFoundError(f"No matchlists in {raw_dir}")
-    save_canonical_matches(matches, processed_dir)
 
     players = load_player_matches(raw_dir)
+    stitch_n = 0
+    if stitch_teams and not players.empty:
+        stitch = build_team_stitch_map(players, matches, threshold=0.6)
+        matches, players = apply_team_stitch(matches, stitch, players)
+        stitch_n = sum(1 for a, b in stitch.items() if a != b)
+        print(f"Team stitch: {stitch_n} team_ids remapped (Jaccard>=0.6)")
+
+    save_canonical_matches(matches, processed_dir)
     coverage = summarize_player_coverage(matches, players)
     print(json.dumps(coverage, indent=2))
     if not players.empty:
@@ -73,7 +87,7 @@ def run_model_compare(
 
     team_features = build_match_feature_matrix(matches, min_games=5)
     player_features = build_player_match_features(matches, players)
-    chemistry = build_chemistry_features(matches, players)
+    chemistry = build_chemistry_features(matches, players, lan_only=lan_only_chemistry)
     features = merge_team_and_player_features(team_features, player_features)
     features = merge_chemistry_features(features, chemistry)
     feature_cols = FEATURE_COLUMNS + PLAYER_FEATURE_COLUMNS + CHEMISTRY_FEATURE_COLUMNS
@@ -81,19 +95,29 @@ def run_model_compare(
     print(f"Features: {len(features)} rows, {len(feature_cols)} cols -> {feat_path}")
     print(f"Rows with player stats: {int(features['has_player_stats'].sum())}")
     print(f"Rows with chemistry: {int(features['has_chemistry'].sum())}")
+    print(f"Sample half-life: {half_life_days}d · patch_741_ts={PATCH_741_START_TS}")
 
     print("\n--- XGBoost ---")
-    xgb_result = train_xgboost_pipeline(features, feature_cols=feature_cols)
+    xgb_result = train_xgboost_pipeline(
+        features, feature_cols=feature_cols, half_life_days=half_life_days
+    )
     print(summarize_results(xgb_result))
     xgb_path = save_train_result(xgb_result, output_dir, stem="xgb_v1")
 
     print("\n--- CatBoost ---")
-    cat_result = train_catboost_pipeline(features, feature_cols=feature_cols)
+    cat_result = train_catboost_pipeline(
+        features, feature_cols=feature_cols, half_life_days=half_life_days
+    )
     print(summarize_results(cat_result))
     cat_path = save_catboost_result(cat_result, output_dir, stem="catboost_v1")
 
     print("\n--- Blend (LOO-tuned XGB + CatBoost) ---")
-    blend_result = train_blend_pipeline(features, feature_cols=feature_cols, calibrate=False)
+    blend_result = train_blend_pipeline(
+        features,
+        feature_cols=feature_cols,
+        calibrate=False,
+        half_life_days=half_life_days,
+    )
     print(summarize_blend(blend_result))
 
     # Isotonic on pooled LOO (metrics only; not saved to production bundle).
@@ -118,8 +142,15 @@ def run_model_compare(
     )
 
     comparison = {
+        "version": "0.3.0-prod",
         "player_coverage": coverage,
         "n_features_rows": len(features),
+        "n_feature_cols": len(feature_cols),
+        "n_leagues": summary.get("n_tournaments"),
+        "n_matches": summary.get("n_matches"),
+        "team_stitch_remaps": stitch_n,
+        "lan_only_chemistry": lan_only_chemistry,
+        "half_life_days": half_life_days,
         "models": {
             "xgboost": {
                 "walk_forward_avg_auc": _avg_auc(xgb_result.walk_forward),

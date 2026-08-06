@@ -23,7 +23,7 @@ class OpenDotaClient:
             time.sleep(self.rate_limit - elapsed)
 
         url = f"{self.BASE_URL}{endpoint}"
-        resp = self.session.get(url, params=params)
+        resp = self.session.get(url, params=params, timeout=45)
         self._last_request = time.time()
 
         if resp.status_code == 429:

@@ -160,6 +160,14 @@
 ## Не делать сразу
 
 - LightGBM без gain на LOO  
-- Draft embeddings до расширения корпуса  
+- Draft embeddings / полная draft-симуляция до расширения корпуса  
 - Слепое копирование доски battlepass  
 - Per-TI blend weights на 4 фолдах  
+
+---
+
+## Hero / draft слой (аддитивно, не блокер фазы A)
+
+Отдельный дизайн: **[HERO_DRAFT_PLAN.md](HERO_DRAFT_PLAN.md)**.
+
+Кратко: **hybrid** — soft prior по signature / player×hero pub WR (OpenDota) для Swiss сейчас; Monte Carlo драфта + matchups — позже (live / v0.4). Не скрейпить dota2protracker в MVP. Не блокирует расширение корпуса.

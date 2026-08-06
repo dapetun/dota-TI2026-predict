@@ -35,6 +35,10 @@ PLAYER_FEATURE_COLUMNS = [
     "d_pl_lan_wr",
     "diff_pl_lan_wr",
     "has_player_stats",
+    # v0.3
+    "r_pl_uncertainty",
+    "d_pl_uncertainty",
+    "diff_pl_uncertainty",
 ]
 
 
@@ -101,6 +105,7 @@ def _team_player_vector(
             "pl_wr": 0.5,
             "pl_games": 0.0,
             "pl_lan_wr": 0.5,
+            "pl_uncertainty": 1.0,
         }
 
     kdas, gpms, xpms, hdpms, tdpms, wrs, games, lan_wrs = [], [], [], [], [], [], [], []
@@ -115,6 +120,7 @@ def _team_player_vector(
         games.append(float(len(st.times)))
         lan_wrs.append(_lan_wr(st))
 
+    mean_games = float(np.mean(games))
     return {
         "pl_kda": float(np.mean(kdas)),
         "pl_gpm": float(np.mean(gpms)),
@@ -122,8 +128,9 @@ def _team_player_vector(
         "pl_hdpm": float(np.mean(hdpms)),
         "pl_tdpm": float(np.mean(tdpms)),
         "pl_wr": float(np.mean(wrs)),
-        "pl_games": float(np.mean(games)),
+        "pl_games": mean_games,
         "pl_lan_wr": float(np.mean(lan_wrs)),
+        "pl_uncertainty": float(1.0 / np.sqrt(mean_games + 1.0)),
     }
 
 
@@ -212,6 +219,9 @@ def build_player_match_features(
                 "d_pl_lan_wr": d_vec["pl_lan_wr"],
                 "diff_pl_lan_wr": r_vec["pl_lan_wr"] - d_vec["pl_lan_wr"],
                 "has_player_stats": 1 if has_stats else 0,
+                "r_pl_uncertainty": r_vec["pl_uncertainty"],
+                "d_pl_uncertainty": d_vec["pl_uncertainty"],
+                "diff_pl_uncertainty": r_vec["pl_uncertainty"] - d_vec["pl_uncertainty"],
             }
         )
 
@@ -281,6 +291,9 @@ def compose_player_pair_features(
         "d_pl_lan_wr": d_vec["pl_lan_wr"],
         "diff_pl_lan_wr": r_vec["pl_lan_wr"] - d_vec["pl_lan_wr"],
         "has_player_stats": 1.0 if has else 0.0,
+        "r_pl_uncertainty": r_vec["pl_uncertainty"],
+        "d_pl_uncertainty": d_vec["pl_uncertainty"],
+        "diff_pl_uncertainty": r_vec["pl_uncertainty"] - d_vec["pl_uncertainty"],
     }
 
 

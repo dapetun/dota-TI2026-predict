@@ -1,0 +1,659 @@
+{
+  "generated_at": "2026-08-06",
+  "source": "tournaments.py + download_data.py",
+  "n_leagues": 65,
+  "n_maps_sum": 9641,
+  "note": "Curated v0.3 registry; IDs from datdota/OpenDota. Deduped unique maps ~8709.",
+  "candidates": [
+    {
+      "key": "TI10_2021",
+      "league_id": 13256,
+      "name": "The International 2021",
+      "tier": "ti",
+      "tier_weight": 2.0,
+      "is_lan": true,
+      "n_matches": 487,
+      "included": true
+    },
+    {
+      "key": "TI11_2022",
+      "league_id": 14268,
+      "name": "The International 2022",
+      "tier": "ti",
+      "tier_weight": 2.0,
+      "is_lan": true,
+      "n_matches": 231,
+      "included": true
+    },
+    {
+      "key": "TI12_2023",
+      "league_id": 15728,
+      "name": "The International 2023",
+      "tier": "ti",
+      "tier_weight": 2.0,
+      "is_lan": true,
+      "n_matches": 151,
+      "included": true
+    },
+    {
+      "key": "TI13_2024",
+      "league_id": 16935,
+      "name": "The International 2024",
+      "tier": "ti",
+      "tier_weight": 2.0,
+      "is_lan": true,
+      "n_matches": 121,
+      "included": true
+    },
+    {
+      "key": "TI14_2025",
+      "league_id": 18324,
+      "name": "The International 2025",
+      "tier": "ti",
+      "tier_weight": 2.0,
+      "is_lan": true,
+      "n_matches": 144,
+      "included": true
+    },
+    {
+      "key": "Lima_Major_2023",
+      "league_id": 15089,
+      "name": "Lima Major 2023",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 195,
+      "included": true
+    },
+    {
+      "key": "Berlin_Major_2023",
+      "league_id": 15251,
+      "name": "ESL One Berlin Major 2023",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 191,
+      "included": true
+    },
+    {
+      "key": "Bali_Major_2023",
+      "league_id": 15438,
+      "name": "The Bali Major 2023",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 200,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S23",
+      "league_id": 16632,
+      "name": "DreamLeague S23",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 87,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S1",
+      "league_id": 16669,
+      "name": "PGL Wallachia S1",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 115,
+      "included": true
+    },
+    {
+      "key": "ESL_Birmingham_2024",
+      "league_id": 16518,
+      "name": "ESL One Birmingham 2024",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 94,
+      "included": true
+    },
+    {
+      "key": "Riyadh_Masters_2024",
+      "league_id": 16881,
+      "name": "Riyadh Masters 2024 (EWC)",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 222,
+      "included": true
+    },
+    {
+      "key": "Elite_League_S2",
+      "league_id": 16905,
+      "name": "Elite League S2",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": false,
+      "n_matches": 169,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S2",
+      "league_id": 17119,
+      "name": "PGL Wallachia S2",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 121,
+      "included": true
+    },
+    {
+      "key": "BetBoom_Dacha_Belgrade_2024",
+      "league_id": 17126,
+      "name": "BetBoom Dacha Belgrade 2024",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 95,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S24",
+      "league_id": 17272,
+      "name": "DreamLeague S24",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 196,
+      "included": true
+    },
+    {
+      "key": "BLAST_SLAM_I",
+      "league_id": 17414,
+      "name": "BLAST SLAM I",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 43,
+      "included": true
+    },
+    {
+      "key": "ESL_Bangkok_2024",
+      "league_id": 17509,
+      "name": "ESL One Bangkok 2024",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 88,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S25",
+      "league_id": 17765,
+      "name": "DreamLeague S25",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 196,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S3",
+      "league_id": 17891,
+      "name": "PGL Wallachia S3",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 112,
+      "included": true
+    },
+    {
+      "key": "ESL_Raleigh_2025",
+      "league_id": 17795,
+      "name": "ESL One Raleigh 2025",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 90,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S4",
+      "league_id": 18058,
+      "name": "PGL Wallachia S4",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 115,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S26",
+      "league_id": 18111,
+      "name": "DreamLeague S26",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 202,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S5",
+      "league_id": 18358,
+      "name": "PGL Wallachia S5",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 116,
+      "included": true
+    },
+    {
+      "key": "EWC_2025",
+      "league_id": 18375,
+      "name": "Esports World Cup 2025",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 89,
+      "included": true
+    },
+    {
+      "key": "Clavision_2025",
+      "league_id": 18359,
+      "name": "Clavision Masters 2025",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 85,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S6",
+      "league_id": 18920,
+      "name": "PGL Wallachia S6",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 118,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S27",
+      "league_id": 18988,
+      "name": "DreamLeague S27",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 206,
+      "included": true
+    },
+    {
+      "key": "BLAST_SLAM_VI",
+      "league_id": 19099,
+      "name": "BLAST SLAM VI",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 100,
+      "included": true
+    },
+    {
+      "key": "BLAST_SLAM_VII",
+      "league_id": 19101,
+      "name": "BLAST SLAM VII",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 102,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S28",
+      "league_id": 19269,
+      "name": "DreamLeague S28",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 195,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S7_2026",
+      "league_id": 19435,
+      "name": "PGL Wallachia S7 2026",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 124,
+      "included": true
+    },
+    {
+      "key": "PGL_Wallachia_S8",
+      "league_id": 19543,
+      "name": "PGL Wallachia S8",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 119,
+      "included": true
+    },
+    {
+      "key": "ESL_Birmingham_2026",
+      "league_id": 19422,
+      "name": "ESL One Birmingham 2026",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 142,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S29",
+      "league_id": 19696,
+      "name": "DreamLeague S29",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 185,
+      "included": true
+    },
+    {
+      "key": "EWC_2026",
+      "league_id": 19785,
+      "name": "Esports World Cup 2026",
+      "tier": "major",
+      "tier_weight": 1.5,
+      "is_lan": true,
+      "n_matches": 157,
+      "included": true
+    },
+    {
+      "key": "Elite_League_2024",
+      "league_id": 16483,
+      "name": "Elite League by FISSURE 2024",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 219,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Universe_Ep3",
+      "league_id": 16846,
+      "name": "FISSURE Universe Ep3",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 70,
+      "included": true
+    },
+    {
+      "key": "Clavision_S1_2024",
+      "league_id": 16901,
+      "name": "Clavision S1 Snow-Ruyi 2024",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 83,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Playground_1",
+      "league_id": 17588,
+      "name": "FISSURE PLAYGROUND 1",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 87,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Universe_Ep4",
+      "league_id": 17907,
+      "name": "FISSURE Universe Ep4",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 110,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Universe_Ep5",
+      "league_id": 18107,
+      "name": "FISSURE Universe Ep5",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 116,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Universe_Ep6",
+      "league_id": 18433,
+      "name": "FISSURE Universe Ep6",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 117,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Universe_Ep7",
+      "league_id": 18633,
+      "name": "FISSURE Universe Ep7",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 75,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Playground_2",
+      "league_id": 18863,
+      "name": "FISSURE PLAYGROUND 2",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 124,
+      "included": true
+    },
+    {
+      "key": "FISSURE_Universe_Ep8",
+      "league_id": 19239,
+      "name": "FISSURE Universe Ep8",
+      "tier": "online",
+      "tier_weight": 0.5,
+      "is_lan": false,
+      "n_matches": 96,
+      "included": true
+    },
+    {
+      "key": "TI13_WEU_Qual",
+      "league_id": 16842,
+      "name": "TI13 WEU Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 43,
+      "included": true
+    },
+    {
+      "key": "TI13_SEA_Qual",
+      "league_id": 16840,
+      "name": "TI13 SEA Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 37,
+      "included": true
+    },
+    {
+      "key": "TI13_SA_Qual",
+      "league_id": 16841,
+      "name": "TI13 SA Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 38,
+      "included": true
+    },
+    {
+      "key": "TI13_EEU_Qual",
+      "league_id": 16839,
+      "name": "TI13 EEU Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 42,
+      "included": true
+    },
+    {
+      "key": "TI13_CN_Qual",
+      "league_id": 16843,
+      "name": "TI13 CN Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 41,
+      "included": true
+    },
+    {
+      "key": "TI13_NA_Qual",
+      "league_id": 16844,
+      "name": "TI13 NA Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 31,
+      "included": true
+    },
+    {
+      "key": "TI14_WEU_Qual",
+      "league_id": 18309,
+      "name": "TI14 WEU Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 39,
+      "included": true
+    },
+    {
+      "key": "TI14_SEA_Qual",
+      "league_id": 18308,
+      "name": "TI14 SEA Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 43,
+      "included": true
+    },
+    {
+      "key": "TI14_NA_Qual",
+      "league_id": 18307,
+      "name": "TI14 NA Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 24,
+      "included": true
+    },
+    {
+      "key": "TI14_CN_Qual",
+      "league_id": 18306,
+      "name": "TI14 CN Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 31,
+      "included": true
+    },
+    {
+      "key": "TI14_SA_Qual",
+      "league_id": 18305,
+      "name": "TI14 SA Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 44,
+      "included": true
+    },
+    {
+      "key": "TI14_EEU_Qual",
+      "league_id": 18304,
+      "name": "TI14 EEU Qualifier",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 44,
+      "included": true
+    },
+    {
+      "key": "Riyadh_2024_Quals",
+      "league_id": 16740,
+      "name": "Riyadh Masters 2024 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 327,
+      "included": true
+    },
+    {
+      "key": "EWC_2025_Quals",
+      "league_id": 18210,
+      "name": "EWC 2025 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 278,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S25_Quals",
+      "league_id": 17628,
+      "name": "DreamLeague S25 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 454,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S26_Quals",
+      "league_id": 17874,
+      "name": "DreamLeague S26 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 427,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S27_Quals",
+      "league_id": 18629,
+      "name": "DreamLeague S27 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 432,
+      "included": true
+    },
+    {
+      "key": "DreamLeague_S28_Quals",
+      "league_id": 19089,
+      "name": "DreamLeague S28 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 379,
+      "included": true
+    },
+    {
+      "key": "ESL_Birmingham_2026_Quals",
+      "league_id": 19090,
+      "name": "ESL Birmingham 2026 Qualifiers",
+      "tier": "qual",
+      "tier_weight": 0.75,
+      "is_lan": false,
+      "n_matches": 387,
+      "included": true
+    }
+  ]
+}

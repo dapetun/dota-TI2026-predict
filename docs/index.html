@@ -26,6 +26,7 @@
     <nav class="nav">
       <a href="#board">Доска</a>
       <a href="#standings">Шансы</a>
+      <a href="#heatmap">Heatmap</a>
       <a href="#matchup">Матч</a>
       <a href="#model">Модель</a>
       <a class="nav-github" href="../" id="repo-link">Репозиторий</a>
@@ -91,6 +92,7 @@
               <th>#</th>
               <th>Команда</th>
               <th>Регион</th>
+              <th>Сила μ±σ</th>
               <th>Пройти</th>
               <th>Вылететь</th>
               <th>Ожид. побед</th>
@@ -102,10 +104,20 @@
       </div>
     </section>
 
+    <section class="section" id="heatmap">
+      <div class="section-head">
+        <h3>Slot heatmap</h3>
+        <p>Вероятности слотов компендиума 16×6 (в %).</p>
+      </div>
+      <div class="table-wrap heatmap-wrap">
+        <table class="heatmap" id="slot-heatmap"></table>
+      </div>
+    </section>
+
     <section class="section" id="matchup">
       <div class="section-head">
         <h3>Кто кого</h3>
-        <p>Парная вероятность победы в серии (Bradley–Terry от power ranking).</p>
+        <p>Парная вероятность победы (blend pairwise или power ranking).</p>
       </div>
       <div class="matchup">
         <div class="matchup-pick">
@@ -124,7 +136,7 @@
     <section class="section" id="model">
       <div class="section-head">
         <h3>Состояние модели</h3>
-        <p>XGBoost обучен на истории матчей; доска Swiss сейчас строится от power ranking.</p>
+        <p id="methodology-text">XGBoost + CatBoost blend; Leave-One-TI-Out; сила μ±σ.</p>
       </div>
       <div class="metrics" id="metrics-grid"></div>
     </section>

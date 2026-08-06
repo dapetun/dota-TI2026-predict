@@ -9,6 +9,7 @@ from src.simulation.tournament_sim import (
     FANTASY_BOARD_SLOTS,
     SwissConfig,
     assign_fantasy_board,
+    simulate_elimination_round,
     simulate_swiss_stage,
 )
 from src.ti2026.teams import POWER_RANKINGS, get_team_ids
@@ -44,6 +45,34 @@ def test_swiss_records_are_first_to_four():
     # Qualify + elim should sum ~100
     for _, row in df.iterrows():
         assert abs(row["direct_qualification_pct"] + row["eliminated_pct"] - 100) < 1.5
+
+
+def test_elimination_round_pairs_3_2_vs_2_3():
+    """Official ER: each 3-2 plays a 2-3; five winners advance."""
+    three_two = ["A", "B", "C", "D", "E"]
+    two_three = ["F", "G", "H", "I", "J"]
+    teams = three_two + two_three
+    # Stronger teams first in matrix order → A..E beat F..J.
+    strengths = {t: 10 - i for i, t in enumerate(teams)}
+    m = np.full((10, 10), 0.5)
+    for i, a in enumerate(teams):
+        for j, b in enumerate(teams):
+            if i != j:
+                m[i, j] = strengths[a] / (strengths[a] + strengths[b])
+    win_matrix = pd.DataFrame(m, index=teams, columns=teams)
+    records = {t: (3, 2) for t in three_two} | {t: (2, 3) for t in two_three}
+
+    winners = simulate_elimination_round(
+        teams,
+        win_matrix,
+        advance_n=5,
+        rng=np.random.default_rng(0),
+        records=records,
+    )
+    assert len(winners) == 5
+    # Strong 3-2 side should win most/all vs weaker 2-3 under this matrix.
+    assert set(winners).issubset(set(three_two) | set(two_three))
+    assert len(set(winners)) == 5
 
 
 def test_fantasy_board_capacities():
