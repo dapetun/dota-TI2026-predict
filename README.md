@@ -35,7 +35,7 @@ Meta version: **0.3.0-prod**. См. [SECURITY.md](SECURITY.md).
 
 ```text
 scripts/download_data.py --list-only
-scripts/download_details.py          # shards; не download_details_bg.py
+scripts/download_details.py          # shards via /explorer (fallback; /matches часто hang)
 scripts/train_compare.py             # XGB + CatBoost + blend
 scripts/build_rosters.py             # optional
 scripts/export_web_data.py           # JSON для UI; по умолчанию --require-blend
@@ -122,7 +122,7 @@ docker run --rm ti2026-predict
 2. Словарь OpenDota `team_id` → имя: curated `data/team_id_map.json` (в repo); локальный override — `data/raw/team_id_map.json` (gitignored). Используется только если в matchlist нет имён команд.
 3. Ростеры TI 2026 — `src/ti2026/teams.py`, `data/ti2026_rosters.json` (nick→account curated; там же `open_dota_team_id`).
 4. Признаки: Elo/Glicko-2, form (~40d), sample half-life (~210d), patch≥7.41 mult 1.25, player, chemistry, stitch Jaccard≥0.6.
-5. Details: `data/raw/details_shards/<tournament>/<match_id>.json` (новые); legacy monolith `match_details.json` читается shim-ом.
+5. Details: `data/raw/details_shards/<tournament>/<match_id>.json` (новые; source по умолчанию OpenDota `/explorer`, т.к. `/matches/{id}` часто hang); legacy monolith `match_details.json` читается shim-ом. Stratz deprecated stub. `OPENDOTA_API_KEY` опционален.
 6. Analyst picks — `docs/data/analyst_picks.json` (Sports.ru).
 
 **Дисклеймер:** модель даёт вероятности с высокой неопределённостью; не финансовый совет и не инструмент для ставок.

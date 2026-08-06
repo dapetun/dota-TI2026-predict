@@ -181,14 +181,20 @@ def download_details(
     tournaments: list[str] | None = None,
     rate_limit: float = 2.0,
     write_monolith: bool = False,
+    source: str = "explorer",
 ) -> dict:
-    """Download missing match details into shards (optionally sync monolith)."""
+    """Download missing match details into shards (optionally sync monolith).
+
+    ``source``: ``explorer`` (default, fast SQL), ``rest`` (/matches), or ``auto``.
+    Prefer explorer while OpenDota ``/matches/{id}`` hangs on large payloads.
+    """
     logger.info("Loading existing details cache...")
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     details_file = RAW_DIR / MONOLITH_NAME
     existing = _load_existing(details_file)
     logger.info("Monolith cached details: %s", len(existing))
     client = OpenDotaClient(rate_limit=rate_limit)
+    logger.info("Match detail source: %s", source)
 
     order = tournaments or download_order()
     logger.info("Scanning %s tournaments for missing match_ids...", len(order))
@@ -216,14 +222,14 @@ def download_details(
 
     errors = 0
     downloaded = 0
-    # Same mid: retry timeouts a few times, then skip (don't spin forever).
-    max_timeouts_per_match = 3
-    progress_every = 50  # less aggressive than every 10 (monolith rewrite is heavy)
+    # Same mid: retry transient network a few times, then skip.
+    max_transient_per_match = 3 if source != "rest" else 2
+    progress_every = 10  # explorer is cheap; surface progress sooner
     for i, (tourn_key, mid) in enumerate(needed):
-        mid_timeouts = 0
+        mid_transient = 0
         while True:
             try:
-                detail = client.get_match(mid)
+                detail = client.get_match_resilient(mid, source=source)
                 if detail and "error" not in detail and _has_players(detail):
                     detail = {**detail, "match_id": detail.get("match_id") or mid}
                     atomic_write_json(shard_path_for_match(RAW_DIR, mid, tourn_key), detail)
@@ -238,23 +244,31 @@ def download_details(
                     logger.warning("Rate limited at %s, sleeping 65s...", mid)
                     time.sleep(65)
                     continue
-                if "timed out" in msg or "timeout" in msg:
-                    mid_timeouts += 1
+                transient = (
+                    "timed out" in msg
+                    or "timeout" in msg
+                    or "connection aborted" in msg
+                    or "connection reset" in msg
+                    or "10054" in msg
+                )
+                if transient:
+                    mid_transient += 1
                     logger.warning(
-                        "Timeout at %s (%s/%s), sleeping 5s...",
+                        "Transient error at %s (%s/%s): %s",
                         mid,
-                        mid_timeouts,
-                        max_timeouts_per_match,
+                        mid_transient,
+                        max_transient_per_match,
+                        exc,
                     )
-                    if mid_timeouts >= max_timeouts_per_match:
+                    if mid_transient >= max_transient_per_match:
                         logger.warning(
-                            "Skipping %s after %s consecutive timeouts",
+                            "Skipping %s after %s transient failures",
                             mid,
-                            mid_timeouts,
+                            mid_transient,
                         )
                         errors += 1
                         break
-                    time.sleep(5)
+                    time.sleep(3 * mid_transient)
                     continue
                 errors += 1
                 logger.warning("Error at %s: %s", mid, exc)
@@ -302,6 +316,12 @@ def main() -> None:
     )
     parser.add_argument("--rate", type=float, default=2.0, help="Seconds between API calls")
     parser.add_argument(
+        "--source",
+        choices=("explorer", "rest", "auto"),
+        default="explorer",
+        help="Match payload source (default explorer: /matches often times out)",
+    )
+    parser.add_argument(
         "--write-monolith",
         action="store_true",
         help="Also rewrite legacy match_details.json (slow/large; default off)",
@@ -312,6 +332,7 @@ def main() -> None:
         tournaments=args.tournaments,
         rate_limit=args.rate,
         write_monolith=args.write_monolith,
+        source=args.source,
     )
 
 
