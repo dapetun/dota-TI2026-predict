@@ -179,7 +179,7 @@ def download_details(
     *,
     max_new: int | None = None,
     tournaments: list[str] | None = None,
-    rate_limit: float = 1.1,
+    rate_limit: float = 2.0,
     write_monolith: bool = False,
 ) -> dict:
     """Download missing match details into shards (optionally sync monolith)."""
@@ -216,30 +216,52 @@ def download_details(
 
     errors = 0
     downloaded = 0
+    # Same mid: retry timeouts a few times, then skip (don't spin forever).
+    max_timeouts_per_match = 3
+    progress_every = 50  # less aggressive than every 10 (monolith rewrite is heavy)
     for i, (tourn_key, mid) in enumerate(needed):
-        try:
-            detail = client.get_match(mid)
-            if detail and "error" not in detail and _has_players(detail):
-                detail = {**detail, "match_id": detail.get("match_id") or mid}
-                atomic_write_json(shard_path_for_match(RAW_DIR, mid, tourn_key), detail)
-                existing[str(mid)] = detail
-                downloaded += 1
-            else:
+        mid_timeouts = 0
+        while True:
+            try:
+                detail = client.get_match(mid)
+                if detail and "error" not in detail and _has_players(detail):
+                    detail = {**detail, "match_id": detail.get("match_id") or mid}
+                    atomic_write_json(shard_path_for_match(RAW_DIR, mid, tourn_key), detail)
+                    existing[str(mid)] = detail
+                    downloaded += 1
+                else:
+                    errors += 1
+                break
+            except Exception as exc:  # noqa: BLE001 — network resilience
+                msg = str(exc).lower()
+                if "429" in msg or "rate" in msg:
+                    logger.warning("Rate limited at %s, sleeping 65s...", mid)
+                    time.sleep(65)
+                    continue
+                if "timed out" in msg or "timeout" in msg:
+                    mid_timeouts += 1
+                    logger.warning(
+                        "Timeout at %s (%s/%s), sleeping 5s...",
+                        mid,
+                        mid_timeouts,
+                        max_timeouts_per_match,
+                    )
+                    if mid_timeouts >= max_timeouts_per_match:
+                        logger.warning(
+                            "Skipping %s after %s consecutive timeouts",
+                            mid,
+                            mid_timeouts,
+                        )
+                        errors += 1
+                        break
+                    time.sleep(5)
+                    continue
                 errors += 1
-        except Exception as exc:  # noqa: BLE001 — network resilience
-            errors += 1
-            msg = str(exc).lower()
-            if "429" in msg or "rate" in msg:
-                logger.warning("Rate limited at %s, sleeping 65s...", mid)
-                time.sleep(65)
-            elif "timed out" in msg or "timeout" in msg:
-                logger.warning("Timeout at %s, sleeping 5s...", mid)
-                time.sleep(5)
-            else:
                 logger.warning("Error at %s: %s", mid, exc)
                 time.sleep(1)
+                break
 
-        if (i + 1) % 10 == 0 or (i + 1) == len(needed):
+        if (i + 1) % progress_every == 0 or (i + 1) == len(needed):
             if write_monolith:
                 atomic_write_json(details_file, existing)
             logger.info(
@@ -278,7 +300,7 @@ def main() -> None:
         default=None,
         help="Optional subset of tournament keys",
     )
-    parser.add_argument("--rate", type=float, default=1.1, help="Seconds between API calls")
+    parser.add_argument("--rate", type=float, default=2.0, help="Seconds between API calls")
     parser.add_argument(
         "--write-monolith",
         action="store_true",

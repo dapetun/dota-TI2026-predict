@@ -39,7 +39,8 @@ class OpenDotaClient:
             time.sleep(self.rate_limit - elapsed)
 
         url = f"{self.BASE_URL}{endpoint}"
-        resp = self.session.get(url, params=params, timeout=45)
+        # OpenDota can be slow under load; 45s caused false timeouts.
+        resp = self.session.get(url, params=params, timeout=90)
         self._last_request = time.time()
 
         if resp.status_code == 429:
