@@ -23,6 +23,7 @@ from src.features.player_features import (
     compose_player_pair_features,
     replay_player_states,
 )
+from src.models.artifact_hash import verify_artifact_sha256
 from src.models.ensemble import ensemble_predict
 from src.ti2026.teams import get_team_ids
 
@@ -59,21 +60,26 @@ def resolve_opendota_team_ids(
     matches: pd.DataFrame,
     team_ids: list[str] | None = None,
 ) -> dict[str, int]:
-    """Map TI2026 ids → most recent OpenDota team_id in match history."""
+    """Map TI2026 ids → most recent OpenDota team_id in match history.
+
+    Single reverse chronological scan (O(matches)), not O(teams×matches).
+    """
     team_ids = team_ids or get_team_ids()
+    needed = set(team_ids)
     mapping: dict[str, int] = {}
-    if matches.empty:
+    if matches.empty or not needed:
         return mapping
 
     df = matches.sort_values("start_time")
-    for tid in team_ids:
-        for _, row in df.iloc[::-1].iterrows():
-            if row.get("radiant_canonical") == tid:
-                mapping[tid] = int(row["radiant_team_id"])
-                break
-            if row.get("dire_canonical") == tid:
-                mapping[tid] = int(row["dire_team_id"])
-                break
+    for row in df.iloc[::-1].itertuples(index=False):
+        if len(mapping) >= len(needed):
+            break
+        rc = getattr(row, "radiant_canonical", None)
+        if rc in needed and rc not in mapping:
+            mapping[rc] = int(row.radiant_team_id)
+        dc = getattr(row, "dire_canonical", None)
+        if dc in needed and dc not in mapping:
+            mapping[dc] = int(row.dire_team_id)
     return mapping
 
 
@@ -96,8 +102,26 @@ def latest_lineup_for_team(players: pd.DataFrame, odota_team_id: int) -> list[in
     return ids
 
 
-def load_blend_bundle(path: str | Path = "outputs/model_blend_v1.joblib") -> dict[str, Any]:
-    """Load blend joblib produced by train_compare."""
+def load_blend_bundle(
+    path: str | Path = "outputs/model_blend_v1.joblib",
+    *,
+    expected_sha256: str | None = None,
+    verify_hash: bool = True,
+) -> dict[str, Any]:
+    """Load blend joblib produced by train_compare.
+
+    When ``verify_hash`` is True, checks sidecar / ``model_compare.json`` SHA256
+    (fail on mismatch; warn if no hash recorded).
+    """
+    path = Path(path)
+    if verify_hash:
+        verify_artifact_sha256(
+            path,
+            expected_sha256,
+            label=path.name,
+            manifest_path=path.parent / "model_compare.json",
+            manifest_key="model_blend_sha256",
+        )
     return joblib.load(path)
 
 

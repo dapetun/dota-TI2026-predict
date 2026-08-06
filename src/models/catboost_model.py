@@ -12,7 +12,7 @@ import pandas as pd
 from catboost import CatBoostClassifier
 
 from src.features.match_features import FEATURE_COLUMNS
-from src.features.sample_weights import compute_sample_weights
+from src.features.sample_weights import RATING_HALF_LIFE_DAYS, compute_sample_weights
 from src.models.validation import (
     TrainResult,
     evaluate_folds,
@@ -61,7 +61,7 @@ def train_catboost_pipeline(
     features_df: pd.DataFrame,
     feature_cols: list[str] | None = None,
     params: dict[str, Any] | None = None,
-    half_life_days: float = 90.0,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
     n_walk_folds: int = 5,
 ) -> TrainResult:
     """Train CatBoost with walk-forward + Leave-One-TI-Out, then fit final model."""

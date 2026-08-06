@@ -14,7 +14,7 @@ import xgboost as xgb
 from sklearn.calibration import CalibratedClassifierCV
 
 from src.features.match_features import FEATURE_COLUMNS
-from src.features.sample_weights import compute_sample_weights
+from src.features.sample_weights import RATING_HALF_LIFE_DAYS, compute_sample_weights
 from src.models.validation import (
     FoldResult,
     TrainResult,
@@ -63,7 +63,7 @@ def _importance_from_model(model: Any, feature_cols: list[str]) -> dict[str, flo
     if hasattr(model, "calibrated_classifiers_"):
         try:
             base = model.calibrated_classifiers_[0].estimator
-        except Exception:  # noqa: BLE001
+        except (AttributeError, IndexError):
             base = model
     if not hasattr(base, "feature_importances_"):
         return {}
@@ -80,7 +80,7 @@ def train_xgboost_pipeline(
     features_df: pd.DataFrame,
     feature_cols: list[str] | None = None,
     params: dict[str, Any] | None = None,
-    half_life_days: float = 90.0,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
     n_walk_folds: int = 5,
     calibrate_final: bool = True,
 ) -> TrainResult:

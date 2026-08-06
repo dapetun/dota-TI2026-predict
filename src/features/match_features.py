@@ -284,12 +284,12 @@ def replay_team_states(
     if matches.empty:
         return store
     df = matches.sort_values("start_time").reset_index(drop=True)
-    for _, m in df.iterrows():
-        r_id = int(m["radiant_team_id"])
-        d_id = int(m["dire_team_id"])
-        t = int(m["start_time"])
-        tier_w = float(m.get("tier_weight", 1.0))
-        r_win = bool(m["radiant_win"])
+    for m in df.itertuples(index=False):
+        r_id = int(m.radiant_team_id)
+        d_id = int(m.dire_team_id)
+        t = int(m.start_time)
+        tier_w = float(getattr(m, "tier_weight", 1.0) or 1.0)
+        r_win = bool(m.radiant_win)
         _update_after_match(store, r_id, d_id, t, tier_w, r_win, elo_k_base=elo_k_base)
     return store
 
@@ -328,27 +328,31 @@ def build_match_feature_matrix(
     df = matches.sort_values("start_time").reset_index(drop=True)
     store = TeamStateStore()
     rows: list[dict] = []
+    has_year = "year" in df.columns
+    has_r_canon = "radiant_canonical" in df.columns
+    has_d_canon = "dire_canonical" in df.columns
+    has_tier_w = "tier_weight" in df.columns
 
-    for _, m in df.iterrows():
-        r_id = int(m["radiant_team_id"])
-        d_id = int(m["dire_team_id"])
-        t = int(m["start_time"])
-        tier_w = float(m.get("tier_weight", 1.0))
-        r_win = bool(m["radiant_win"])
+    for m in df.itertuples(index=False):
+        r_id = int(m.radiant_team_id)
+        d_id = int(m.dire_team_id)
+        t = int(m.start_time)
+        tier_w = float(getattr(m, "tier_weight", 1.0) if has_tier_w else 1.0) or 1.0
+        r_win = bool(m.radiant_win)
 
         feats = compose_pair_features(store, r_id, d_id, t, tier_weight=tier_w)
         rows.append(
             {
-                "match_id": int(m["match_id"]),
+                "match_id": int(m.match_id),
                 "start_time": t,
-                "date": m["date"],
-                "tournament": m["tournament"],
-                "tier": m["tier"],
-                "year": m.get("year"),
+                "date": m.date,
+                "tournament": m.tournament,
+                "tier": m.tier,
+                "year": getattr(m, "year", None) if has_year else None,
                 "radiant_team_id": r_id,
                 "dire_team_id": d_id,
-                "radiant_canonical": m.get("radiant_canonical", ""),
-                "dire_canonical": m.get("dire_canonical", ""),
+                "radiant_canonical": getattr(m, "radiant_canonical", "") if has_r_canon else "",
+                "dire_canonical": getattr(m, "dire_canonical", "") if has_d_canon else "",
                 **feats,
                 "radiant_win": int(r_win),
             }

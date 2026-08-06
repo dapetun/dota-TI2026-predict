@@ -117,6 +117,9 @@ def simulate_swiss_round(
             paired_this_round.add(opponent)
             teams_in_group = [t for t in teams_in_group if t not in paired_this_round]
 
+        # Odd leftover in a record bucket gets an implicit bye this round
+        # (no auto-win recorded). Intentional MC simplification vs real Swiss.
+
     for team in state.teams:
         w, l = state.records[team]
         if w >= config.wins_to_qualify:

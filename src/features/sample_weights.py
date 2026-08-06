@@ -3,12 +3,15 @@
 Defaults (v0.3):
   - rating / sample half-life ≈ 210d (long continuity)
   - form features use ~40d half-life inside match_features (separate)
+  - patch 7.41 window up-weight (PATCH_IN_MULT) via patch_start_ts
 """
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from src.ti2026.multisource import PATCH_741_START_TS, PATCH_IN_MULT
 
 # Rating / training sample half-life (days). Form uses FORM_HALF_LIFE_DAYS elsewhere.
 RATING_HALF_LIFE_DAYS: float = 210.0
@@ -39,16 +42,17 @@ def compute_sample_weights(
     *,
     cold_start_threshold: int = COLD_START_GP_THRESHOLD,
     cold_start_weight: float = COLD_START_WEIGHT,
-    patch_mult: float = 1.0,
-    patch_start_ts: int | None = None,
+    patch_mult: float = PATCH_IN_MULT,
+    patch_start_ts: int | None = PATCH_741_START_TS,
 ) -> np.ndarray:
-    """Combine exponential time decay with tournament-tier multipliers.
+    """Combine exponential time decay with tournament-tier / patch multipliers.
 
     Why this scheme:
     - Esports meta drifts with patches; equal weight on old matches hurts.
     - High-tier LAN/TI results transfer better to TI group stage.
     - 210-day half-life keeps rating continuity; form is decayed separately (~40d).
     - Both-sides cold-start matches get down-weighted.
+    - Matches after patch_start_ts get ``patch_mult`` (default PATCH_IN_MULT).
     """
     if df.empty:
         return np.array([])

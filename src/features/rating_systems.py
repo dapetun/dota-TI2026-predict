@@ -1,9 +1,27 @@
-"""Elo, Glicko-2, and TrueSkill rating systems for teams."""
+"""Elo and Glicko-2 team ratings.
+
+``GlickoRating`` implements Mark Glickman's Glicko-2 (μ/φ/σ) with Illinois
+volatility iteration. Each ``update`` is one rating period with a single game
+(continuous match stream). ``advance_inactive`` inflates RD between periods.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Dict
 
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass, field
-from typing import Dict, Optional
+
+# Glicko-2 scale: rating R = SCALE * μ + 1500, RD = SCALE * φ
+GLICKO2_SCALE: float = 173.7178
+GLICKO2_TAU: float = 0.5
+GLICKO2_EPSILON: float = 1e-6
+GLICKO2_INITIAL_MU: float = 1500.0
+GLICKO2_INITIAL_RD: float = 350.0
+GLICKO2_INITIAL_VOL: float = 0.06
+GLICKO2_MIN_RD: float = 30.0
+GLICKO2_MAX_RD: float = 350.0
 
 
 @dataclass
@@ -35,10 +53,12 @@ class EloRating:
 
 @dataclass
 class GlickoRating:
-    initial_mu: float = 1500.0
-    initial_rd: float = 350.0
-    initial_vol: float = 0.06
-    tau: float = 0.5
+    """Canonical Glicko-2 μ/RD/volatility (Glickman)."""
+
+    initial_mu: float = GLICKO2_INITIAL_MU
+    initial_rd: float = GLICKO2_INITIAL_RD
+    initial_vol: float = GLICKO2_INITIAL_VOL
+    tau: float = GLICKO2_TAU
     ratings: Dict[int, dict] = field(default_factory=dict)
 
     def get(self, team_id: int) -> dict:
@@ -50,73 +70,103 @@ class GlickoRating:
             }
         return self.ratings[team_id]
 
-    def _g(self, rd: float) -> float:
-        return 1.0 / np.sqrt(1.0 + 3.0 * (rd ** 2) / (np.pi ** 2 * 400.0 ** 2))
+    def _to_glicko2(self, mu: float, rd: float) -> tuple[float, float]:
+        return (mu - 1500.0) / GLICKO2_SCALE, rd / GLICKO2_SCALE
 
-    def _E(self, mu: float, mu_j: float, rd_j: float) -> float:
-        return 1.0 / (1.0 + np.exp(-self._g(rd_j) * (mu - mu_j) / 400.0))
+    def _from_glicko2(self, mu: float, phi: float) -> tuple[float, float]:
+        return 1500.0 + GLICKO2_SCALE * mu, GLICKO2_SCALE * phi
 
-    def update(self, winner_id: int, loser_id: int):
+    @staticmethod
+    def _g(phi: float) -> float:
+        return 1.0 / np.sqrt(1.0 + 3.0 * phi**2 / (np.pi**2))
+
+    @staticmethod
+    def _E(mu: float, mu_j: float, phi_j: float) -> float:
+        return 1.0 / (1.0 + np.exp(-GlickoRating._g(phi_j) * (mu - mu_j)))
+
+    def _update_one(
+        self,
+        team_id: int,
+        opp_mu: float,
+        opp_rd: float,
+        score: float,
+    ) -> None:
+        """One-period Glicko-2 update vs a single opponent (score in {0, 0.5, 1})."""
+        me = self.get(team_id)
+        mu, phi = self._to_glicko2(me["mu"], me["rd"])
+        sigma = float(me["vol"])
+        mu_j, phi_j = self._to_glicko2(opp_mu, opp_rd)
+
+        g_j = self._g(phi_j)
+        e_j = self._E(mu, mu_j, phi_j)
+        v = 1.0 / (g_j**2 * e_j * (1.0 - e_j) + 1e-12)
+        delta = v * g_j * (score - e_j)
+
+        a = np.log(sigma**2)
+        tau = self.tau
+
+        def f(x: float) -> float:
+            ex = np.exp(x)
+            num = ex * (delta**2 - phi**2 - v - ex)
+            den = 2.0 * (phi**2 + v + ex) ** 2
+            return num / den - (x - a) / (tau**2)
+
+        # Illinois algorithm for volatility (Glickman §3.6)
+        A = a
+        if delta**2 > phi**2 + v:
+            B = np.log(delta**2 - phi**2 - v)
+        else:
+            k = 1
+            B = a - k * tau
+            while f(B) < 0:
+                k += 1
+                B = a - k * tau
+                if k > 50:
+                    break
+
+        fA, fB = f(A), f(B)
+        for _ in range(50):
+            if abs(B - A) <= GLICKO2_EPSILON:
+                break
+            C = A + (A - B) * fA / (fB - fA + 1e-18)
+            fC = f(C)
+            if fC * fB <= 0:
+                A, fA = B, fB
+            else:
+                fA /= 2.0
+            B, fB = C, fC
+
+        sigma_prime = float(np.exp(A / 2.0))
+        phi_star = np.sqrt(phi**2 + sigma_prime**2)
+        phi_prime = 1.0 / np.sqrt(1.0 / phi_star**2 + 1.0 / v)
+        mu_prime = mu + phi_prime**2 * g_j * (score - e_j)
+
+        new_mu, new_rd = self._from_glicko2(mu_prime, phi_prime)
+        me["mu"] = float(new_mu)
+        me["rd"] = float(np.clip(new_rd, GLICKO2_MIN_RD, GLICKO2_MAX_RD))
+        me["vol"] = sigma_prime
+
+    def advance_inactive(self, team_id: int, n_periods: int = 1) -> None:
+        """Inflate RD for inactive periods (φ' = √(φ² + σ²) per period)."""
+        if n_periods <= 0:
+            return
+        me = self.get(team_id)
+        mu, phi = self._to_glicko2(me["mu"], me["rd"])
+        sigma = float(me["vol"])
+        for _ in range(int(n_periods)):
+            phi = np.sqrt(phi**2 + sigma**2)
+        _, new_rd = self._from_glicko2(mu, phi)
+        me["rd"] = float(np.clip(new_rd, GLICKO2_MIN_RD, GLICKO2_MAX_RD))
+
+    def update(self, winner_id: int, loser_id: int) -> None:
+        """Update both teams after a decisive match (winner score=1, loser=0)."""
         w = self.get(winner_id)
         l = self.get(loser_id)
-
-        g_w = self._g(w["rd"])
-        g_l = self._g(l["rd"])
-        E_w = self._E(w["mu"], l["mu"], l["rd"])
-        E_l = self._E(l["mu"], w["mu"], w["rd"])
-
-        v_w = 1.0 / (g_w ** 2 * E_w * (1 - E_w) + 1e-10)
-        v_l = 1.0 / (g_l ** 2 * E_l * (1 - E_l) + 1e-10)
-
-        w["mu"] += g_w * (1 - E_w) * v_w
-        w["rd"] = max(150.0, w["rd"] * np.sqrt(max(1.0 - 1.0 / v_w, 0.01)))
-
-        l["mu"] += g_l * (0 - E_l) * v_l
-        l["rd"] = max(150.0, l["rd"] * np.sqrt(max(1.0 - 1.0 / v_l, 0.01)))
-
-
-@dataclass
-class TrueSkillRating:
-    mu: float = 25.0
-    sigma: float = 25.0 / 3.0
-    beta: float = 25.0 / 6.0
-    draw_prob: float = 0.1
-    ratings: Dict[int, dict] = field(default_factory=dict)
-
-    def get(self, team_id: int) -> dict:
-        if team_id not in self.ratings:
-            self.ratings[team_id] = {"mu": self.mu, "sigma": self.sigma}
-        return self.ratings[team_id]
-
-    def _v_win(self, eps: float) -> float:
-        from scipy.stats import norm
-        t = norm.cdf(eps)
-        if t < 1e-10:
-            return -eps + self.beta
-        return norm.pdf(eps) / t
-
-    def _w_win(self, eps: float, v: float) -> float:
-        from scipy.stats import norm
-        t = norm.cdf(eps)
-        if t < 1e-10:
-            return 1.0
-        return v * (v + eps)
-
-    def update(self, winner_id: int, loser_id: int):
-        w = self.get(winner_id)
-        l = self.get(loser_id)
-
-        c = np.sqrt(2 * self.beta ** 2 + w["sigma"] ** 2 + l["sigma"] ** 2)
-        eps = (w["mu"] - l["mu"]) / c
-
-        v = self._v_win(eps)
-        w_val = self._w_win(eps, v)
-
-        w["mu"] += (w["sigma"] ** 2 / c) * v
-        w["sigma"] *= np.sqrt(max(1.0 - w_val * (w["sigma"] ** 2 / c ** 2), 0.01))
-
-        l["mu"] -= (l["sigma"] ** 2 / c) * v
-        l["sigma"] *= np.sqrt(max(1.0 - w_val * (l["sigma"] ** 2 / c ** 2), 0.01))
+        # Snapshot pre-match ratings so both sides update against the same prior.
+        w_mu, w_rd = float(w["mu"]), float(w["rd"])
+        l_mu, l_rd = float(l["mu"]), float(l["rd"])
+        self._update_one(winner_id, l_mu, l_rd, 1.0)
+        self._update_one(loser_id, w_mu, w_rd, 0.0)
 
 
 def build_elo_history(
@@ -124,39 +174,29 @@ def build_elo_history(
     k_factor: float = 32.0,
 ) -> pd.DataFrame:
     """Process all matches chronologically and return Elo history per team per match."""
-    elo = EloRating(k_factor=k_factor)
     records = []
-
-    for _, row in team_matches.sort_values("start_time").iterrows():
-        team_a = int(row["team_id"])
-        won_a = bool(row["team_won"])
-
-        # Find opponent (from match_id group)
-        records.append({
-            "match_id": row["match_id"],
-            "team_id": team_a,
-            "elo_before": elo.get(team_a),
-            "won": won_a,
-        })
-
-    # Process opponents in a second pass
-    df = pd.DataFrame(records)
     elo2 = EloRating(k_factor=k_factor)
 
     for match_id, group in team_matches.sort_values("start_time").groupby("match_id"):
         if len(group) < 2:
             continue
-        teams = group["team_id"].values
-        winners = group[group["team_won"] == True]["team_id"].values
-        losers = group[group["team_won"] == False]["team_id"].values
+        winners = group[group["team_won"] == True]["team_id"].values  # noqa: E712
+        losers = group[group["team_won"] == False]["team_id"].values  # noqa: E712
 
+        before = {int(row["team_id"]): elo2.get(int(row["team_id"])) for _, row in group.iterrows()}
         if len(winners) > 0 and len(losers) > 0:
             elo2.update(int(winners[0]), int(losers[0]))
 
         for _, row in group.iterrows():
-            df.loc[
-                (df["match_id"] == row["match_id"]) & (df["team_id"] == row["team_id"]),
-                "elo_after",
-            ] = elo2.get(int(row["team_id"]))
+            tid = int(row["team_id"])
+            records.append(
+                {
+                    "match_id": match_id,
+                    "team_id": tid,
+                    "elo_before": before[tid],
+                    "elo_after": elo2.get(tid),
+                    "won": bool(row["team_won"]),
+                }
+            )
 
-    return df
+    return pd.DataFrame(records)

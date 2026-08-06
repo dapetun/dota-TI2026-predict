@@ -38,12 +38,22 @@ CANONICAL_COLUMNS = [
 
 
 def _load_team_id_map(raw_dir: Path) -> dict[int, str]:
-    map_file = raw_dir / "team_id_map.json"
-    if not map_file.exists():
-        return {}
-    with open(map_file, encoding="utf-8") as f:
-        raw = json.load(f)
-    return {int(k): v for k, v in raw.items()}
+    """Load OpenDota team_id → name map.
+
+    Prefer ``raw_dir/team_id_map.json`` (local cache under gitignored data/raw).
+    Fall back to curated ``data/team_id_map.json`` in the repo root data/.
+    """
+    candidates = [
+        Path(raw_dir) / "team_id_map.json",
+        Path(__file__).resolve().parents[2] / "data" / "team_id_map.json",
+    ]
+    for map_file in candidates:
+        if not map_file.exists():
+            continue
+        with open(map_file, encoding="utf-8") as f:
+            raw = json.load(f)
+        return {int(k): v for k, v in raw.items() if str(k).isdigit()}
+    return {}
 
 
 def _resolve_name(

@@ -1,11 +1,17 @@
 # TI 2026 Prediction Pipeline Configuration
+#
+# Optional overrides loaded via src.config.load_settings().
+# Canonical defaults also live in code (RATING_HALF_LIFE_DAYS=210,
+# DEFAULT_N_SIMULATIONS=20000, SWISS_CONFIG). Keep YAML in sync when changing.
+#
+# STRATZ keys below are legacy documentation only — prod uses OpenDota.
 
 api:
-  stratz_token: ""  # Set via STRATZ_TOKEN env var
+  stratz_token: ""  # Deprecated — unused in prod pipeline
   opendota_base: "https://api.opendota.com/api"
-  stratz_base: "https://api.stratz.com/graphql"
+  stratz_base: "https://api.stratz.com/graphql"  # Deprecated
   rate_limit_opendota: 1  # seconds between requests
-  rate_limit_stratz: 0.5
+  rate_limit_stratz: 0.5  # Deprecated
 
 data:
   raw_dir: "data/raw"
@@ -15,7 +21,7 @@ data:
   # Full TI history; relevance via sample weights
   train_start: "2021-01-01"
   train_end: "2026-08-01"
-  sample_weight_half_life_days: 90
+  sample_weight_half_life_days: 210  # SoT aligned with RATING_HALF_LIFE_DAYS
   min_team_matches: 5
 
 features:

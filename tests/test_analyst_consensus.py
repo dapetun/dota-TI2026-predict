@@ -32,7 +32,7 @@ def _fake_predictions() -> list[dict]:
     ]
 
 
-def test_load_analyst_picks_has_eleven_full_grids():
+def test_load_analyst_picks_has_ten_full_grids():
     data = load_analyst_picks()
     assert len(data["analysts"]) == 10
     for row in data["analysts"]:

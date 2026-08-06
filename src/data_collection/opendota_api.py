@@ -1,23 +1,39 @@
 """OpenDota API client for match/hero/player data."""
 
-import os
-import time
+from __future__ import annotations
+
 import json
-import requests
-import pandas as pd
+import time
 from pathlib import Path
-from typing import Optional
+
+import pandas as pd
+import requests
+
+# Cap recursive 429 retries so rate-limit storms cannot hang forever.
+DEFAULT_MAX_RETRIES: int = 5
+DEFAULT_RETRY_BACKOFF_SEC: float = 60.0
+
+
+class OpenDotaRateLimitError(RuntimeError):
+    """Raised when OpenDota keeps returning HTTP 429 after max retries."""
 
 
 class OpenDotaClient:
     BASE_URL = "https://api.opendota.com/api"
 
-    def __init__(self, rate_limit: float = 1.0):
+    def __init__(
+        self,
+        rate_limit: float = 1.0,
+        max_retries: int = DEFAULT_MAX_RETRIES,
+        retry_backoff_sec: float = DEFAULT_RETRY_BACKOFF_SEC,
+    ):
         self.session = requests.Session()
         self.rate_limit = rate_limit
-        self._last_request = 0
+        self.max_retries = max_retries
+        self.retry_backoff_sec = retry_backoff_sec
+        self._last_request = 0.0
 
-    def _get(self, endpoint: str, params: dict = None) -> dict:
+    def _get(self, endpoint: str, params: dict | None = None, _attempt: int = 0) -> dict:
         elapsed = time.time() - self._last_request
         if elapsed < self.rate_limit:
             time.sleep(self.rate_limit - elapsed)
@@ -27,9 +43,14 @@ class OpenDotaClient:
         self._last_request = time.time()
 
         if resp.status_code == 429:
-            print("Rate limited, waiting 60s...")
-            time.sleep(60)
-            return self._get(endpoint, params)
+            if _attempt >= self.max_retries:
+                raise OpenDotaRateLimitError(
+                    f"OpenDota 429 after {self.max_retries} retries on {endpoint}"
+                )
+            wait = self.retry_backoff_sec * (1.0 + 0.25 * _attempt)
+            print(f"Rate limited, waiting {wait:.0f}s (attempt {_attempt + 1}/{self.max_retries})...")
+            time.sleep(wait)
+            return self._get(endpoint, params, _attempt=_attempt + 1)
 
         resp.raise_for_status()
         return resp.json()

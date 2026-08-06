@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import joblib
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 from src.data_collection.match_details import (
     load_player_matches,
@@ -29,9 +32,10 @@ from src.features.chemistry_features import (
     build_chemistry_features,
     merge_chemistry_features,
 )
-from src.features.sample_weights import RATING_HALF_LIFE_DAYS
+from src.config import sample_half_life_days
 from src.features.team_stitching import apply_team_stitch, build_team_stitch_map
-from src.ti2026.multisource import PATCH_741_START_TS
+from src.models.artifact_hash import write_sha256_sidecar
+from src.ti2026.multisource import PATCH_741_START_TS, PATCH_IN_MULT
 from src.models.catboost_model import save_catboost_result, train_catboost_pipeline
 from src.models.ensemble import summarize_blend, train_blend_pipeline, tune_blend_weights_loo
 from src.models.validation import FoldResult, leave_one_ti_splits
@@ -58,16 +62,19 @@ def run_model_compare(
     *,
     stitch_teams: bool = True,
     lan_only_chemistry: bool = False,
-    half_life_days: float = RATING_HALF_LIFE_DAYS,
+    half_life_days: float | None = None,
 ) -> dict:
     """Train XGB + CatBoost + blend; write comparison metrics."""
-    print("=" * 60)
-    print("TI 2026 — model compare (XGB / CatBoost / blend) v0.3")
-    print("=" * 60)
+    if half_life_days is None:
+        half_life_days = sample_half_life_days()
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    logger.info("=" * 60)
+    logger.info("TI 2026 — model compare (XGB / CatBoost / blend) v0.3")
+    logger.info("=" * 60)
 
     matches = load_raw_matchlists(raw_dir)
     summary = summarize_matches(matches)
-    print(json.dumps(summary, indent=2, ensure_ascii=False))
+    logger.info("%s", json.dumps(summary, indent=2, ensure_ascii=False))
     if matches.empty:
         raise FileNotFoundError(f"No matchlists in {raw_dir}")
 
@@ -77,11 +84,11 @@ def run_model_compare(
         stitch = build_team_stitch_map(players, matches, threshold=0.6)
         matches, players = apply_team_stitch(matches, stitch, players)
         stitch_n = sum(1 for a, b in stitch.items() if a != b)
-        print(f"Team stitch: {stitch_n} team_ids remapped (Jaccard>=0.6)")
+        logger.info("Team stitch: %s team_ids remapped (Jaccard>=0.6)", stitch_n)
 
     save_canonical_matches(matches, processed_dir)
     coverage = summarize_player_coverage(matches, players)
-    print(json.dumps(coverage, indent=2))
+    logger.info("%s", json.dumps(coverage, indent=2))
     if not players.empty:
         save_player_matches(players, processed_dir)
 
@@ -92,33 +99,38 @@ def run_model_compare(
     features = merge_chemistry_features(features, chemistry)
     feature_cols = FEATURE_COLUMNS + PLAYER_FEATURE_COLUMNS + CHEMISTRY_FEATURE_COLUMNS
     feat_path = save_features(features, features_dir)
-    print(f"Features: {len(features)} rows, {len(feature_cols)} cols -> {feat_path}")
-    print(f"Rows with player stats: {int(features['has_player_stats'].sum())}")
-    print(f"Rows with chemistry: {int(features['has_chemistry'].sum())}")
-    print(f"Sample half-life: {half_life_days}d · patch_741_ts={PATCH_741_START_TS}")
+    logger.info("Features: %s rows, %s cols -> %s", len(features), len(feature_cols), feat_path)
+    logger.info("Rows with player stats: %s", int(features["has_player_stats"].sum()))
+    logger.info("Rows with chemistry: %s", int(features["has_chemistry"].sum()))
+    logger.info(
+        "Sample half-life: %sd · patch_741_ts=%s · patch_mult=%s",
+        half_life_days,
+        PATCH_741_START_TS,
+        PATCH_IN_MULT,
+    )
 
-    print("\n--- XGBoost ---")
+    logger.info("--- XGBoost ---")
     xgb_result = train_xgboost_pipeline(
         features, feature_cols=feature_cols, half_life_days=half_life_days
     )
-    print(summarize_results(xgb_result))
+    logger.info("%s", summarize_results(xgb_result))
     xgb_path = save_train_result(xgb_result, output_dir, stem="xgb_v1")
 
-    print("\n--- CatBoost ---")
+    logger.info("--- CatBoost ---")
     cat_result = train_catboost_pipeline(
         features, feature_cols=feature_cols, half_life_days=half_life_days
     )
-    print(summarize_results(cat_result))
+    logger.info("%s", summarize_results(cat_result))
     cat_path = save_catboost_result(cat_result, output_dir, stem="catboost_v1")
 
-    print("\n--- Blend (LOO-tuned XGB + CatBoost) ---")
+    logger.info("--- Blend (LOO-tuned XGB + CatBoost) ---")
     blend_result = train_blend_pipeline(
         features,
         feature_cols=feature_cols,
         calibrate=False,
         half_life_days=half_life_days,
     )
-    print(summarize_blend(blend_result))
+    logger.info("%s", summarize_blend(blend_result))
 
     # Isotonic on pooled LOO (metrics only; not saved to production bundle).
     loo_folds = leave_one_ti_splits(features.sort_values("start_time").reset_index(drop=True))
@@ -131,6 +143,7 @@ def run_model_compare(
     calibrated_note = isotonic_cal is not None
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
+    blend_path = out / "model_blend_v1.joblib"
     joblib.dump(
         {
             "model": blend_result.model,
@@ -138,8 +151,9 @@ def run_model_compare(
             "params": blend_result.params,
             "model_name": blend_result.model_name,
         },
-        out / "model_blend_v1.joblib",
+        blend_path,
     )
+    blend_sha256 = write_sha256_sidecar(blend_path)
 
     comparison = {
         "version": "0.3.0-prod",
@@ -151,6 +165,10 @@ def run_model_compare(
         "team_stitch_remaps": stitch_n,
         "lan_only_chemistry": lan_only_chemistry,
         "half_life_days": half_life_days,
+        "patch_741_start_ts": PATCH_741_START_TS,
+        "patch_sample_mult": PATCH_IN_MULT,
+        "model_blend_path": str(blend_path),
+        "model_blend_sha256": blend_sha256,
         "models": {
             "xgboost": {
                 "walk_forward_avg_auc": _avg_auc(xgb_result.walk_forward),
@@ -180,5 +198,5 @@ def run_model_compare(
     with open(cmp_path, "w", encoding="utf-8") as f:
         json.dump(comparison, f, indent=2)
 
-    print(f"\nComparison -> {cmp_path}")
+    logger.info("Comparison -> %s", cmp_path)
     return comparison

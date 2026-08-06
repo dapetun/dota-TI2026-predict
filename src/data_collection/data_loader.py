@@ -1,22 +1,27 @@
-"""Unified data loader - merges STRATZ + OpenDota into canonical format."""
+"""Unified data loader — legacy STRATZ/OpenDota CSV path.
+
+Deprecated for production: prefer ``match_loader.load_raw_matchlists`` +
+``train_compare`` / ``export_web_data``. Team-name SoT is ``ti2026.teams``.
+"""
+
+from __future__ import annotations
 
 import json
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from typing import Optional
 
+import pandas as pd
 
-# Canonical team name mapping (handles renames)
+from src.ti2026.teams import ALIAS_TO_CANONICAL, normalize_team_name
+
+# Legacy display map (canonical ids aligned with ti2026.teams — Vision not "Team Vision").
 TEAM_NAME_MAP = {
-    # 2026 teams
     "BetBoom Team": "BetBoom",
     "BoomBoys": "BetBoom",
-    "PARIVISION": "Team Vision",
-    "Team Vision": "Team Vision",
+    "PARIVISION": "Vision",
+    "Team Vision": "Vision",
     "Tundra Esports": "1w",
     "1w": "1w",
-    "Team Spirit": "Team Spirit",
+    "Team Spirit": "Spirit",
     "Aurora Gaming": "Aurora",
     "Aurora": "Aurora",
     "Team Falcons": "Falcons",
@@ -32,13 +37,19 @@ TEAM_NAME_MAP = {
     "Team Resilience": "Resilience",
 }
 
-TEAM_ID_MAP = {
-    # STRATZ/OpenDota team IDs (will be populated from data)
-}
+TEAM_ID_MAP: dict = {}
 
-
-def normalize_team_name(name: str) -> str:
-    return TEAM_NAME_MAP.get(name, name)
+__all__ = [
+    "TEAM_NAME_MAP",
+    "TEAM_ID_MAP",
+    "normalize_team_name",
+    "ALIAS_TO_CANONICAL",
+    "load_raw_matches",
+    "expand_players",
+    "build_team_match_results",
+    "save_processed_data",
+    "load_processed_data",
+]
 
 
 def load_raw_matches(data_dir: str = "data/raw") -> pd.DataFrame:
@@ -83,7 +94,7 @@ def expand_players(matches_df: pd.DataFrame) -> pd.DataFrame:
         if isinstance(players, str):
             try:
                 players = json.loads(players)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 continue
 
         if not isinstance(players, list):
@@ -93,7 +104,7 @@ def expand_players(matches_df: pd.DataFrame) -> pd.DataFrame:
             if isinstance(p, str):
                 try:
                     p = json.loads(p)
-                except:
+                except (json.JSONDecodeError, TypeError):
                     continue
 
             is_radiant = p.get("isRadiant", False)

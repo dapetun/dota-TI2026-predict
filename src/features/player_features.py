@@ -171,8 +171,8 @@ def build_player_match_features(
     rows: list[dict] = []
     ordered = matches.sort_values("start_time").reset_index(drop=True)
 
-    for _, m in ordered.iterrows():
-        mid = int(m["match_id"])
+    for m in ordered.itertuples(index=False):
+        mid = int(m.match_id)
         group = by_match.get(mid)
         has_stats = group is not None and not group.empty
 
@@ -246,8 +246,8 @@ def replay_player_states(
     for mid, group in players.groupby("match_id"):
         by_match[int(mid)] = group
 
-    for _, m in matches.sort_values("start_time").iterrows():
-        group = by_match.get(int(m["match_id"]))
+    for m in matches.sort_values("start_time").itertuples(index=False):
+        group = by_match.get(int(m.match_id))
         if group is None or group.empty:
             continue
         for _, prow in group.iterrows():

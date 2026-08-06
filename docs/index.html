@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TI 2026 Swiss Predictor</title>
   <meta name="description" content="Открытый прогноз групповой стадии The International 2026" />
+  <!-- CSP hint: GitHub Pages cannot set HTTP CSP headers from static HTML alone.
+       Tighten via Pages/custom headers when available. Fonts: Google Fonts CDN
+       (Instrument Sans + Syne); self-host to drop third-party if needed. -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'"
+  />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -29,7 +36,7 @@
       <a href="#heatmap">Heatmap</a>
       <a href="#matchup">Матч</a>
       <a href="#model">Модель</a>
-      <a class="nav-github" href="../" id="repo-link">Репозиторий</a>
+      <a class="nav-github" href="https://github.com/dapetun/dota-TI2026-predict" id="repo-link" rel="noopener noreferrer" target="_blank">Репозиторий</a>
     </nav>
   </header>
 
@@ -42,10 +49,12 @@
           16 команд, Swiss до 4 побед/поражений, затем Elimination Round. Ниже — прогнозная доска.
         </p>
         <div class="hero-meta" id="hero-meta"></div>
+        <p class="fallback-banner" id="fallback-banner" hidden></p>
       </div>
       <aside class="hero-card" id="disclaimer-card">
         <p class="card-label">Важно</p>
         <p id="disclaimer-text">Загрузка…</p>
+        <ul id="meta-warnings" class="meta-warnings" hidden></ul>
       </aside>
     </section>
 

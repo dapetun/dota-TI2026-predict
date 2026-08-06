@@ -1,4 +1,7 @@
-"""Training pipeline: ETL → team+player features → XGBoost → evaluation."""
+"""Training pipeline: ETL → team+player features → XGBoost → evaluation.
+
+Prefer ``train_compare`` for production blend; this module trains XGB-only.
+"""
 
 from __future__ import annotations
 
@@ -98,7 +101,7 @@ def run_training(
     if hasattr(result.model, "calibrated_classifiers_"):
         try:
             base = result.model.calibrated_classifiers_[0].estimator
-        except Exception:
+        except (AttributeError, IndexError):
             pass
     plot_feature_importance(base, result.feature_cols, output_dir=output_dir)
 

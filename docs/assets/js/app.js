@@ -34,6 +34,16 @@ const VALVE_POINTS_TABLE = [
 /** @type {any} */
 let DATA = null;
 
+/** Escape text for safe insertion into HTML. */
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function loadData() {
   const res = await fetch(DATA_URL);
   if (!res.ok) throw new Error(`Не удалось загрузить predictions.json (${res.status})`);
@@ -60,16 +70,47 @@ function activeBoard(data) {
   return data.board;
 }
 
+function renderFallbackBanner(data) {
+  const el = document.getElementById("fallback-banner");
+  if (!el) return;
+  const meta = data.meta || {};
+  const isFallback =
+    meta.is_power_ranking_fallback === true ||
+    String(meta.model || "").includes("power_ranking");
+  if (!isFallback) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+  el.hidden = false;
+  el.textContent =
+    "Режим fallback: power ranking (не blend pairwise). Переобучите модель через train_compare.";
+}
+
 function renderHero(data) {
   const meta = data.meta;
   document.getElementById("disclaimer-text").textContent = meta.disclaimer;
+  renderFallbackBanner(data);
+  const warnEl = document.getElementById("meta-warnings");
+  if (warnEl) {
+    const warnings = Array.isArray(meta.warnings) ? meta.warnings : [];
+    if (warnings.length) {
+      warnEl.hidden = false;
+      warnEl.innerHTML = warnings
+        .map((w) => `<li>${escapeHtml(w)}</li>`)
+        .join("");
+    } else {
+      warnEl.hidden = true;
+      warnEl.innerHTML = "";
+    }
+  }
   const strategy = getBoardStrategy();
   const compare = meta.board_compare || {};
   const stratPts = compare[strategy]?.expected_points;
   const ptsVal = stratPts ?? meta.expected_compendium_points;
   const pts =
     ptsVal != null
-      ? `<span class="chip" title="${valvePointsTooltip()}">E[очки] <strong>${Math.round(ptsVal).toLocaleString("ru-RU")}</strong></span>`
+      ? `<span class="chip" title="${escapeHtml(valvePointsTooltip())}">E[очки] <strong>${Math.round(ptsVal).toLocaleString("ru-RU")}</strong></span>`
       : "";
   const analystPts = data.analyst?.expected_points;
   const analystChip =
@@ -81,13 +122,13 @@ function renderHero(data) {
       ? `<span class="chip">Fusion <strong>${Math.round(meta.fusion_expected_points).toLocaleString("ru-RU")}</strong></span>`
       : "";
   document.getElementById("hero-meta").innerHTML = `
-    <span class="chip"><strong>${meta.model_label}</strong></span>
-    <span class="chip">Симуляций <strong>${meta.n_simulations.toLocaleString("ru-RU")}</strong></span>
+    <span class="chip"><strong>${escapeHtml(meta.model_label)}</strong></span>
+    <span class="chip">Симуляций <strong>${Number(meta.n_simulations).toLocaleString("ru-RU")}</strong></span>
     ${pts}
     ${analystChip}
     ${fusion}
-    <span class="chip">${meta.format}</span>
-    <span class="chip">v${meta.version}</span>
+    <span class="chip">${escapeHtml(meta.format)}</span>
+    <span class="chip">v${escapeHtml(meta.version)}</span>
   `;
   document.getElementById("footer-stamp").textContent =
     `Обновлено: ${new Date(meta.generated_at).toLocaleString("ru-RU")} · ${meta.model}`;
@@ -96,7 +137,7 @@ function renderHero(data) {
 function renderBoard(data) {
   const root = document.getElementById("swiss-board");
   const board = activeBoard(data);
-  const nAnalysts = data.analyst?.n_analysts || 11;
+  const nAnalysts = data.analyst?.n_analysts;
   root.innerHTML = BOARD_COLUMNS.map((col) => {
     const teams = board[col.key] || [];
     const pills = teams.length
@@ -104,16 +145,19 @@ function renderBoard(data) {
           .map((t) => {
             const agree = t.analyst_agreement ?? 0;
             const names = (t.analyst_names || []).join(", ");
+            const denom = nAnalysts != null ? String(nAnalysts) : "?";
             const chip =
               agree >= ANALYST_THRESHOLD
-                ? `<span class="chip mini" title="${names}">${agree}/${nAnalysts}</span>`
+                ? `<span class="chip mini" title="${escapeHtml(names)}">${agree}/${denom}</span>`
                 : "";
             const slotPct = t.slot_pct ?? 0;
+            const displayName = escapeHtml(t.name || t.short);
+            const title = escapeHtml(`${t.name || ""}${names ? " · " + names : ""}`);
             return `
-          <div class="team-pill" title="${t.name}${names ? " · " + names : ""}">
+          <div class="team-pill" title="${title}">
             <div>
-              <div class="name">${t.name || t.short} ${chip}</div>
-              <div class="meta">${t.record} · P(слот) ${fmtPct(slotPct)}</div>
+              <div class="name">${displayName} ${chip}</div>
+              <div class="meta">${escapeHtml(t.record)} · P(слот) ${fmtPct(slotPct)}</div>
             </div>
             <div class="prob">${fmtPct(t.qualify_pct)}</div>
           </div>`;
@@ -163,25 +207,25 @@ function renderStandings(data) {
       <tr>
         <td>${i + 1}</td>
         <td class="team-cell">
-          ${t.name}
-          <span class="sub">${t.source} · rank ${t.power_rank}${home}</span>
+          ${escapeHtml(t.name)}
+          <span class="sub">${escapeHtml(t.source)} · rank ${escapeHtml(t.power_rank)}${escapeHtml(home)}</span>
         </td>
-        <td>${t.region}</td>
-        <td class="strength-cell" title="Elo shrunk ± combined σ">${strength}</td>
+        <td>${escapeHtml(t.region)}</td>
+        <td class="strength-cell" title="Elo shrunk ± combined σ">${escapeHtml(strength)}</td>
         <td>
           <div class="bar">
             <span>${fmtPct(t.qualify_pct)}</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${t.qualify_pct}%"></div></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Number(t.qualify_pct) || 0}%"></div></div>
           </div>
         </td>
         <td>
           <div class="bar">
             <span>${fmtPct(t.eliminated_pct)}</span>
-            <div class="bar-track"><div class="bar-fill danger" style="width:${t.eliminated_pct}%"></div></div>
+            <div class="bar-track"><div class="bar-fill danger" style="width:${Number(t.eliminated_pct) || 0}%"></div></div>
           </div>
         </td>
-        <td>${t.expected_wins.toFixed(2)}</td>
-        <td>${t.most_likely_record}</td>
+        <td>${Number(t.expected_wins).toFixed(2)}</td>
+        <td>${escapeHtml(t.most_likely_record)}</td>
       </tr>`;
     })
     .join("");
@@ -202,7 +246,7 @@ function renderHeatmap(data) {
     return;
   }
   const head = `<thead><tr><th>Команда</th>${hm.slots
-    .map((s) => `<th>${s}</th>`)
+    .map((s) => `<th>${escapeHtml(s)}</th>`)
     .join("")}</tr></thead>`;
   const body = hm.matrix
     .map((row, i) => {
@@ -210,10 +254,10 @@ function renderHeatmap(data) {
       const cells = row
         .map(
           (v) =>
-            `<td style="background:${heatColor(v)}" title="${team.name} · ${v}%">${Number(v).toFixed(1)}</td>`
+            `<td style="background:${heatColor(v)}" title="${escapeHtml(team.name)} · ${Number(v)}%">${Number(v).toFixed(1)}</td>`
         )
         .join("");
-      return `<tr><th scope="row">${team.short || team.name}</th>${cells}</tr>`;
+      return `<tr><th scope="row">${escapeHtml(team.short || team.name)}</th>${cells}</tr>`;
     })
     .join("");
   root.innerHTML = `${head}<tbody>${body}</tbody>`;
@@ -223,7 +267,7 @@ function fillMatchupSelects(data) {
   const opts = data.teams
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, "ru"))
-    .map((t) => `<option value="${t.id}">${t.name}</option>`)
+    .map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`)
     .join("");
   const a = document.getElementById("team-a");
   const b = document.getElementById("team-b");
@@ -253,12 +297,12 @@ function renderMatchup(data) {
   document.getElementById("matchup-result").innerHTML = `
     <div class="duel">
       <div class="duel-side">
-        <div class="name">${teamA?.name || idA}</div>
+        <div class="name">${escapeHtml(teamA?.name || idA)}</div>
         <div class="pct" style="color:var(--gold)">${pa}%</div>
       </div>
       <div class="meta">вероятность победы серии</div>
       <div class="duel-side">
-        <div class="name">${teamB?.name || idB}</div>
+        <div class="name">${escapeHtml(teamB?.name || idB)}</div>
         <div class="pct" style="color:var(--teal)">${pb}%</div>
       </div>
     </div>
@@ -313,9 +357,9 @@ function renderMetrics(data) {
     .map(
       (c) => `
     <article class="metric">
-      <p class="label">${c.label}</p>
-      <p class="value">${c.value}</p>
-      <p class="hint">${c.hint}</p>
+      <p class="label">${escapeHtml(c.label)}</p>
+      <p class="value">${escapeHtml(c.value)}</p>
+      <p class="hint">${escapeHtml(c.hint)}</p>
     </article>`
     )
     .join("");

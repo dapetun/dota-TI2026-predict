@@ -95,7 +95,7 @@
 
 ### Средний win (рейтинг)
 
-- Подключить **Glicko-2** из `src/features/rating_systems.py` (сейчас legacy).
+- Подключить **Glicko-2** из `src/features/rating_systems.py` (**done**: Glickman μ/φ/σ + Illinois volatility).
 - В MC: сэмпл силы из `N(μ, RD²)` или расширенный P(win).
 - UI: `сила μ ± σ`.
 
@@ -163,6 +163,18 @@
 - Draft embeddings / полная draft-симуляция до расширения корпуса  
 - Слепое копирование доски battlepass  
 - Per-TI blend weights на 4 фолдах  
+
+---
+
+## Stage 6 stubs (roadmap features — не блокеры)
+
+| Feature | Статус | Где |
+|---|---|---|
+| Playoff / double-elim MC | **stub** `implemented=False` | `src/simulation/playoff_stub.py` |
+| Draft / hero embeddings | design only | `docs/HERO_DRAFT_PLAN.md` |
+| Polymarket / market prior | **stub** returns `None` | `multisource.market_slot_prior_stub` |
+
+Полная реализация — после ≥80% player coverage и стабильного LOO. Не импортировать несуществующие модули.
 
 ---
 

@@ -7,17 +7,10 @@ from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (
-    accuracy_score,
-    brier_score_loss,
-    log_loss,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
 
 from src.data_collection.tournaments import TI_KEYS
-from src.features.sample_weights import compute_sample_weights
+from src.evaluation.metrics import classification_metrics
+from src.features.sample_weights import RATING_HALF_LIFE_DAYS, compute_sample_weights
 
 FitFn = Callable[[pd.DataFrame, np.ndarray, np.ndarray | None], Any]
 PredictFn = Callable[[Any, pd.DataFrame], np.ndarray]
@@ -49,23 +42,6 @@ class TrainResult:
     feature_importance: dict[str, float] = field(default_factory=dict)
     params: dict[str, Any] = field(default_factory=dict)
     model_name: str = "model"
-
-
-def classification_metrics(y_true: np.ndarray, proba: np.ndarray) -> dict[str, float]:
-    """Binary classification metrics from win probabilities."""
-    preds = (proba >= 0.5).astype(int)
-    out = {
-        "log_loss": float(log_loss(y_true, proba, labels=[0, 1])),
-        "brier": float(brier_score_loss(y_true, proba)),
-        "accuracy": float(accuracy_score(y_true, preds)),
-        "precision": float(precision_score(y_true, preds, zero_division=0)),
-        "recall": float(recall_score(y_true, preds, zero_division=0)),
-    }
-    if len(np.unique(y_true)) > 1:
-        out["auc"] = float(roc_auc_score(y_true, proba))
-    else:
-        out["auc"] = 0.5
-    return out
 
 
 def predict_proba_positive(model: Any, X: pd.DataFrame) -> np.ndarray:
@@ -123,7 +99,7 @@ def evaluate_folds(
     fit_fn: FitFn,
     *,
     predict_fn: PredictFn = predict_proba_positive,
-    half_life_days: float = 90.0,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
 ) -> list[FoldResult]:
     """Run weighted model evaluation over provided folds."""
     X = df[feature_cols]

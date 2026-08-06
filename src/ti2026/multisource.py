@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 # Patch 7.41 release (approximate OpenDota / Valve window).
 PATCH_741_START_TS: int = 1774310400  # 2026-03-24 00:00 UTC
+# Default up-weight for matches after PATCH_741_START_TS (wired into sample_weights).
+PATCH_IN_MULT: float = 1.25
 
 # Shanghai TI 2026 — home bonus for CN region teams (Elo points).
 DEFAULT_HOME_LAN_ELO: float = 30.0
@@ -45,7 +47,7 @@ def patch_window_weight(
     start_time: int,
     *,
     patch_start_ts: int = PATCH_741_START_TS,
-    in_patch_mult: float = 1.25,
+    in_patch_mult: float = PATCH_IN_MULT,
     out_patch_mult: float = 1.0,
 ) -> float:
     """Множитель sample-weight: чуть выше вес матчей текущего патча."""

@@ -176,6 +176,16 @@ body {
   margin-left: 0.25rem;
   vertical-align: middle;
 }
+.fallback-banner {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(226, 179, 87, 0.55);
+  border-radius: var(--radius);
+  background: rgba(226, 179, 87, 0.12);
+  color: var(--gold);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 
 .hero-card {
   background: linear-gradient(180deg, rgba(226, 179, 87, 0.12), rgba(20, 25, 31, 0.9));
@@ -193,6 +203,14 @@ body {
   color: var(--gold);
 }
 #disclaimer-text { margin: 0; color: var(--text); font-size: 0.95rem; }
+.meta-warnings {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--gold);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.meta-warnings[hidden] { display: none; }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }

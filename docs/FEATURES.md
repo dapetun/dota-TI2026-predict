@@ -28,8 +28,8 @@
 | `r_uncertainty` / `d_*` / `diff_*` | derived | `1/sqrt(gp+1)` | Явная неопределённость | Среднее |
 | `r_elo_shrunk` / `d_*` / `diff_*` | Empirical Bayes | `w=gp/(gp+k)`, k=12 → prior 1500 | Стабилизация новичков | Сильное |
 | `r_opp_avg_elo` / `d_*` / `diff_*` | schedule | средний Elo соперников до матча | Сила календаря | Среднее |
-| `r_glicko_mu` / `d_*` / `diff_*` | Glicko-2 | μ рейтинга | Альтернативная сила | Среднее–сильное |
-| `r_glicko_rd` / `d_*` / `diff_*` | Glicko-2 | rating deviation | Uncertainty μ±σ в UI | Среднее |
+| `r_glicko_mu` / `d_*` / `diff_*` | Glicko-2 (Glickman) | μ рейтинга | Альтернативная сила | Среднее–сильное |
+| `r_glicko_rd` / `d_*` / `diff_*` | Glicko-2 | rating deviation (φ→RD) + volatility σ | Uncertainty μ±σ в UI | Среднее |
 
 ## Player features
 
@@ -73,8 +73,8 @@
 | Источник | Модуль | Поведение |
 |---|---|---|
 | Home LAN | `src/ti2026/multisource.py` | +30 Elo CN/Shanghai — meta/informational; в μ GS не добавляется |
-| Patch 7.41 | `PATCH_741_START_TS` ≈ 2026-03-24 | флаг/вес патч-окна |
-| Fusion | `src/ti2026/fusion.py` | model default 0.65 + analyst; market stub P2 |
+| Patch 7.41 | `PATCH_741_START_TS` ≈ 2026-03-24 | **wired** в `compute_sample_weights` (`PATCH_IN_MULT=1.25`) |
+| Fusion | `src/ti2026/fusion.py` | model default 0.65 + analyst; `tune_fusion_weight_loo` = **in-sample** grid (не true LOO) |
 | Market | stub | `market_slot_prior_stub` → None |
 
 ## Модели

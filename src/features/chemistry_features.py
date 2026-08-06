@@ -152,12 +152,12 @@ def build_chemistry_features(
     rows: list[dict] = []
     ordered = matches.sort_values("start_time").reset_index(drop=True)
 
-    for _, m in ordered.iterrows():
-        mid = int(m["match_id"])
-        now = int(m["start_time"])
+    for m in ordered.itertuples(index=False):
+        mid = int(m.match_id)
+        now = int(m.start_time)
         group = by_match.get(mid)
         has = group is not None and not group.empty
-        r_win = bool(m.get("radiant_win", False))
+        r_win = bool(getattr(m, "radiant_win", False))
 
         if has:
             r_ids = _lineup_ids(group, True)
@@ -168,8 +168,8 @@ def build_chemistry_features(
             d_mean, d_min, d_90, d_pwr = _pair_stats(
                 d_ids, pair_games, pair_last, now, pair_wins
             )
-            r_team = int(m.get("radiant_team_id") or 0)
-            d_team = int(m.get("dire_team_id") or 0)
+            r_team = int(getattr(m, "radiant_team_id", 0) or 0)
+            d_team = int(getattr(m, "dire_team_id", 0) or 0)
             r_jac = _jaccard(last_roster.get(r_team), set(r_ids)) if r_team else 0.0
             d_jac = _jaccard(last_roster.get(d_team), set(d_ids)) if d_team else 0.0
             r_stab = (
@@ -214,7 +214,7 @@ def build_chemistry_features(
             }
         )
 
-        if has and (not lan_only or bool(m.get("is_lan"))):
+        if has and (not lan_only or bool(getattr(m, "is_lan", False))):
             _update_pairs(
                 r_ids, now, pair_games, pair_last, won=r_win, pair_wins=pair_wins
             )
@@ -257,12 +257,12 @@ def replay_chemistry_state(
     for mid, group in players.groupby("match_id"):
         by_match[int(mid)] = group
 
-    for _, m in matches.sort_values("start_time").iterrows():
-        if lan_only and not bool(m.get("is_lan")):
+    for m in matches.sort_values("start_time").itertuples(index=False):
+        if lan_only and not bool(getattr(m, "is_lan", False)):
             continue
-        mid = int(m["match_id"])
-        now = int(m["start_time"])
-        r_win = bool(m.get("radiant_win", False))
+        mid = int(m.match_id)
+        now = int(m.start_time)
+        r_win = bool(getattr(m, "radiant_win", False))
         group = by_match.get(mid)
         if group is None or group.empty:
             continue
@@ -279,8 +279,8 @@ def replay_chemistry_state(
             won=not r_win,
             pair_wins=state.pair_wins,
         )
-        r_team = int(m.get("radiant_team_id") or 0)
-        d_team = int(m.get("dire_team_id") or 0)
+        r_team = int(getattr(m, "radiant_team_id", 0) or 0)
+        d_team = int(getattr(m, "dire_team_id", 0) or 0)
         if r_team:
             state.last_roster[r_team] = set(r_ids)
             state.roster_hist.setdefault(r_team, []).append((now, set(r_ids)))

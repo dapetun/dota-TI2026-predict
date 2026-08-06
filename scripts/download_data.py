@@ -56,7 +56,8 @@ def download_match_detail(match_id: int, retries: int = 3) -> dict | None:
                 time.sleep(60)
             else:
                 time.sleep(0.2)
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 — network resilience
+            print(f"    Exception fetching {match_id}: {exc}")
             time.sleep(1)
     return None
 

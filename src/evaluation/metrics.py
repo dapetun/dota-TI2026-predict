@@ -21,7 +21,10 @@ from sklearn.metrics import (
 
 
 def classification_metrics(y_true: np.ndarray, y_prob: np.ndarray) -> dict[str, float]:
-    """Compute core probabilistic and threshold metrics."""
+    """Compute core probabilistic and threshold metrics.
+
+    Returns both ``auc`` and ``auc_roc`` (same value) for legacy callers.
+    """
     preds = (y_prob >= 0.5).astype(int)
     metrics = {
         "log_loss": float(log_loss(y_true, y_prob, labels=[0, 1])),
@@ -30,9 +33,11 @@ def classification_metrics(y_true: np.ndarray, y_prob: np.ndarray) -> dict[str, 
         "precision": float(precision_score(y_true, preds, zero_division=0)),
         "recall": float(recall_score(y_true, preds, zero_division=0)),
     }
-    metrics["auc_roc"] = (
+    auc = (
         float(roc_auc_score(y_true, y_prob)) if len(np.unique(y_true)) > 1 else 0.5
     )
+    metrics["auc"] = auc
+    metrics["auc_roc"] = auc
     return metrics
 
 

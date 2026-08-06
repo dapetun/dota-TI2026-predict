@@ -1,8 +1,17 @@
-"""Load and normalize OpenDota match details into player-match rows."""
+"""Load and normalize OpenDota match details into player-match rows.
+
+Storage layout (shim):
+1. Prefer per-match shards under ``data/raw/details_shards/<tournament>/<match_id>.json``
+2. Fall back to legacy monolith ``match_details.json`` and ``*_details.json`` lists
+3. New downloads should write shards (see ``scripts/download_details.py``)
+"""
 
 from __future__ import annotations
 
 import json
+import logging
+import os
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -10,6 +19,7 @@ import pandas as pd
 
 from src.data_collection.tournaments import TOURNAMENTS
 
+logger = logging.getLogger(__name__)
 
 PLAYER_COLUMNS = [
     "match_id",
@@ -35,6 +45,48 @@ PLAYER_COLUMNS = [
     "duration",
 ]
 
+DETAILS_SHARDS_DIRNAME = "details_shards"
+MONOLITH_NAME = "match_details.json"
+
+
+def details_shards_dir(raw_dir: str | Path) -> Path:
+    """Return path to per-match detail shards directory."""
+    return Path(raw_dir) / DETAILS_SHARDS_DIRNAME
+
+
+def shard_path_for_match(
+    raw_dir: str | Path,
+    match_id: int,
+    tournament_key: str | None = None,
+) -> Path:
+    """Path for one match detail shard (atomic write target)."""
+    folder = details_shards_dir(raw_dir) / (tournament_key or "_unknown")
+    return folder / f"{int(match_id)}.json"
+
+
+def atomic_write_json(path: Path, payload: object) -> None:
+    """Write JSON atomically (tmp + replace); Windows-safe retries."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f)
+        f.flush()
+        os.fsync(f.fileno())
+    last_err: Exception | None = None
+    for attempt in range(8):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError as exc:
+            last_err = exc
+            time.sleep(0.5 * (attempt + 1))
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+        tmp.unlink(missing_ok=True)
+    except OSError as exc:
+        raise last_err or exc
+
 
 def _healing_value(raw: Any) -> int:
     if isinstance(raw, dict):
@@ -45,13 +97,41 @@ def _healing_value(raw: Any) -> int:
         return 0
 
 
-def _iter_detail_objects(raw_dir: Path) -> Iterable[tuple[str | None, dict]]:
-    """Yield (tournament_key_or_None, detail_dict) from on-disk caches."""
-    # Legacy combined store: {match_id: detail}
-    combined = raw_dir / "match_details.json"
+def _iter_shard_objects(raw_dir: Path) -> Iterable[tuple[str | None, dict]]:
+    """Yield (tournament_key, detail) from per-match shards."""
+    root = details_shards_dir(raw_dir)
+    if not root.exists():
+        return
+    for path in sorted(root.glob("*/*.json")):
+        if path.name.endswith(".tmp") or path.suffix != ".json":
+            continue
+        key = path.parent.name
+        tourn = None if key == "_unknown" else key
+        try:
+            with open(path, encoding="utf-8") as f:
+                detail = json.load(f)
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Skipping bad shard %s: %s", path.name, exc)
+            continue
+        if isinstance(detail, dict):
+            mid = detail.get("match_id") or path.stem
+            try:
+                detail = {**detail, "match_id": int(mid)}
+            except (TypeError, ValueError):
+                continue
+            yield tourn, detail
+
+
+def _iter_monolith_objects(raw_dir: Path) -> Iterable[tuple[str | None, dict]]:
+    """Yield from legacy combined store and per-tournament detail dumps."""
+    combined = raw_dir / MONOLITH_NAME
     if combined.exists():
-        with open(combined, encoding="utf-8") as f:
-            payload = json.load(f)
+        try:
+            with open(combined, encoding="utf-8") as f:
+                payload = json.load(f)
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Cannot load %s: %s", combined.name, exc)
+            payload = None
         if isinstance(payload, dict):
             for mid, detail in payload.items():
                 if isinstance(detail, dict):
@@ -62,16 +142,25 @@ def _iter_detail_objects(raw_dir: Path) -> Iterable[tuple[str | None, dict]]:
                 if isinstance(detail, dict):
                     yield None, detail
 
-    # Per-tournament detail dumps from download_data.py
     for path in sorted(raw_dir.glob("*_details.json")):
         key = path.stem.replace("_details", "")
-        with open(path, encoding="utf-8") as f:
-            payload = json.load(f)
+        try:
+            with open(path, encoding="utf-8") as f:
+                payload = json.load(f)
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("Cannot load %s: %s", path.name, exc)
+            continue
         if not isinstance(payload, list):
             continue
         for detail in payload:
             if isinstance(detail, dict):
                 yield key, detail
+
+
+def _iter_detail_objects(raw_dir: Path) -> Iterable[tuple[str | None, dict]]:
+    """Yield (tournament_key_or_None, detail_dict); shards win over monolith duplicates."""
+    yield from _iter_shard_objects(raw_dir)
+    yield from _iter_monolith_objects(raw_dir)
 
 
 def _tournament_meta(key: str | None, league_id: int | None) -> tuple[str, float, bool]:
@@ -188,16 +277,21 @@ def summarize_player_coverage(
             "coverage": 0.0,
             "n_player_rows": 0,
             "n_accounts": 0,
+            "target_coverage": 0.8,
+            "meets_target": False,
         }
     with_players = set(players["match_id"].unique())
     match_ids = set(matches["match_id"].unique())
     covered = len(match_ids & with_players)
+    cov = round(covered / n_matches, 3) if n_matches else 0.0
     return {
         "n_matches": n_matches,
         "n_matches_with_players": covered,
-        "coverage": round(covered / n_matches, 3) if n_matches else 0.0,
+        "coverage": cov,
         "n_player_rows": int(len(players)),
         "n_accounts": int(players["account_id"].nunique()),
+        "target_coverage": 0.8,
+        "meets_target": cov >= 0.8,
     }
 
 
@@ -211,3 +305,17 @@ def save_player_matches(
     out = out_dir / "player_matches.csv"
     players.to_csv(out, index=False)
     return out
+
+
+def list_cached_detail_ids(raw_dir: str | Path) -> set[int]:
+    """Match IDs that already have a player-bearing detail (shard or monolith)."""
+    raw_path = Path(raw_dir)
+    ids: set[int] = set()
+    for _, detail in _iter_detail_objects(raw_path):
+        players = detail.get("players")
+        if not isinstance(players, list) or not players:
+            continue
+        mid = detail.get("match_id")
+        if mid is not None:
+            ids.add(int(mid))
+    return ids

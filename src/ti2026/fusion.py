@@ -110,7 +110,11 @@ def tune_fusion_weight_loo(
     *,
     grid: list[float] | None = None,
 ) -> tuple[float, float]:
-    """Grid search model_weight maximizing E[points] on fused slot probs."""
+    """In-sample grid search of ``model_weight`` maximizing E[points].
+
+    Not true leave-one-out CV: the grid is scored on the same fused
+    predictions passed in (optimistic / for export display only).
+    """
     from src.ti2026.compendium_scoring import expected_valve_points, optimize_fantasy_board
     from src.ti2026.compendium_scoring import _assignment_from_board
 

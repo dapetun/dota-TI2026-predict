@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.features.sample_weights import compute_sample_weights
+from src.features.sample_weights import RATING_HALF_LIFE_DAYS, compute_sample_weights
 from src.models.catboost_model import fit_catboost
 from src.models.validation import (
     FoldResult,
@@ -111,7 +111,7 @@ def tune_blend_weights_loo(
     feature_cols: list[str],
     loo_folds: list[tuple[str, np.ndarray, np.ndarray]],
     *,
-    half_life_days: float = 90.0,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
     xgb_params: dict | None = None,
     cat_params: dict | None = None,
     grid: list[float] | None = None,
@@ -170,7 +170,7 @@ def evaluate_blend_folds(
     folds: list[tuple[str | int, np.ndarray, np.ndarray]],
     feature_cols: list[str],
     *,
-    half_life_days: float = 90.0,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
     xgb_params: dict | None = None,
     cat_params: dict | None = None,
     blend_weights: dict[str, float] | None = None,
@@ -198,7 +198,7 @@ def train_blend_pipeline(
     features_df: pd.DataFrame,
     feature_cols: list[str],
     *,
-    half_life_days: float = 90.0,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
     n_walk_folds: int = 5,
     xgb_params: dict | None = None,
     cat_params: dict | None = None,
