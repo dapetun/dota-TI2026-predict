@@ -38,6 +38,8 @@ const STRINGS = {
     "disclaimer.label": "Важно",
     "disclaimer.summary": "Не для ставок · кратко о прогнозе",
     "disclaimer.loading": "Загрузка…",
+    "disclaimer.body":
+      "Это исследовательский прогноз Swiss-доски и слотов компендиума TI 2026. Считается по матчевым данным: модель + мнения аналитиков + рыночные вероятности. Неопределённость высокая — не для ставок и не финансовый совет. Рыночные вероятности — только исследовательский сигнал. Автор не рекламирует букмекеров.",
     "warn.market_prior_power_rankings":
       "Рыночные вероятности сейчас взяты из нашего рейтинга команд, а не из живых коэффициентов букмекеров; вес рынка в смеси обнулён, чтобы не учитывать рейтинг дважды.",
     "warn.in_sample_tune_model_weight":
@@ -90,13 +92,14 @@ const STRINGS = {
       "Рыночные вероятности — исследовательский сигнал. Автор не рекламирует букмекеров. Не для ставок.",
     "standings.title": "Шансы команд",
     "standings.lead":
-      "μ ± σ — оценка силы и неопределённости. «Пройти» / «Вылететь» — доля симуляций Swiss (~50 000).",
+      "<strong>μ ± σ</strong> — оценка силы и неопределённости. «Пройти» / «Вылететь» — доля симуляций Swiss (~50 000).",
     "standings.sort_label": "Сортировка",
     "standings.sort.qualify": "По шансу пройти",
     "standings.sort.power": "По силе",
     "standings.sort.elim": "По шансу вылететь",
     "standings.sort.alpha": "А–Я",
     "standings.search": "Найти команду…",
+    "standings.power_rank": "рейтинг",
     "standings.th.rank": "#",
     "standings.th.team": "Команда",
     "standings.th.region": "Регион",
@@ -105,6 +108,12 @@ const STRINGS = {
     "standings.th.elim": "Вылететь",
     "standings.th.wins": "Ожид. побед",
     "standings.th.record": "Рекорд",
+    "source.direct_invite": "Прямое приглашение",
+    "source.eu_qualifier": "Квалификация EU",
+    "source.sea_qualifier": "Квалификация SEA",
+    "source.na_qualifier": "Квалификация NA",
+    "source.sa_qualifier": "Квалификация SA",
+    "source.cn_qualifier": "Квалификация CN",
     "heatmap.title": "Карта слотов",
     "heatmap.lead":
       "Доля симуляций (%), где команда оказалась в каждом слоте компендиума (16 команд × 6 слотов).",
@@ -117,6 +126,8 @@ const STRINGS = {
     "matchup.series_win": "вероятность победы серии",
     "model.title": "Состояние модели",
     "model.lead_fallback": "Смесь XGBoost + CatBoost; проверка Leave-One-TI-Out; сила μ±σ.",
+    "model.methodology":
+      "Мы берём результаты матчей турниров и оцениваем силу каждой команды. У 100% матчей корпуса (8709/8709) есть составы игроков. Модель сравнивает две команды и говорит, кто вероятнее победит. Затем много раз проигрываем весь Swiss-турнир и смотрим, куда чаще попадает каждая команда. Качество проверяем на прошлых TI и на свежих матчах. Итоговый прогноз смешивает модель с мнениями аналитиков и рыночными вероятностями. Число μ ± σ на сайте — сила команды ± насколько мы в ней уверены. Технические подробности — в разделе «Как считаем» ниже.",
     "how.title": "Как считаем",
     "how.lead_before":
       "Простыми словами — что за цифры на сайте и откуда они берутся. Детали и каталог признаков — в",
@@ -152,6 +163,10 @@ const STRINGS = {
       "Нечётный остаток в корзине рекорда Swiss получает bye без авто-победы (упрощение симуляции).",
     "footer.open": "Открытый проект. Данные — OpenDota.",
     "footer.license": "Лицензия MIT",
+    "footer.copyright": "Copyright © 2026 dapetun",
+    "footer.aria": "Подвал сайта",
+    "nav.aria.primary": "Основная навигация",
+    "nav.aria.secondary": "Дополнительная навигация",
     "projects.title": "Другие проекты",
     "projects.moex.desc": "Котировки Мосбиржи и портфель по Марковицу",
     "projects.keyboard.desc": "Помогает пройти мини-игру «Атака автоматонов» из ивента «Тёмный карнавал» в Dota",
@@ -170,8 +185,11 @@ const STRINGS = {
     "chip.sims": "Прогонов турнира",
     "chip.model_blend": "Прогноз модели",
     "chip.model_power": "Упрощённый рейтинг",
+    "chip.model_catboost": "CatBoost (парная)",
+    "chip.model_xgb": "XGBoost",
     "chip.model_default": "Модель",
     "format.swiss": "Swiss 16→4, 5 раундов Bo3 + доп. раунд",
+    "format.swiss_short": "Swiss 16→4",
     "footer.updated": "Обновлено",
     "fallback.banner":
       "Запасной режим: силовой рейтинг (не смесь парных оценок). Переобучите модель через train_compare.",
@@ -202,6 +220,7 @@ const STRINGS = {
     "error.fetch": "Не удалось загрузить predictions.json ({status})",
     "rank.home": "дом +",
     "rules.meta_title": "Правила Swiss TI 2026 · вольный пересказ",
+    "rules.redirect": "Правила групповой стадии →",
     "rules.eyebrow": "The International 2026",
     "rules.title": "Правила групповой стадии",
     "rules.lead":
@@ -271,6 +290,8 @@ const STRINGS = {
     "disclaimer.label": "Note",
     "disclaimer.summary": "Not for betting · about this forecast",
     "disclaimer.loading": "Loading…",
+    "disclaimer.body":
+      "This is a research forecast of the TI 2026 Swiss board and compendium slots. Built from match data: model + analyst views + market probabilities. Uncertainty is high — not for betting and not financial advice. Market probabilities are a research signal only. The author does not promote bookmakers.",
     "warn.market_prior_power_rankings":
       "Market probabilities currently come from our team ranking, not live bookmaker odds; the market share in the mix is set to zero so the ranking is not counted twice.",
     "warn.in_sample_tune_model_weight":
@@ -323,13 +344,14 @@ const STRINGS = {
       "Market probabilities are a research signal. The author does not promote bookmakers. Not for betting.",
     "standings.title": "Team odds",
     "standings.lead":
-      "μ ± σ — strength and uncertainty. Qualify / Eliminated — share of Swiss simulations (~50,000).",
+      "<strong>μ ± σ</strong> — strength and uncertainty. Qualify / Eliminated — share of Swiss simulations (~50,000).",
     "standings.sort_label": "Sort",
     "standings.sort.qualify": "By qualify chance",
     "standings.sort.power": "By strength",
     "standings.sort.elim": "By elim chance",
     "standings.sort.alpha": "A–Z",
     "standings.search": "Find a team…",
+    "standings.power_rank": "rank",
     "standings.th.rank": "#",
     "standings.th.team": "Team",
     "standings.th.region": "Region",
@@ -338,6 +360,12 @@ const STRINGS = {
     "standings.th.elim": "Eliminated",
     "standings.th.wins": "Exp. wins",
     "standings.th.record": "Record",
+    "source.direct_invite": "Direct invite",
+    "source.eu_qualifier": "EU Qualifier",
+    "source.sea_qualifier": "SEA Qualifier",
+    "source.na_qualifier": "NA Qualifier",
+    "source.sa_qualifier": "SA Qualifier",
+    "source.cn_qualifier": "CN Qualifier",
     "heatmap.title": "Slot map",
     "heatmap.lead":
       "Share of sims (%) where a team landed in each compendium slot (16 teams × 6 slots).",
@@ -350,6 +378,8 @@ const STRINGS = {
     "matchup.series_win": "series win probability",
     "model.title": "Model status",
     "model.lead_fallback": "XGBoost + CatBoost blend; Leave-One-TI-Out; strength μ±σ.",
+    "model.methodology":
+      "We take tournament match results and estimate each team’s strength. 100% of corpus matches (8709/8709) have player rosters. The model compares two teams and estimates who is more likely to win. Then we simulate the full Swiss many times and see where each team lands most often. Quality is checked on past TIs and recent matches. The published forecast mixes the model with analyst views and market probabilities. μ ± σ on the site is team strength ± how sure we are. More detail is in “How we compute” below.",
     "how.title": "How we compute",
     "how.lead_before": "Plain-language numbers on this site. Details and feature catalog in",
     "how.lead_and": "and",
@@ -384,6 +414,10 @@ const STRINGS = {
       "Odd leftover in a Swiss record bucket gets a bye without auto-win (MC simplification).",
     "footer.open": "Open project. Data — OpenDota.",
     "footer.license": "MIT License",
+    "footer.copyright": "Copyright © 2026 dapetun",
+    "footer.aria": "Footer",
+    "nav.aria.primary": "Primary navigation",
+    "nav.aria.secondary": "Secondary navigation",
     "projects.title": "Other projects",
     "projects.moex.desc": "MOEX quotes and Markowitz portfolio builder",
     "projects.keyboard.desc": "Helps clear the Automatons Attack minigame from the Dark Carnival event in Dota",
@@ -402,8 +436,11 @@ const STRINGS = {
     "chip.sims": "Tournament sims",
     "chip.model_blend": "Model forecast",
     "chip.model_power": "Simple ranking",
+    "chip.model_catboost": "CatBoost pairwise",
+    "chip.model_xgb": "XGBoost",
     "chip.model_default": "Model",
     "format.swiss": "Swiss 16→4, 5 Bo3 rounds + elim",
+    "format.swiss_short": "Swiss 16→4",
     "footer.updated": "Updated",
     "fallback.banner":
       "Fallback mode: power ranking (not pairwise blend). Retrain via train_compare.",
@@ -434,6 +471,7 @@ const STRINGS = {
     "error.fetch": "Failed to load predictions.json ({status})",
     "rank.home": "home +",
     "rules.meta_title": "TI 2026 Swiss rules · informal summary",
+    "rules.redirect": "Group stage rules →",
     "rules.eyebrow": "The International 2026",
     "rules.title": "Group Stage rules",
     "rules.lead":
@@ -1014,6 +1052,26 @@ export function localizeWarning(raw) {
   // Don't dump raw English into non-EN UI
   if (currentLang === "en") return text;
   return t("warn.unknown");
+}
+
+const SOURCE_I18N = {
+  "Direct Invite": "source.direct_invite",
+  "EU Qualifier": "source.eu_qualifier",
+  "SEA Qualifier": "source.sea_qualifier",
+  "NA Qualifier": "source.na_qualifier",
+  "SA Qualifier": "source.sa_qualifier",
+  "CN Qualifier": "source.cn_qualifier",
+};
+
+/**
+ * Localize known team qualification source labels from export data.
+ * @param {string} raw
+ */
+export function localizeSource(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const key = SOURCE_I18N[text];
+  return key ? t(key) : text;
 }
 
 function syncLangSwitcher(lang) {

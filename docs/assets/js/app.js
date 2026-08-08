@@ -1,4 +1,4 @@
-import { t, initI18n, onLangChange, localeTag, localizeWarning } from "./i18n.js";
+import { t, initI18n, onLangChange, localeTag, localizeWarning, localizeSource } from "./i18n.js";
 
 const DATA_URL = "data/predictions.json";
 const BOARD_STORAGE_KEY = "ti2026_board_strategy";
@@ -309,7 +309,7 @@ function renderFusionWeights(data) {
   const isFusion = strategy === "fusion" || strategy.startsWith("fusion_");
   root.hidden = !isFusion;
   if (disc) {
-    disc.textContent = meta.market_disclaimer || t("fusion.market_fallback");
+    disc.textContent = t("fusion.market_fallback");
   }
   if (!isFusion) {
     sliders.innerHTML = "";
@@ -426,7 +426,7 @@ function renderFallbackBanner(data) {
 
 function renderHero(data) {
   const meta = data.meta;
-  document.getElementById("disclaimer-text").textContent = meta.disclaimer;
+  document.getElementById("disclaimer-text").textContent = t("disclaimer.body");
   renderFallbackBanner(data);
   const warnEl = document.getElementById("meta-warnings");
   if (warnEl) {
@@ -490,14 +490,16 @@ function renderHero(data) {
 }
 
 function friendlyModelLabel(meta) {
-  const key = String(meta.model || "");
+  const key = String(meta.model || "").toLowerCase();
   if (key.includes("blend")) return t("chip.model_blend");
   if (key.includes("power")) return t("chip.model_power");
-  return meta.model_label || t("chip.model_default");
+  if (key.includes("catboost")) return t("chip.model_catboost");
+  if (key.includes("xgb")) return t("chip.model_xgb");
+  return t("chip.model_default");
 }
 
 function friendlyFormatLabel(fmt) {
-  if (!fmt) return "Swiss 16→4";
+  if (!fmt) return t("format.swiss_short");
   if (/16-team Swiss/i.test(fmt) || /Swiss to 4/i.test(fmt)) {
     return t("format.swiss");
   }
@@ -590,7 +592,7 @@ function renderStandings(data) {
             ${teamLogoHtml(row.id || row.short, row.short || row.name, { size: "sm" })}
             <div>
               ${escapeHtml(row.name)}
-              <span class="sub">${escapeHtml(row.source)} · rank ${escapeHtml(row.power_rank)}${escapeHtml(home)}</span>
+              <span class="sub">${escapeHtml(localizeSource(row.source))} · ${escapeHtml(t("standings.power_rank"))} ${escapeHtml(row.power_rank)}${escapeHtml(home)}</span>
             </div>
           </div>
         </td>
@@ -707,8 +709,8 @@ function renderMetrics(data) {
   const m = data.model_metrics || {};
   const meta = data.meta || {};
   const meth = document.getElementById("methodology-text");
-  if (meth && meta.methodology) {
-    meth.textContent = meta.methodology;
+  if (meth) {
+    meth.textContent = t("model.methodology");
   }
   const cov = m.player_coverage;
   const covLabel =

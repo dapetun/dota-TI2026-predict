@@ -37,7 +37,7 @@
       </a>
 
       <p class="nav-group-label" data-i18n="nav.group.participate">Участвуйте</p>
-      <nav class="side-nav" aria-label="Primary">
+      <nav class="side-nav" data-i18n-aria="nav.aria.primary" aria-label="Primary">
         <a href="#board" data-i18n="nav.board">Прогнозы</a>
         <a href="#standings" data-i18n="nav.standings">Команды</a>
         <a href="#heatmap" data-i18n="nav.heatmap">Карта слотов</a>
@@ -45,7 +45,7 @@
       </nav>
 
       <p class="nav-group-label" data-i18n="nav.group.support">Подробнее</p>
-      <nav class="side-nav" aria-label="Secondary">
+      <nav class="side-nav" data-i18n-aria="nav.aria.secondary" aria-label="Secondary">
         <a href="#model" data-i18n="nav.model">Модель</a>
         <a href="#how" data-i18n="nav.how">Как считаем</a>
         <a href="#rules" data-i18n="nav.rules">Правила</a>
@@ -89,6 +89,30 @@
 
       <div class="hero-meta" id="hero-meta"></div>
       <p class="fallback-banner" id="fallback-banner" hidden></p>
+
+      <aside class="other-projects-strip" aria-labelledby="other-projects-title">
+        <p class="other-projects-label" id="other-projects-title" data-i18n="projects.title">Другие проекты</p>
+        <div class="other-projects-grid">
+          <a
+            class="project-banner"
+            href="https://github.com/dapetun/moex-investment"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span class="project-banner-name">moex-investment</span>
+            <span class="project-banner-desc" data-i18n="projects.moex.desc">Котировки Мосбиржи и портфель по Марковицу</span>
+          </a>
+          <a
+            class="project-banner"
+            href="https://github.com/dapetun/Keyboard-Sender"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span class="project-banner-name">Keyboard-Sender</span>
+            <span class="project-banner-desc" data-i18n="projects.keyboard.desc">Помогает пройти мини-игру «Атака автоматонов» из ивента «Тёмный карнавал» в Dota</span>
+          </a>
+        </div>
+      </aside>
 
       <main>
         <section class="section section-board" id="board">
@@ -144,7 +168,7 @@
           <div class="section-head row">
             <div>
               <h3 data-i18n="standings.title">Шансы команд</h3>
-              <p data-i18n="standings.lead"><strong>μ ± σ</strong> — оценка силы и неопределённости. «Пройти» / «Вылететь» — доля симуляций Swiss (~50&nbsp;000).</p>
+              <p data-i18n-html="standings.lead"><strong>μ ± σ</strong> — оценка силы и неопределённости. «Пройти» / «Вылететь» — доля симуляций Swiss (~50&nbsp;000).</p>
             </div>
             <div class="controls">
               <label class="sr-only" for="sort-by" data-i18n="standings.sort_label">Сортировка</label>
@@ -208,7 +232,7 @@
         <section class="section" id="model">
           <div class="section-head">
             <h3 data-i18n="model.title">Состояние модели</h3>
-            <p id="methodology-text" data-i18n="model.lead_fallback">Смесь XGBoost + CatBoost; проверка Leave-One-TI-Out; сила μ±σ.</p>
+            <p id="methodology-text" data-i18n="model.methodology">Смесь XGBoost + CatBoost; проверка Leave-One-TI-Out; сила μ±σ.</p>
           </div>
           <div class="metrics" id="metrics-grid"></div>
         </section>
@@ -377,35 +401,10 @@
           </p>
         </section>
 
-        <section class="section other-projects-section" aria-labelledby="other-projects-title">
-          <div class="other-projects">
-            <p class="other-projects-label" id="other-projects-title" data-i18n="projects.title">Другие проекты</p>
-            <div class="other-projects-grid">
-              <a
-                class="project-banner"
-                href="https://github.com/dapetun/moex-investment"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <span class="project-banner-name">moex-investment</span>
-                <span class="project-banner-desc" data-i18n="projects.moex.desc">Котировки Мосбиржи и портфель по Марковицу</span>
-              </a>
-              <a
-                class="project-banner"
-                href="https://github.com/dapetun/Keyboard-Sender"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <span class="project-banner-name">Keyboard-Sender</span>
-                <span class="project-banner-desc" data-i18n="projects.keyboard.desc">Помогает пройти мини-игру «Атака автоматонов» из ивента «Тёмный карнавал» в Dota</span>
-              </a>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer class="site-footer">
-        <nav class="footer-nav" aria-label="Footer">
+        <nav class="footer-nav" data-i18n-aria="footer.aria" aria-label="Footer">
           <a href="#board" data-i18n="nav.board">Прогнозы</a>
           <a href="#standings" data-i18n="nav.standings">Команды</a>
           <a href="#rules" data-i18n="nav.rules">Правила</a>
@@ -417,7 +416,7 @@
         <p id="footer-stamp"></p>
         <p class="license-line">
           <a href="https://github.com/dapetun/dota-TI2026-predict/blob/prod/LICENSE" rel="noopener noreferrer" target="_blank" data-i18n="footer.license">Лицензия MIT</a>
-          · Copyright © 2026 dapetun
+          · <span data-i18n="footer.copyright">Copyright © 2026 dapetun</span>
         </p>
       </footer>
     </div>

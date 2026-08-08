@@ -1118,57 +1118,66 @@ body {
 }
 .footer-nav a:hover { color: var(--gold-bright); }
 
-.other-projects {
-  margin: 0;
-  max-width: 40rem;
-}
-.section.other-projects-section {
-  padding-top: 2rem;
-  padding-bottom: 0.25rem;
-  border-top: 1px solid var(--line);
-  margin-top: 1.5rem;
+.other-projects-strip {
+  margin: 0 0 1.1rem;
+  max-width: 42rem;
+  padding: 0.55rem 0 0.65rem;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.22);
 }
 .other-projects-label {
-  margin: 0 0 0.55rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold);
+  font-weight: 600;
 }
 .other-projects-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
+  gap: 0.45rem;
 }
 .project-banner {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.65rem 0.75rem;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
   text-decoration: none;
   color: inherit;
-  background: linear-gradient(135deg, rgba(32, 26, 20, 0.95), rgba(18, 14, 11, 0.88));
+  background: linear-gradient(135deg, rgba(32, 26, 20, 0.92), rgba(18, 14, 11, 0.82));
   border: 1px solid var(--line);
-  border-left: 2px solid var(--gold);
+  border-left: 3px solid var(--gold);
   border-radius: var(--radius);
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 .project-banner:hover {
-  border-color: var(--line-strong);
-  background: linear-gradient(135deg, rgba(40, 32, 24, 0.98), rgba(22, 18, 14, 0.92));
-  box-shadow: 0 0 18px rgba(197, 160, 89, 0.12);
+  border-color: rgba(197, 160, 89, 0.55);
+  border-left-color: var(--gold-bright);
+  background: linear-gradient(135deg, rgba(44, 34, 24, 0.98), rgba(24, 18, 14, 0.94));
+  box-shadow: 0 0 16px rgba(197, 160, 89, 0.16);
+  transform: translateY(-1px);
+}
+.project-banner:hover .project-banner-name {
+  color: var(--gold-bright);
 }
 .project-banner-name {
   font-family: var(--display);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--gold-bright);
+  letter-spacing: 0.03em;
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .project-banner-desc {
-  font-size: 0.78rem;
-  line-height: 1.35;
+  font-size: 0.72rem;
+  line-height: 1.3;
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .license-line { margin: 0.65rem 0 0; font-size: 0.82rem; }
