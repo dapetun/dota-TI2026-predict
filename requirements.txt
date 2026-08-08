@@ -1,6 +1,6 @@
 requests>=2.34.2,<3
 pandas>=2.1.0,<3
-numpy>=1.24.0,<3
+numpy>=2.5.1,<3
 scikit-learn>=1.3.0,<2
 xgboost>=2.0.0,<4
 catboost>=1.2.0,<2
