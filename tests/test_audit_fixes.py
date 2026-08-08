@@ -203,9 +203,16 @@ def test_curated_team_id_map_in_repo():
 
 
 def test_tune_fusion_weight_loo_doc_mentions_in_sample():
-    from src.ti2026.fusion import tune_fusion_weight_loo
+    from src.ti2026.fusion import (
+        DEFAULT_MODEL_WEIGHT,
+        resolve_production_fusion_weight,
+        tune_fusion_weight_loo,
+    )
 
     assert "in-sample" in (tune_fusion_weight_loo.__doc__ or "").lower()
+    # Production must not adopt a zeroed model weight from in-sample tune.
+    assert resolve_production_fusion_weight(0.0) == DEFAULT_MODEL_WEIGHT
+    assert 0.0 not in (tune_fusion_weight_loo.__defaults__ or ())
 
 
 def test_glicko2_update_and_inactive():

@@ -182,11 +182,13 @@ def download_details(
     rate_limit: float = 2.0,
     write_monolith: bool = False,
     source: str = "explorer",
+    batch_size: int = 25,
 ) -> dict:
     """Download missing match details into shards (optionally sync monolith).
 
     ``source``: ``explorer`` (default, fast SQL), ``rest`` (/matches), or ``auto``.
     Prefer explorer while OpenDota ``/matches/{id}`` hangs on large payloads.
+    ``batch_size`` > 1 batches explorer SQL via ``IN (...)`` (ignored for rest).
     """
     logger.info("Loading existing details cache...")
     RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -220,28 +222,43 @@ def download_details(
         with_players = sum(1 for v in existing.values() if _has_players(v))
         return {"cached": len(existing), "downloaded": 0, "errors": 0, "with_players": with_players}
 
+    # Batch only for pure explorer path (one SQL → many matches).
+    use_batch = source == "explorer" and batch_size > 1
+    effective_batch = max(1, batch_size) if use_batch else 1
+    if use_batch:
+        logger.info("Explorer batch size: %s", effective_batch)
+
     errors = 0
     downloaded = 0
-    # Same mid: retry transient network a few times, then skip.
-    max_transient_per_match = 3 if source != "rest" else 2
-    progress_every = 10  # explorer is cheap; surface progress sooner
-    for i, (tourn_key, mid) in enumerate(needed):
-        mid_transient = 0
+    max_transient_per_chunk = 3 if source != "rest" else 2
+    progress_every = 10 if effective_batch == 1 else max(effective_batch, 25)
+    total = len(needed)
+    i = 0
+    while i < total:
+        chunk = needed[i : i + effective_batch]
+        chunk_transient = 0
         while True:
             try:
-                detail = client.get_match_resilient(mid, source=source)
-                if detail and "error" not in detail and _has_players(detail):
-                    detail = {**detail, "match_id": detail.get("match_id") or mid}
-                    atomic_write_json(shard_path_for_match(RAW_DIR, mid, tourn_key), detail)
-                    existing[str(mid)] = detail
-                    downloaded += 1
+                if use_batch and len(chunk) > 1:
+                    details_map = client.get_matches_explorer([mid for _, mid in chunk])
                 else:
-                    errors += 1
+                    tourn_key, mid = chunk[0]
+                    details_map = {mid: client.get_match_resilient(mid, source=source)}
+
+                for tourn_key, mid in chunk:
+                    detail = details_map.get(mid)
+                    if detail and "error" not in detail and _has_players(detail):
+                        detail = {**detail, "match_id": detail.get("match_id") or mid}
+                        atomic_write_json(shard_path_for_match(RAW_DIR, mid, tourn_key), detail)
+                        existing[str(mid)] = detail
+                        downloaded += 1
+                    else:
+                        errors += 1
                 break
             except Exception as exc:  # noqa: BLE001 — network resilience
                 msg = str(exc).lower()
                 if "429" in msg or "rate" in msg:
-                    logger.warning("Rate limited at %s, sleeping 65s...", mid)
+                    logger.warning("Rate limited near %s, sleeping 65s...", chunk[0][1])
                     time.sleep(65)
                     continue
                 transient = (
@@ -252,36 +269,66 @@ def download_details(
                     or "10054" in msg
                 )
                 if transient:
-                    mid_transient += 1
+                    chunk_transient += 1
                     logger.warning(
-                        "Transient error at %s (%s/%s): %s",
-                        mid,
-                        mid_transient,
-                        max_transient_per_match,
+                        "Transient error near %s (%s/%s, batch=%s): %s",
+                        chunk[0][1],
+                        chunk_transient,
+                        max_transient_per_chunk,
+                        len(chunk),
                         exc,
                     )
-                    if mid_transient >= max_transient_per_match:
+                    if chunk_transient >= max_transient_per_chunk:
+                        # Fall back to one-by-one so one bad id does not burn the batch.
+                        if len(chunk) > 1:
+                            logger.warning(
+                                "Batch failed; falling back to single fetches for %s ids",
+                                len(chunk),
+                            )
+                            for tourn_key, mid in chunk:
+                                try:
+                                    detail = client.get_match_resilient(mid, source=source)
+                                    if detail and "error" not in detail and _has_players(detail):
+                                        detail = {
+                                            **detail,
+                                            "match_id": detail.get("match_id") or mid,
+                                        }
+                                        atomic_write_json(
+                                            shard_path_for_match(RAW_DIR, mid, tourn_key),
+                                            detail,
+                                        )
+                                        existing[str(mid)] = detail
+                                        downloaded += 1
+                                    else:
+                                        errors += 1
+                                except Exception as single_exc:  # noqa: BLE001
+                                    errors += 1
+                                    logger.warning("Error at %s: %s", mid, single_exc)
+                                    time.sleep(1)
+                            break
                         logger.warning(
                             "Skipping %s after %s transient failures",
-                            mid,
-                            mid_transient,
+                            chunk[0][1],
+                            chunk_transient,
                         )
                         errors += 1
                         break
-                    time.sleep(3 * mid_transient)
+                    time.sleep(3 * chunk_transient)
                     continue
-                errors += 1
-                logger.warning("Error at %s: %s", mid, exc)
+                errors += len(chunk)
+                logger.warning("Error near %s: %s", chunk[0][1], exc)
                 time.sleep(1)
                 break
 
-        if (i + 1) % progress_every == 0 or (i + 1) == len(needed):
+        prev = i
+        i += len(chunk)
+        if i >= total or (prev // progress_every) != (i // progress_every):
             if write_monolith:
                 atomic_write_json(details_file, existing)
             logger.info(
                 "Progress %s/%s | new=%s | errors=%s",
-                i + 1,
-                len(needed),
+                i,
+                total,
                 downloaded,
                 errors,
             )
@@ -314,12 +361,23 @@ def main() -> None:
         default=None,
         help="Optional subset of tournament keys",
     )
-    parser.add_argument("--rate", type=float, default=2.0, help="Seconds between API calls")
+    parser.add_argument(
+        "--rate",
+        type=float,
+        default=2.0,
+        help="Seconds between API calls (free tier ~1.0 without OPENDOTA_API_KEY)",
+    )
     parser.add_argument(
         "--source",
         choices=("explorer", "rest", "auto"),
         default="explorer",
         help="Match payload source (default explorer: /matches often times out)",
+    )
+    parser.add_argument(
+        "--batch",
+        type=int,
+        default=25,
+        help="Explorer SQL batch size (IN list); 1 = one match per request",
     )
     parser.add_argument(
         "--write-monolith",
@@ -333,6 +391,7 @@ def main() -> None:
         rate_limit=args.rate,
         write_monolith=args.write_monolith,
         source=args.source,
+        batch_size=args.batch,
     )
 
 

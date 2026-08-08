@@ -5,6 +5,7 @@ v0.3 additions:
   - schedule strength: opp_avg_elo
   - Glicko-2 μ / RD as uncertainty (alongside classic Elo)
   - separate form half-life (~40d) vs rating continuity
+  - dual Elo (online vs LAN) + margin-of-victory K scaling
 """
 
 from __future__ import annotations
@@ -24,6 +25,10 @@ ELO_PRIOR: float = 1500.0
 # Form decay half-life (days) for WR rolling — short-term form.
 FORM_HALF_LIFE_DAYS: float = 40.0
 # Rating sample-weight half-life is documented in sample_weights (210d default).
+# MoV: dampened multiplier on Elo K from kill score / duration.
+MOV_MAX_MULT: float = 1.5
+MOV_REF_SCORE_DIFF: float = 20.0
+MOV_REF_DURATION: float = 2400.0  # seconds; long games ≈ closer
 
 
 # Documented feature set (see docs/FEATURES.md).
@@ -126,9 +131,15 @@ def gp_uncertainty(gp: float) -> float:
 
 @dataclass
 class TeamStateStore:
-    """Running Elo/form/H2H/Glicko after replaying match history."""
+    """Running Elo/form/H2H/Glicko after replaying match history.
+
+    ``elo`` is the blended/unified rating used by default. ``elo_online`` /
+    ``elo_lan`` track context-specific ratings for Group Stage vs Main Event.
+    """
 
     elo: dict[int, float] = field(default_factory=lambda: defaultdict(lambda: 1500.0))
+    elo_online: dict[int, float] = field(default_factory=lambda: defaultdict(lambda: 1500.0))
+    elo_lan: dict[int, float] = field(default_factory=lambda: defaultdict(lambda: 1500.0))
     history: dict[int, list[tuple[int, bool, float]]] = field(
         default_factory=lambda: defaultdict(list)
     )
@@ -142,9 +153,54 @@ class TeamStateStore:
     glicko: GlickoRating = field(default_factory=GlickoRating)
 
 
-def _team_side_stats(store: TeamStateStore, team_id: int, as_of_ts: int) -> dict[str, float]:
+def margin_of_victory_k_scale(
+    radiant_score: float | int | None = None,
+    dire_score: float | int | None = None,
+    *,
+    duration: float | int | None = None,
+    max_mult: float = MOV_MAX_MULT,
+    ref_score_diff: float = MOV_REF_SCORE_DIFF,
+    ref_duration: float = MOV_REF_DURATION,
+) -> float:
+    """Scale Elo K by kill margin; fall back to duration if scores missing.
+
+    Larger margins → slightly higher K (capped). Very long games without
+    score → mild downscale (closer contest proxy).
+    """
+    rs = float(radiant_score) if radiant_score is not None else 0.0
+    ds = float(dire_score) if dire_score is not None else 0.0
+    if rs > 0 or ds > 0:
+        margin = abs(rs - ds)
+        # 1 + log1p(margin)/log1p(ref) ∈ [1, ~2], clipped to max_mult
+        scale = 1.0 + float(np.log1p(margin) / np.log1p(ref_score_diff))
+        return float(min(max_mult, max(0.75, scale)))
+    if duration is not None and float(duration) > 0:
+        # Longer than ref → closer → lower K; shorter blowouts → higher K
+        ratio = float(ref_duration) / max(float(duration), 1.0)
+        scale = float(np.clip(ratio, 0.85, max_mult))
+        return scale
+    return 1.0
+
+
+def _context_elo(store: TeamStateStore, team_id: int, *, prefer_lan: bool) -> float:
+    """Select online/LAN Elo, falling back to unified when context is cold."""
+    unified = float(store.elo[team_id])
+    ctx = float(store.elo_lan[team_id] if prefer_lan else store.elo_online[team_id])
+    # Cold context rating → use unified so GS can still see LAN signal and vice versa.
+    if abs(ctx - ELO_PRIOR) < 1e-9 and abs(unified - ELO_PRIOR) > 1e-9:
+        return unified
+    return ctx
+
+
+def _team_side_stats(
+    store: TeamStateStore,
+    team_id: int,
+    as_of_ts: int,
+    *,
+    prefer_lan: bool = True,
+) -> dict[str, float]:
     """Pre-match side stats for one OpenDota team_id."""
-    elo = float(store.elo[team_id])
+    elo = _context_elo(store, team_id, prefer_lan=prefer_lan)
     hist = store.history[team_id]
     wr, wr5, streak = _form_stats(hist, as_of_ts=as_of_ts)
     gp = len(hist)
@@ -179,10 +235,16 @@ def compose_pair_features(
     dire_team_id: int,
     as_of_ts: int,
     tier_weight: float = 2.0,
+    *,
+    prefer_lan: bool = True,
 ) -> dict[str, float]:
-    """Build FEATURE_COLUMNS for a hypothetical Radiant vs Dire matchup."""
-    r = _team_side_stats(store, radiant_team_id, as_of_ts)
-    d = _team_side_stats(store, dire_team_id, as_of_ts)
+    """Build FEATURE_COLUMNS for a hypothetical Radiant vs Dire matchup.
+
+    ``prefer_lan=False`` injects online Elo into existing ``r_elo``/``d_elo``
+    (Group Stage context) without changing the trained feature schema.
+    """
+    r = _team_side_stats(store, radiant_team_id, as_of_ts, prefer_lan=prefer_lan)
+    d = _team_side_stats(store, dire_team_id, as_of_ts, prefer_lan=prefer_lan)
     elo_prob = 1.0 / (1.0 + 10 ** ((d["elo_shrunk"] - r["elo_shrunk"]) / 400.0))
 
     pair = tuple(sorted((radiant_team_id, dire_team_id)))
@@ -242,6 +304,21 @@ def compose_pair_features(
     }
 
 
+def _apply_elo_delta(
+    store_map: dict[int, float],
+    r_id: int,
+    d_id: int,
+    r_win: bool,
+    k: float,
+) -> None:
+    """Update one Elo map (unified / online / LAN)."""
+    r_elo = float(store_map[r_id])
+    d_elo = float(store_map[d_id])
+    elo_prob = 1.0 / (1.0 + 10 ** ((d_elo - r_elo) / 400.0))
+    store_map[r_id] = r_elo + k * ((1.0 if r_win else 0.0) - elo_prob)
+    store_map[d_id] = d_elo + k * ((0.0 if r_win else 1.0) - (1.0 - elo_prob))
+
+
 def _update_after_match(
     store: TeamStateStore,
     r_id: int,
@@ -251,14 +328,21 @@ def _update_after_match(
     r_win: bool,
     *,
     elo_k_base: float = 20.0,
+    is_lan: bool = True,
+    radiant_score: float | int | None = None,
+    dire_score: float | int | None = None,
+    duration: float | int | None = None,
 ) -> None:
     """Apply Elo / Glicko / history updates after emitting features."""
     r_elo = store.elo[r_id]
     d_elo = store.elo[d_id]
-    elo_prob = 1.0 / (1.0 + 10 ** ((d_elo - r_elo) / 400.0))
-    k = elo_k_base * (1.0 + (tier_w - 1.0) * 0.4)
-    store.elo[r_id] = r_elo + k * ((1.0 if r_win else 0.0) - elo_prob)
-    store.elo[d_id] = d_elo + k * ((0.0 if r_win else 1.0) - (1.0 - elo_prob))
+    mov = margin_of_victory_k_scale(radiant_score, dire_score, duration=duration)
+    k = elo_k_base * (1.0 + (tier_w - 1.0) * 0.4) * mov
+    _apply_elo_delta(store.elo, r_id, d_id, r_win, k)
+    if is_lan:
+        _apply_elo_delta(store.elo_lan, r_id, d_id, r_win, k)
+    else:
+        _apply_elo_delta(store.elo_online, r_id, d_id, r_win, k)
     store.history[r_id].append((t, r_win, tier_w))
     store.history[d_id].append((t, not r_win, tier_w))
     pair = tuple(sorted((r_id, d_id)))
@@ -284,13 +368,33 @@ def replay_team_states(
     if matches.empty:
         return store
     df = matches.sort_values("start_time").reset_index(drop=True)
+    has_lan = "is_lan" in df.columns
+    has_rs = "radiant_score" in df.columns
+    has_ds = "dire_score" in df.columns
+    has_dur = "duration" in df.columns
     for m in df.itertuples(index=False):
         r_id = int(m.radiant_team_id)
         d_id = int(m.dire_team_id)
         t = int(m.start_time)
         tier_w = float(getattr(m, "tier_weight", 1.0) or 1.0)
         r_win = bool(m.radiant_win)
-        _update_after_match(store, r_id, d_id, t, tier_w, r_win, elo_k_base=elo_k_base)
+        is_lan = bool(getattr(m, "is_lan", True)) if has_lan else True
+        rs = getattr(m, "radiant_score", None) if has_rs else None
+        ds = getattr(m, "dire_score", None) if has_ds else None
+        dur = getattr(m, "duration", None) if has_dur else None
+        _update_after_match(
+            store,
+            r_id,
+            d_id,
+            t,
+            tier_w,
+            r_win,
+            elo_k_base=elo_k_base,
+            is_lan=is_lan,
+            radiant_score=rs,
+            dire_score=ds,
+            duration=dur,
+        )
     return store
 
 
@@ -332,6 +436,10 @@ def build_match_feature_matrix(
     has_r_canon = "radiant_canonical" in df.columns
     has_d_canon = "dire_canonical" in df.columns
     has_tier_w = "tier_weight" in df.columns
+    has_lan = "is_lan" in df.columns
+    has_rs = "radiant_score" in df.columns
+    has_ds = "dire_score" in df.columns
+    has_dur = "duration" in df.columns
 
     for m in df.itertuples(index=False):
         r_id = int(m.radiant_team_id)
@@ -339,8 +447,11 @@ def build_match_feature_matrix(
         t = int(m.start_time)
         tier_w = float(getattr(m, "tier_weight", 1.0) if has_tier_w else 1.0) or 1.0
         r_win = bool(m.radiant_win)
-
-        feats = compose_pair_features(store, r_id, d_id, t, tier_weight=tier_w)
+        is_lan = bool(getattr(m, "is_lan", True)) if has_lan else True
+        # Train features use unified/LAN-leaning context (prefer_lan=True).
+        feats = compose_pair_features(
+            store, r_id, d_id, t, tier_weight=tier_w, prefer_lan=True
+        )
         rows.append(
             {
                 "match_id": int(m.match_id),
@@ -357,7 +468,19 @@ def build_match_feature_matrix(
                 "radiant_win": int(r_win),
             }
         )
-        _update_after_match(store, r_id, d_id, t, tier_w, r_win, elo_k_base=elo_k_base)
+        _update_after_match(
+            store,
+            r_id,
+            d_id,
+            t,
+            tier_w,
+            r_win,
+            elo_k_base=elo_k_base,
+            is_lan=is_lan,
+            radiant_score=getattr(m, "radiant_score", None) if has_rs else None,
+            dire_score=getattr(m, "dire_score", None) if has_ds else None,
+            duration=getattr(m, "duration", None) if has_dur else None,
+        )
 
     feat = pd.DataFrame(rows)
     if min_games > 0:

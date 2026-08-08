@@ -37,8 +37,8 @@ from src.features.team_stitching import apply_team_stitch, build_team_stitch_map
 from src.models.artifact_hash import write_sha256_sidecar
 from src.ti2026.multisource import PATCH_741_START_TS, PATCH_IN_MULT
 from src.models.catboost_model import save_catboost_result, train_catboost_pipeline
-from src.models.ensemble import summarize_blend, train_blend_pipeline, tune_blend_weights_loo
-from src.models.validation import FoldResult, leave_one_ti_splits
+from src.models.ensemble import summarize_blend, train_blend_pipeline
+from src.models.validation import FoldResult
 from src.models.xgboost_model import save_train_result, summarize_results, train_xgboost_pipeline
 
 
@@ -52,6 +52,12 @@ def _avg_ll(folds: list[FoldResult]) -> float | None:
     if not folds:
         return None
     return float(np.mean([f.log_loss for f in folds]))
+
+
+def _avg_brier(folds: list[FoldResult]) -> float | None:
+    if not folds:
+        return None
+    return float(np.mean([f.brier for f in folds]))
 
 
 def run_model_compare(
@@ -123,24 +129,16 @@ def run_model_compare(
     logger.info("%s", summarize_results(cat_result))
     cat_path = save_catboost_result(cat_result, output_dir, stem="catboost_v1")
 
-    logger.info("--- Blend (LOO-tuned XGB + CatBoost) ---")
+    logger.info("--- Blend (LOO-tuned XGB + CatBoost, isotonic when calibrate=True) ---")
     blend_result = train_blend_pipeline(
         features,
         feature_cols=feature_cols,
-        calibrate=False,
+        calibrate=True,
         half_life_days=half_life_days,
     )
     logger.info("%s", summarize_blend(blend_result))
 
-    # Isotonic on pooled LOO (metrics only; not saved to production bundle).
-    loo_folds = leave_one_ti_splits(features.sort_values("start_time").reset_index(drop=True))
-    _, isotonic_cal = tune_blend_weights_loo(
-        features.sort_values("start_time").reset_index(drop=True),
-        feature_cols,
-        loo_folds,
-        calibrate=True,
-    )
-    calibrated_note = isotonic_cal is not None
+    calibrated_note = bool(blend_result.params.get("calibrated"))
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     blend_path = out / "model_blend_v1.joblib"
@@ -175,6 +173,8 @@ def run_model_compare(
                 "leave_one_ti_avg_auc": _avg_auc(xgb_result.leave_one_ti),
                 "walk_forward_avg_logloss": _avg_ll(xgb_result.walk_forward),
                 "leave_one_ti_avg_logloss": _avg_ll(xgb_result.leave_one_ti),
+                "walk_forward_avg_brier": _avg_brier(xgb_result.walk_forward),
+                "leave_one_ti_avg_brier": _avg_brier(xgb_result.leave_one_ti),
                 "metrics_path": str(xgb_path),
             },
             "catboost": {
@@ -182,6 +182,8 @@ def run_model_compare(
                 "leave_one_ti_avg_auc": _avg_auc(cat_result.leave_one_ti),
                 "walk_forward_avg_logloss": _avg_ll(cat_result.walk_forward),
                 "leave_one_ti_avg_logloss": _avg_ll(cat_result.leave_one_ti),
+                "walk_forward_avg_brier": _avg_brier(cat_result.walk_forward),
+                "leave_one_ti_avg_brier": _avg_brier(cat_result.leave_one_ti),
                 "metrics_path": str(cat_path),
             },
             "blend": {
@@ -189,8 +191,10 @@ def run_model_compare(
                 "leave_one_ti_avg_auc": _avg_auc(blend_result.leave_one_ti),
                 "walk_forward_avg_logloss": _avg_ll(blend_result.walk_forward),
                 "leave_one_ti_avg_logloss": _avg_ll(blend_result.leave_one_ti),
+                "walk_forward_avg_brier": _avg_brier(blend_result.walk_forward),
+                "leave_one_ti_avg_brier": _avg_brier(blend_result.leave_one_ti),
                 "weights": blend_result.params.get("weights"),
-                "isotonic_loo_evaluated": calibrated_note,
+                "isotonic_calibrated": calibrated_note,
             },
         },
     }

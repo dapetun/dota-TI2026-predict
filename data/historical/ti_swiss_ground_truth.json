@@ -1,0 +1,54 @@
+{
+  "disclaimer": "Curated from public Liquipedia standings for research / backtest only.",
+  "source": "Liquipedia",
+  "tournaments": {
+    "TI14": {
+      "year": 2025,
+      "name": "The International 2025",
+      "format": "swiss_to_4",
+      "liquipedia": "https://liquipedia.net/dota2/The_International/2025/Group_Stage",
+      "note": "True Swiss (first to 4W/4L). Slot keys match FANTASY_BOARD_SLOTS.",
+      "slots": {
+        "undefeated": ["Xtreme"],
+        "one_loss": ["BetBoom", "Tidebound"],
+        "advance": ["Aurora", "Falcons", "Parivision", "HEROIC", "Liquid"],
+        "eliminate": ["Spirit", "Wildcard", "Tundra", "Yakutou", "Nigma"],
+        "one_win": ["BOOM", "NAVI"],
+        "winless": ["Nemesis"]
+      },
+      "name_aliases": {
+        "Xtreme": ["Xtreme Gaming", "XG"],
+        "BetBoom": ["BB Team", "BetBoom Team"],
+        "Tidebound": ["Team Tidebound"],
+        "Parivision": ["PARIVISION", "PVISION", "PARI"],
+        "Yakutou": ["Yakutou Brothers", "YkBros"],
+        "Nemesis": ["Team Nemesis"],
+        "NAVI": ["Natus Vincere"],
+        "BOOM": ["BOOM Esports"],
+        "Wildcard": ["Wildcard Gaming"]
+      }
+    },
+    "TI13": {
+      "year": 2024,
+      "name": "The International 2024",
+      "format": "round_robin_groups",
+      "liquipedia": "https://liquipedia.net/dota2/The_International/2024/Group_Stage",
+      "note": "TI13 used RR groups (not Swiss). Slots are a soft mapping from group W-L / advancement for scoring experiments only — not literal Swiss records.",
+      "slots": {
+        "undefeated": ["Spirit"],
+        "one_loss": ["Liquid", "Tundra"],
+        "advance": ["Xtreme", "Falcons", "Gaimin", "Cloud9", "BetBoom"],
+        "eliminate": ["Aurora", "1w", "HEROIC", "Talon", "G2iG"],
+        "one_win": ["nouns", "Zero"],
+        "winless": ["beastcoast"]
+      },
+      "name_aliases": {
+        "Gaimin": ["Gaimin Gladiators", "GG"],
+        "Cloud9": ["C9"],
+        "G2iG": ["G2.iG", "iG"],
+        "Zero": ["Team Zero", "Azure Ray"],
+        "beastcoast": ["bc"]
+      }
+    }
+  }
+}

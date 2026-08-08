@@ -1,0 +1,20 @@
+{
+  "source": "fixture",
+  "note": "Offline fixture player×hero rows for signature builder tests.",
+  "players": {
+    "1001": [
+      {"hero_id": 8, "games": 40, "win": 26},
+      {"hero_id": 1, "games": 25, "win": 14},
+      {"hero_id": 74, "games": 15, "win": 7}
+    ],
+    "1002": [
+      {"hero_id": 2, "games": 50, "win": 28},
+      {"hero_id": 14, "games": 30, "win": 12},
+      {"hero_id": 3, "games": 10, "win": 4}
+    ],
+    "1003": [
+      {"hero_id": 74, "games": 60, "win": 36},
+      {"hero_id": 8, "games": 20, "win": 11}
+    ]
+  }
+}

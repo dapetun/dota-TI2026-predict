@@ -199,14 +199,58 @@ def simulate_elimination_round(
     return remaining[:advance_n]
 
 
+def sample_strength_adjusted_matrix(
+    win_matrix: pd.DataFrame,
+    team_strengths: dict[str, dict],
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """Resample pairwise P(win) from latent strengths ~ N(μ, σ).
+
+    ``team_strengths[tid]`` should expose ``mu``/``sigma`` (Elo-like) or
+    ``glicko_mu``/``glicko_rd``. Bradley-Terry on sampled strengths adjusts
+    the base matrix multiplicatively toward the sampled logit.
+    """
+    teams = list(win_matrix.index)
+    sampled: dict[str, float] = {}
+    for tid in teams:
+        s = team_strengths.get(tid) or {}
+        mu = float(s.get("mu", s.get("elo_shrunk", s.get("glicko_mu", 1500.0))))
+        sigma = float(s.get("sigma", s.get("glicko_rd", s.get("strength_sigma", 50.0))))
+        sigma = max(1.0, sigma)
+        sampled[tid] = float(mu + rng.normal(0.0, sigma))
+
+    out = win_matrix.copy().astype(float)
+    for a in teams:
+        for b in teams:
+            if a == b:
+                continue
+            # BT from sampled strengths
+            sa, sb = sampled[a], sampled[b]
+            p_bt = sa / (sa + sb) if (sa + sb) > 0 else 0.5
+            # Also logistic on Elo-ish scale
+            p_elo = 1.0 / (1.0 + 10 ** ((sb - sa) / 400.0))
+            p_sample = 0.5 * (p_bt + p_elo)
+            p_base = float(win_matrix.loc[a, b])
+            # Blend: keep model structure, inject uncertainty
+            out.loc[a, b] = float(np.clip(0.5 * p_base + 0.5 * p_sample, 0.02, 0.98))
+    return out
+
+
 def simulate_swiss_stage(
     win_matrix: pd.DataFrame,
     team_ids: list,
     config: SwissConfig | None = None,
     n_simulations: int = 100000,
     rng_seed: int = 42,
+    *,
+    team_strengths: dict[str, dict] | None = None,
+    sample_uncertainty: bool = False,
 ) -> pd.DataFrame:
-    """Run Swiss + Elimination Round Monte Carlo."""
+    """Run Swiss + Elimination Round Monte Carlo.
+
+    When ``sample_uncertainty`` and ``team_strengths`` are set, each simulation
+    draws latent strengths (Glicko RD / σ) and adjusts P(win) before pairing.
+    """
     if config is None:
         config = SwissConfig()
 
@@ -220,6 +264,9 @@ def simulate_swiss_stage(
 
     for _ in range(n_simulations):
         state = SwissState(teams=list(team_ids))
+        matrix = win_matrix
+        if sample_uncertainty and team_strengths:
+            matrix = sample_strength_adjusted_matrix(win_matrix, team_strengths, rng)
 
         for _round in range(config.n_rounds):
             active = [
@@ -229,7 +276,7 @@ def simulate_swiss_stage(
             ]
             if len(active) < 2:
                 break
-            state = simulate_swiss_round(state, win_matrix, rng, config)
+            state = simulate_swiss_round(state, matrix, rng, config)
 
         er_pool = [
             t
@@ -239,7 +286,7 @@ def simulate_swiss_stage(
         er_advancers = set(
             simulate_elimination_round(
                 er_pool,
-                win_matrix,
+                matrix,
                 advance_n=config.elimination_round_advance,
                 rng=rng,
                 records=state.records,

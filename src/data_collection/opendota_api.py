@@ -22,6 +22,15 @@ class OpenDotaRateLimitError(RuntimeError):
     """Raised when OpenDota keeps returning HTTP 429 after max retries."""
 
 
+_EXPLORER_MATCH_SELECT = """
+SELECT pm.match_id, pm.account_id, pm.player_slot, pm.hero_id, pm.kills, pm.deaths, pm.assists,
+       pm.gold_per_min, pm.xp_per_min, pm.hero_damage, pm.tower_damage, pm.hero_healing, pm.level,
+       m.start_time, m.duration, m.radiant_win, m.radiant_team_id, m.dire_team_id, m.leagueid
+FROM player_matches pm
+JOIN matches m ON m.match_id = pm.match_id
+""".strip()
+
+
 def explorer_rows_to_match_detail(rows: list[dict], match_id: int) -> dict:
     """Build an OpenDota-shaped match dict from explorer JOIN rows."""
     if not rows:
@@ -62,6 +71,18 @@ def explorer_rows_to_match_detail(rows: list[dict], match_id: int) -> dict:
         "players": players,
         "_source": "opendota_explorer",
     }
+
+
+def explorer_rows_to_match_details(rows: list[dict]) -> dict[int, dict]:
+    """Group explorer JOIN rows into ``match_id → detail`` dicts."""
+    by_mid: dict[int, list[dict]] = {}
+    for row in rows:
+        mid_raw = row.get("match_id")
+        if mid_raw is None:
+            continue
+        mid = int(mid_raw)
+        by_mid.setdefault(mid, []).append(row)
+    return {mid: explorer_rows_to_match_detail(group, mid) for mid, group in by_mid.items()}
 
 
 class OpenDotaClient:
@@ -137,23 +158,39 @@ class OpenDotaClient:
             timeout=DEFAULT_MATCH_REST_TIMEOUT_SEC if timeout is None else timeout,
         )
 
-    def get_match_explorer(self, match_id: int) -> dict:
-        """Fetch match+players via /explorer SQL (fast fallback when /matches hangs)."""
-        sql = f"""
-SELECT pm.match_id, pm.account_id, pm.player_slot, pm.hero_id, pm.kills, pm.deaths, pm.assists,
-       pm.gold_per_min, pm.xp_per_min, pm.hero_damage, pm.tower_damage, pm.hero_healing, pm.level,
-       m.start_time, m.duration, m.radiant_win, m.radiant_team_id, m.dire_team_id, m.leagueid
-FROM player_matches pm
-JOIN matches m ON m.match_id = pm.match_id
-WHERE pm.match_id = {int(match_id)}
-""".strip()
-        payload = self._get("/explorer", {"sql": sql}, timeout=45.0)
+    def _explorer_query(self, sql: str, *, timeout: float = 60.0) -> list[dict]:
+        """Run OpenDota /explorer SQL and return row list."""
+        payload = self._get("/explorer", {"sql": sql}, timeout=timeout)
         if isinstance(payload, dict) and payload.get("err"):
             raise RuntimeError(f"OpenDota explorer error: {payload['err']}")
         rows = payload.get("rows") if isinstance(payload, dict) else None
         if not isinstance(rows, list):
-            raise RuntimeError(f"Unexpected explorer payload for match_id={match_id}")
-        return explorer_rows_to_match_detail(rows, int(match_id))
+            raise RuntimeError("Unexpected explorer payload (no rows list)")
+        return rows
+
+    def get_match_explorer(self, match_id: int) -> dict:
+        """Fetch match+players via /explorer SQL (fast fallback when /matches hangs)."""
+        mid = int(match_id)
+        sql = f"{_EXPLORER_MATCH_SELECT}\nWHERE pm.match_id = {mid}"
+        rows = self._explorer_query(sql, timeout=45.0)
+        return explorer_rows_to_match_detail(rows, mid)
+
+    def get_matches_explorer(self, match_ids: list[int]) -> dict[int, dict]:
+        """Fetch many matches in one /explorer SQL (``IN (...)``).
+
+        Returns only matches present in the response; missing IDs are omitted.
+        """
+        ids = [int(m) for m in match_ids]
+        if not ids:
+            return {}
+        if len(ids) == 1:
+            return {ids[0]: self.get_match_explorer(ids[0])}
+        id_list = ",".join(str(i) for i in ids)
+        # Larger batches need more time; cap stays under client default 90s.
+        timeout = min(90.0, 45.0 + 0.4 * len(ids))
+        sql = f"{_EXPLORER_MATCH_SELECT}\nWHERE pm.match_id IN ({id_list})"
+        rows = self._explorer_query(sql, timeout=timeout)
+        return explorer_rows_to_match_details(rows)
 
     def get_match_resilient(
         self,

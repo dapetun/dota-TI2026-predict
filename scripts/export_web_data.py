@@ -36,13 +36,24 @@ from src.ti2026.compendium_scoring import (
     compare_board_strategies,
     optimize_fantasy_board,
 )
-from src.ti2026.fusion import fuse_slot_probabilities, tune_fusion_weight_loo
+from src.ti2026.fusion import (
+    FUSION_WEIGHT_SCENARIOS,
+    DEFAULT_MARKET_WEIGHT,
+    DEFAULT_MODEL_WEIGHT,
+    DEFAULT_RANKING_WEIGHT,
+    fuse_slot_probabilities,
+    fuse_weight_scenarios,
+    resolve_production_fusion_weight,
+    tune_fusion_weight_loo,
+)
 from src.ti2026.multisource import (
     DEFAULT_HOME_LAN_ELO,
     PATCH_741_START_TS,
     PATCH_IN_MULT,
     home_lan_elo_bonus,
+    load_market_priors,
 )
+from src.ti2026.expert_history import score_all_experts
 from src.ti2026.teams import (
     POWER_RANKINGS,
     SWISS_CONFIG,
@@ -186,6 +197,33 @@ def check_player_coverage(
             f"WARNING: player coverage {cov:.1%} < {warn_threshold:.0%} "
             f"({coverage.get('n_matches_with_players')}/{coverage.get('n_matches')} matches)"
         )
+
+
+def _human_methodology(model_metrics: dict | None) -> str:
+    """Plain-Russian methodology blurb for the model status section."""
+    cov = (model_metrics or {}).get("player_coverage") or {}
+    cov_frac = cov.get("coverage")
+    n_with = cov.get("n_matches_with_players")
+    n_tot = cov.get("n_matches")
+    if cov_frac is not None and n_with is not None and n_tot:
+        cov_line = (
+            f"У {cov_frac:.0%} матчей корпуса ({n_with}/{n_tot}) есть составы игроков; "
+            "остальные ещё без скачанных деталей."
+        )
+    else:
+        cov_line = (
+            "У части матчей есть составы игроков; остальные ещё без скачанных деталей."
+        )
+    return (
+        "Мы берём результаты матчей турниров и оцениваем силу каждой команды.\n"
+        f"{cov_line}\n"
+        "Модель сравнивает две команды и говорит, кто вероятнее победит.\n"
+        "Затем много раз проигрываем весь Swiss-турнир и смотрим, куда чаще попадает каждая команда.\n"
+        "Качество проверяем на прошлых TI и на свежих матчах.\n"
+        "Итоговый прогноз смешивает модель с мнениями аналитиков и рыночными вероятностями.\n"
+        "Число μ ± σ на сайте — сила команды ± насколько мы в ней уверены.\n"
+        "Технические подробности — в разделе «Как считаем» ниже."
+    )
 
 
 def load_model_metrics() -> dict:
@@ -438,8 +476,17 @@ def export_predictions(
         f"{config.n_rounds} rounds, ER->{config.elimination_round_advance}) "
         f"x {n_simulations:,} [{model_label}]..."
     )
+    use_uncertainty = bool(strengths) and any(
+        (s or {}).get("sigma") or (s or {}).get("glicko_rd") for s in strengths.values()
+    )
     results = simulate_swiss_stage(
-        win_matrix, teams, config, n_simulations=n_simulations, rng_seed=42
+        win_matrix,
+        teams,
+        config,
+        n_simulations=n_simulations,
+        rng_seed=42,
+        team_strengths=strengths if use_uncertainty else None,
+        sample_uncertainty=use_uncertainty,
     )
 
     predictions = [
@@ -457,9 +504,65 @@ def export_predictions(
     qualify_board = assign_fantasy_board(predictions)
     points_board = optimize_fantasy_board(predictions)
     consensus_board = build_consensus_board(predictions)
-    fusion_weight, fusion_pts = tune_fusion_weight_loo(predictions)
-    fused_predictions = fuse_slot_probabilities(predictions, model_weight=fusion_weight)
+    market_priors = load_market_priors()
+    tuned_w, fusion_pts = tune_fusion_weight_loo(predictions)
+    # Production SoT: documented DEFAULT_MODEL_WEIGHT (tune is in-sample diagnostic).
+    fusion_weight = resolve_production_fusion_weight(tuned_w)
+    fusion_market_w = DEFAULT_MARKET_WEIGHT
+    fusion_ranking_w = DEFAULT_RANKING_WEIGHT
+    # Seeded market == POWER_RANKINGS soft mass — do not double-count with ranking.
+    if market_priors.get("seeded_from_ranking") or not market_priors.get("is_real_market", True):
+        fusion_market_w = 0.0
+    # Residual analyst keeps production mix when market is forced off.
+    fusion_analyst_w = max(
+        0.0, 1.0 - float(fusion_weight) - float(fusion_market_w) - float(fusion_ranking_w)
+    )
+    fused_predictions = fuse_slot_probabilities(
+        predictions,
+        model_weight=fusion_weight,
+        analyst_weight=fusion_analyst_w,
+        market_weight=fusion_market_w,
+        ranking_weight=fusion_ranking_w,
+        market_priors=market_priors,
+    )
     fusion_board = optimize_fantasy_board(fused_predictions)
+
+    if fusion_market_w <= 0.0:
+        # Rebuild scenarios without phantom market when priors are ranking-seeded.
+        scenario_preds = {
+            name: fuse_slot_probabilities(
+                predictions,
+                model_weight=float(w.get("model_weight", DEFAULT_MODEL_WEIGHT)),
+                analyst_weight=float(
+                    w["analyst_weight"]
+                    if "analyst_weight" in w
+                    else max(
+                        0.0,
+                        1.0
+                        - float(w.get("model_weight", DEFAULT_MODEL_WEIGHT))
+                        - 0.0
+                        - float(w.get("ranking_weight", 0.0))
+                        - float(w.get("expert_weight", 0.0)),
+                    )
+                ),
+                market_weight=0.0,
+                ranking_weight=float(w.get("ranking_weight", 0.0)),
+                expert_weight=float(w.get("expert_weight", 0.0)),
+                market_priors=market_priors,
+                use_expert_history=float(w.get("expert_weight", 0.0)) > 0,
+            )
+            for name, w in FUSION_WEIGHT_SCENARIOS.items()
+        }
+    else:
+        scenario_preds = fuse_weight_scenarios(predictions)
+    scenario_boards = {
+        name: enrich_full_board(optimize_fantasy_board(preds))
+        for name, preds in scenario_preds.items()
+    }
+    scenario_compare = {
+        name: compare_board_strategies(preds)["points_optimal"]
+        for name, preds in scenario_preds.items()
+    }
 
     board = enrich_full_board(points_board)
     boards_payload = {
@@ -467,6 +570,7 @@ def export_predictions(
         "qualify_rank": enrich_full_board(qualify_board),
         "analyst_consensus": enrich_full_board(consensus_board),
         "fusion": enrich_full_board(fusion_board),
+        **{f"fusion_{k}": v for k, v in scenario_boards.items()},
     }
     board_compare = compare_board_strategies(
         predictions,
@@ -477,6 +581,7 @@ def export_predictions(
     )
     analyst_meta = consensus_summary(predictions)
     heatmap = build_slot_heatmap(predictions)
+    expert_scores = score_all_experts()
 
     # Sanity: capacities
     for key, meta in FANTASY_BOARD_SLOTS.items():
@@ -484,25 +589,36 @@ def export_predictions(
         if got != meta["capacity"]:
             print(f"WARNING: board[{key}] has {got}, expected {meta['capacity']}")
 
+    market_disclaimer = (
+        "Рыночные вероятности — только исследовательский сигнал. "
+        "Автор не рекламирует букмекеров. Не для ставок и не финансовый совет."
+    )
     if model_key.startswith("blend"):
         disclaimer = (
-            "Доска Swiss: Monte Carlo на pairwise blend (XGB+CatBoost) "
-            "с team Elo/Glicko-2 ±uncertainty + player/chemistry. "
-            "Home LAN (+Δ Elo CN/Shanghai) — meta для main event, "
-            "в μ Group Stage не добавляется. "
-            "Слоты компендиума — points-optimal под таблицу Valve. "
-            "Это исследовательский прогноз с высокой неопределённостью — "
-            "не для ставок и не финансовый совет."
+            "Это исследовательский прогноз Swiss-доски и слотов компендиума TI 2026. "
+            "Считается по матчевым данным: модель + мнения аналитиков + рыночные "
+            "вероятности. Неопределённость высокая — не для ставок и не финансовый совет. "
+            + market_disclaimer
         )
     else:
         disclaimer = (
-            "ВНИМАНИЕ: доска построена на power ranking (не blend pairwise) "
-            "и Monte Carlo (Swiss до 4 побед/поражений + Elimination Round). "
-            "Это fallback — переобучите модель (train_compare). "
-            "Не для ставок; неопределённость очень высока."
+            "Упрощённый режим: доска по power ranking (основная модель недоступна). "
+            "Исследовательский прогноз с очень высокой неопределённостью — "
+            "не для ставок и не финансовый совет. "
+            + market_disclaimer
         )
 
     meta_warnings = _meta_warnings(model_metrics, is_fallback=is_fallback)
+    if market_priors.get("seeded_from_ranking") or not market_priors.get("is_real_market", True):
+        meta_warnings.append(
+            "Market prior seeded from POWER_RANKINGS (not live odds); "
+            "fusion market_weight forced to 0 to avoid double-counting ranking."
+        )
+    if abs(float(tuned_w) - float(fusion_weight)) > 1e-9:
+        meta_warnings.append(
+            f"In-sample tune suggested model_weight={tuned_w:.2f}; "
+            f"export uses production default {fusion_weight:.2f}."
+        )
 
     payload = {
         "meta": {
@@ -513,38 +629,52 @@ def export_predictions(
             "model_label": model_label,
             "is_power_ranking_fallback": is_fallback,
             "disclaimer": disclaimer,
+            "market_disclaimer": market_disclaimer,
+            "research_disclaimer": (
+                "All fusion sources (model, analyst, anonymous market odds_implied, "
+                "ranking/expert-history) are research signals only."
+            ),
             "warnings": meta_warnings,
             "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
             "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
+            "sample_uncertainty": use_uncertainty,
             "version": "0.3.0-prod",
             "board_strategy": "points_optimal",
             "expected_compendium_points": board_compare["points_optimal"]["expected_points"],
             "expected_correct_slots": board_compare["points_optimal"]["expected_correct"],
             "board_compare": board_compare,
             "fusion_model_weight": fusion_weight,
+            "fusion_model_weight_tuned_in_sample": tuned_w,
+            "fusion_tuned_expected_points_in_sample": fusion_pts,
+            "fusion_analyst_weight": fusion_analyst_w,
+            "fusion_market_weight": fusion_market_w,
+            "fusion_ranking_weight": fusion_ranking_w,
             "fusion_expected_points": board_compare.get("fusion", {}).get("expected_points"),
             "fusion_weight_note": (
-                "tune_fusion_weight_loo is an in-sample grid on current predictions "
-                "(not true LOO CV)."
+                "Production fusion uses DEFAULT_MODEL_WEIGHT=0.65. "
+                "Soft weights are independent (need not sum to 1); fuse renormalizes. "
+                "tune_fusion_weight_loo is in-sample diagnostic only (not true LOO CV)."
             ),
+            "fusion_weight_scenarios": FUSION_WEIGHT_SCENARIOS,
+            "fusion_scenario_scores": scenario_compare,
+            "market_priors_meta": {
+                "source": market_priors.get("source", "anonymous_market"),
+                "seeded_from_ranking": market_priors.get("seeded_from_ranking"),
+                "is_real_market": market_priors.get("is_real_market"),
+                "updated_at": market_priors.get("updated_at"),
+                "disclaimer": market_priors.get("disclaimer"),
+            },
+            "expert_history_scores": expert_scores,
             "n_leagues": len(TOURNAMENTS),
             "n_maps": int(len(matches)) if matches is not None else None,
             "home_lan_elo": DEFAULT_HOME_LAN_ELO,
             "patch_741_start_ts": PATCH_741_START_TS,
-            "methodology": (
-                "Leave-One-TI-Out; sample half-life 210d; form ~40d; "
-                f"patch≥7.41 sample mult {PATCH_IN_MULT}; "
-                "tier weights ti=2/major=1.5/qual=0.75/online=0.5; "
-                "Empirical Bayes Elo shrink + Glicko-2 (μ/RD/σ); "
-                "roster Jaccard stitch ≥0.6. "
-                "Calibration: XGB final fit may use isotonic; production blend "
-                "bundle is uncalibrated — isotonic on LOO is metrics-only."
-            ),
+            "methodology": _human_methodology(model_metrics),
             "calibration_policy": (
                 "XGB pipeline: optional isotonic on final fit. "
-                "Blend production joblib: no isotonic. "
-                "Isotonic on pooled LOO blend = offline eval only."
+                "Blend production: isotonic when calibrate=True in train_compare. "
+                "Brier + log-loss reported in model_compare metrics."
             ),
             "swiss_bye_policy": (
                 "Odd leftover in a Swiss record bucket gets an implicit bye "
@@ -612,7 +742,7 @@ def main(argv: list[str] | None = None) -> int:
         "--n-simulations",
         type=int,
         default=None,
-        help="Monte Carlo sims (default from settings.yaml / 20000)",
+        help="Monte Carlo sims (default from settings.yaml / 50000)",
     )
     parser.add_argument(
         "--require-blend",

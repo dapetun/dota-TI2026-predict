@@ -1,0 +1,392 @@
+{
+  "disclaimer": "Research signal only. The author does not support or endorse gambling operators. Implied probabilities are for Bayesian fusion — not betting advice.",
+  "source": "polymarket_gamma_api",
+  "updated_at": "2026-08-08",
+  "fetched_at_utc": "2026-08-08T10:15:00+00:00",
+  "seed_from_ranking": false,
+  "is_real_market": true,
+  "derivation": "derived_from_winner_odds",
+  "partial": true,
+  "note": "No public Swiss-slot markets on Polymarket/OddsPortal as of fetch. teams{} are Swiss fantasy-slot probs derived from live tournament-WINNER Yes prices via Bradley–Terry + project Swiss Monte Carlo (n_sims=25000, strength_power=0.5). Winner≠Swiss strength — treat as soft market prior.",
+  "method": {
+    "api": "https://gamma-api.polymarket.com/events?slug=the-international-2026-winner-20260629212545745",
+    "docs": "https://docs.polymarket.com/",
+    "winner_event_slug": "the-international-2026-winner-20260629212545745",
+    "winner_event_url": "https://polymarket.com/event/the-international-2026-winner-20260629212545745",
+    "steps": [
+      "Pull Yes outcomePrices for each active team market (skip A/B/C/Other).",
+      "Normalize Yes prices to sum=1 (independent markets de-vig).",
+      "Strength s_i = p_i ** 0.5.",
+      "Bradley–Terry P(i>j) = s_i/(s_i+s_j), clipped to [0.02, 0.98].",
+      "simulate_swiss_stage Monte Carlo n_sims=25000, seed=42.",
+      "Map prob_4_0→undefeated, prob_4_1→one_loss, …; renormalize per team."
+    ],
+    "n_sims": 25000,
+    "rng_seed": 42,
+    "strength_power": 0.5,
+    "swiss_slot_markets_found": [],
+    "related_ti2026_events": [
+      {
+        "title": "The International 2026: Winner",
+        "slug": "the-international-2026-winner-20260629212545745",
+        "n_markets": 20
+      },
+      {
+        "title": "The International 2026: Most Picked Hero",
+        "slug": "the-international-2026-most-picked-hero-20260806194835426",
+        "n_markets": 108
+      },
+      {
+        "title": "The International 2026: Winning Region",
+        "slug": "the-international-2026-winning-region-20260805215811238",
+        "n_markets": 9
+      },
+      {
+        "title": "The International 2026: Will Any Team Field a Stand-in?",
+        "slug": "the-international-2026-will-any-team-field-a-stand-in-20260805215015814",
+        "n_markets": 1
+      },
+      {
+        "title": "Which Hero Will be Announced at TI 2026?",
+        "slug": "which-hero-will-be-announced-at-ti-2026-20260805195759849",
+        "n_markets": 7
+      }
+    ]
+  },
+  "how_to_enable_real_market": [
+    "Run: python scripts/fetch_market_priors.py",
+    "Or paste curated Swiss-slot implied probs into teams{} and set seed_from_ranking=false, is_real_market=true.",
+    "Re-run scripts/export_web_data.py — market_weight stays non-zero only when is_real_market and not seeded."
+  ],
+  "tournament_winner_reference": {
+    "note": "Live Polymarket winner Yes prices (pre-normalization). NOT Swiss slot books — used only as derivation input.",
+    "polymarket": {
+      "url": "https://polymarket.com/event/the-international-2026-winner-20260629212545745",
+      "api": "https://gamma-api.polymarket.com/events?slug=the-international-2026-winner-20260629212545745",
+      "as_of": "2026-08-08",
+      "fetched_at_utc": "2026-08-08T10:15:00+00:00",
+      "market": "The International 2026: Winner",
+      "volume": 103560.719713,
+      "liquidity": 778157.62121,
+      "raw_yes_price": {
+        "Aurora": 0.065,
+        "BetBoom": 0.105,
+        "Falcons": 0.095,
+        "Liquid": 0.075,
+        "1w": 0.065,
+        "Xtreme": 0.0425,
+        "Yandex": 0.215,
+        "Spirit": 0.085,
+        "Vision": 0.215,
+        "HULIGANI": 0.0015,
+        "Nigma": 0.0155,
+        "Resilience": 0.024,
+        "Vici": 0.0345,
+        "OG": 0.0065,
+        "GamerLegion": 0.0055,
+        "LGD": 0.0205
+      },
+      "normalized_implied": {
+        "Aurora": 0.060719,
+        "BetBoom": 0.098085,
+        "Falcons": 0.088744,
+        "Liquid": 0.070061,
+        "1w": 0.060719,
+        "Xtreme": 0.039701,
+        "Yandex": 0.200841,
+        "Spirit": 0.079402,
+        "Vision": 0.200841,
+        "HULIGANI": 0.001401,
+        "Nigma": 0.014479,
+        "Resilience": 0.022419,
+        "Vici": 0.032228,
+        "OG": 0.006072,
+        "GamerLegion": 0.005138,
+        "LGD": 0.01915
+      },
+      "markets": {
+        "Aurora": {
+          "label": "Aurora Gaming",
+          "slug": "will-aurora-gaming-win-the-international-2026-20260629212053614",
+          "yes_price": 0.065
+        },
+        "BetBoom": {
+          "label": "BoomBoys",
+          "slug": "will-boomboys-win-the-international-2026-20260629212053615",
+          "yes_price": 0.105
+        },
+        "Falcons": {
+          "label": "Team Falcons",
+          "slug": "will-team-falcons-win-the-international-2026-20260629212053616",
+          "yes_price": 0.095
+        },
+        "Liquid": {
+          "label": "Team Liquid",
+          "slug": "will-team-liquid-win-the-international-2026-20260629212053617",
+          "yes_price": 0.075
+        },
+        "1w": {
+          "label": "1w Team",
+          "slug": "will-1w-team-win-the-international-2026-20260629212053618",
+          "yes_price": 0.065
+        },
+        "Xtreme": {
+          "label": "Xtreme Gaming",
+          "slug": "will-xtreme-gaming-win-the-international-2026-20260629212053619",
+          "yes_price": 0.0425
+        },
+        "Yandex": {
+          "label": "Team Yandex",
+          "slug": "will-team-yandex-win-the-international-2026-20260629212053620",
+          "yes_price": 0.215
+        },
+        "Spirit": {
+          "label": "Team Spirit",
+          "slug": "will-team-spirit-win-the-international-2026-20260629212053621",
+          "yes_price": 0.085
+        },
+        "Vision": {
+          "label": "TEAM VISION",
+          "slug": "will-team-vision-win-the-international-2026-20260629212053622",
+          "yes_price": 0.215
+        },
+        "HULIGANI": {
+          "label": "HULIGANI",
+          "slug": "will-huligani-win-the-international-2026-20260629212053624",
+          "yes_price": 0.0015
+        },
+        "Nigma": {
+          "label": "Nigma Galaxy",
+          "slug": "will-nigma-galaxy-win-the-international-2026-20260629212053623",
+          "yes_price": 0.0155
+        },
+        "Resilience": {
+          "label": "Team Resilience",
+          "slug": "will-team-resilience-win-the-international-2026-20260629212053625",
+          "yes_price": 0.024
+        },
+        "Vici": {
+          "label": "Vici Gaming",
+          "slug": "will-vici-gaming-win-the-international-2026-20260629212053626",
+          "yes_price": 0.0345
+        },
+        "OG": {
+          "label": "OG",
+          "slug": "will-og-win-the-international-2026-20260629212053627",
+          "yes_price": 0.0065
+        },
+        "GamerLegion": {
+          "label": "GamerLegion",
+          "slug": "will-gamerlegion-win-the-international-2026-20260629212053628",
+          "yes_price": 0.0055
+        },
+        "LGD": {
+          "label": "LGD Gaming",
+          "slug": "will-lgd-gaming-win-the-international-2026-20260629212053629",
+          "yes_price": 0.0205
+        }
+      }
+    },
+    "cyberscore_winner_odds_digest": {
+      "url": "https://cyberscore.live/en/news/the-international-2026-winner-odds/",
+      "as_of": "2026-07-29",
+      "note": "Static article snapshot (not used for teams{} derivation). Kept for cross-check vs Polymarket.",
+      "odds": {
+        "Vision": {
+          "decimal": 4.4,
+          "implied_pct": 22.73
+        },
+        "Yandex": {
+          "decimal": 5.3,
+          "implied_pct": 18.87
+        },
+        "BetBoom": {
+          "decimal": 7.5,
+          "implied_pct": 13.33
+        },
+        "Spirit": {
+          "decimal": 8.5,
+          "implied_pct": 11.76
+        },
+        "Falcons": {
+          "decimal": 8.5,
+          "implied_pct": 11.76
+        },
+        "Aurora": {
+          "decimal": 10.0,
+          "implied_pct": 10.0
+        },
+        "1w": {
+          "decimal": 14.0,
+          "implied_pct": 7.14
+        },
+        "Liquid": {
+          "decimal": 17.0,
+          "implied_pct": 5.88
+        },
+        "Nigma": {
+          "decimal": 17.0,
+          "implied_pct": 5.88
+        },
+        "LGD": {
+          "decimal": 17.0,
+          "implied_pct": 5.88
+        },
+        "Xtreme": {
+          "decimal": 17.0,
+          "implied_pct": 5.88
+        },
+        "Vici": {
+          "decimal": 25.0,
+          "implied_pct": 4.0
+        },
+        "Resilience": {
+          "decimal": 30.0,
+          "implied_pct": 3.33
+        },
+        "OG": {
+          "decimal": 50.0,
+          "implied_pct": 2.0
+        },
+        "GamerLegion": {
+          "decimal": 60.0,
+          "implied_pct": 1.67
+        },
+        "HULIGANI": {
+          "decimal": 100.0,
+          "implied_pct": 1.0
+        }
+      }
+    }
+  },
+  "teams": {
+    "Yandex": {
+      "undefeated": 0.24975,
+      "one_loss": 0.32967,
+      "advance": 0.381618,
+      "eliminate": 0.035964,
+      "one_win": 0.002997,
+      "winless": 0.0
+    },
+    "Vision": {
+      "undefeated": 0.251748,
+      "one_loss": 0.333666,
+      "advance": 0.371628,
+      "eliminate": 0.038961,
+      "one_win": 0.003996,
+      "winless": 0.0
+    },
+    "BetBoom": {
+      "undefeated": 0.105,
+      "one_loss": 0.232,
+      "advance": 0.526,
+      "eliminate": 0.12,
+      "one_win": 0.016,
+      "winless": 0.001
+    },
+    "Falcons": {
+      "undefeated": 0.087,
+      "one_loss": 0.215,
+      "advance": 0.523,
+      "eliminate": 0.156,
+      "one_win": 0.018,
+      "winless": 0.001
+    },
+    "Spirit": {
+      "undefeated": 0.076,
+      "one_loss": 0.189,
+      "advance": 0.515,
+      "eliminate": 0.195,
+      "one_win": 0.023,
+      "winless": 0.002
+    },
+    "Liquid": {
+      "undefeated": 0.061938,
+      "one_loss": 0.171828,
+      "advance": 0.4995,
+      "eliminate": 0.236763,
+      "one_win": 0.026973,
+      "winless": 0.002997
+    },
+    "Aurora": {
+      "undefeated": 0.053053,
+      "one_loss": 0.146146,
+      "advance": 0.468468,
+      "eliminate": 0.295295,
+      "one_win": 0.033033,
+      "winless": 0.004004
+    },
+    "1w": {
+      "undefeated": 0.052947,
+      "one_loss": 0.146853,
+      "advance": 0.452547,
+      "eliminate": 0.308691,
+      "one_win": 0.034965,
+      "winless": 0.003996
+    },
+    "Xtreme": {
+      "undefeated": 0.025974,
+      "one_loss": 0.086913,
+      "advance": 0.343656,
+      "eliminate": 0.468531,
+      "one_win": 0.065934,
+      "winless": 0.008991
+    },
+    "Vici": {
+      "undefeated": 0.018,
+      "one_loss": 0.062,
+      "advance": 0.296,
+      "eliminate": 0.525,
+      "one_win": 0.087,
+      "winless": 0.012
+    },
+    "Resilience": {
+      "undefeated": 0.008991,
+      "one_loss": 0.036963,
+      "advance": 0.224775,
+      "eliminate": 0.566434,
+      "one_win": 0.13986,
+      "winless": 0.022977
+    },
+    "LGD": {
+      "undefeated": 0.006,
+      "one_loss": 0.03,
+      "advance": 0.187,
+      "eliminate": 0.578,
+      "one_win": 0.169,
+      "winless": 0.03
+    },
+    "Nigma": {
+      "undefeated": 0.003996,
+      "one_loss": 0.014985,
+      "advance": 0.132867,
+      "eliminate": 0.585415,
+      "one_win": 0.216783,
+      "winless": 0.045954
+    },
+    "OG": {
+      "undefeated": 0.0,
+      "one_loss": 0.003,
+      "advance": 0.044,
+      "eliminate": 0.418,
+      "one_win": 0.396,
+      "winless": 0.139
+    },
+    "GamerLegion": {
+      "undefeated": 0.0,
+      "one_loss": 0.001001,
+      "advance": 0.03003,
+      "eliminate": 0.374374,
+      "one_win": 0.431431,
+      "winless": 0.163163
+    },
+    "HULIGANI": {
+      "undefeated": 0.0,
+      "one_loss": 0.0,
+      "advance": 0.003,
+      "eliminate": 0.097,
+      "one_win": 0.336,
+      "winless": 0.564
+    }
+  }
+}

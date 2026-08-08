@@ -34,9 +34,28 @@ def _fake_predictions() -> list[dict]:
 
 def test_load_analyst_picks_has_ten_full_grids():
     data = load_analyst_picks()
-    assert len(data["analysts"]) == 10
+    assert len(data["analysts"]) >= 10
     for row in data["analysts"]:
         assert len(row["board"]) == 16
+
+
+def test_load_analyst_picks_includes_hotspawn_partial():
+    data = load_analyst_picks()
+    partial = data.get("partial") or []
+    ids = {row["id"] for row in partial}
+    assert "hotspawn_lead" in ids
+    lead = next(row for row in partial if row["id"] == "hotspawn_lead")
+    assert len(lead.get("board") or {}) >= 1
+    assert any(s.get("id") == "hotspawn" for s in (data.get("sources") or []))
+
+
+def test_consensus_summary_exports_partial_meta():
+    preds = _fake_predictions()
+    summary = consensus_summary(preds)
+    assert summary["n_analysts"] >= 10
+    assert summary["n_partial"] >= 1
+    assert summary["source"] and "Hotspawn" in str(summary["source"])
+    assert any(p.get("id") == "hotspawn_lead" for p in summary["partial"])
 
 
 def test_consensus_board_capacities():
@@ -64,7 +83,7 @@ def test_compare_board_strategies_includes_analyst():
 def test_consensus_summary_scores():
     preds = _fake_predictions()
     summary = consensus_summary(preds)
-    assert summary["n_analysts"] == 10
+    assert summary["n_analysts"] >= 10
     assert summary["expected_points"] > 0
     scores = score_board_assignment(summary["assignment"], preds)
     assert scores["expected_points"] == summary["expected_points"]

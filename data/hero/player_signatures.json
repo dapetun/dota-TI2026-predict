@@ -1,0 +1,92 @@
+{
+  "source": "fixture",
+  "usable_in_production": false,
+  "note": "Test fixture only — soft prior skips this file. Build with --fetch for real OpenDota signatures.",
+  "players": {
+    "1001": {
+      "account_id": 1001,
+      "heroes": [
+        {
+          "hero_id": 8,
+          "games": 40,
+          "wins": 26,
+          "wr": 0.65,
+          "meta_wr": 0.55,
+          "score": 0.6167
+        },
+        {
+          "hero_id": 1,
+          "games": 25,
+          "wins": 14,
+          "wr": 0.56,
+          "meta_wr": 0.52,
+          "score": 0.5422
+        },
+        {
+          "hero_id": 74,
+          "games": 15,
+          "wins": 7,
+          "wr": 0.4667,
+          "meta_wr": 0.5263,
+          "score": 0.5007
+        }
+      ],
+      "sig_wr": 0.5532,
+      "pool_depth": 2
+    },
+    "1002": {
+      "account_id": 1002,
+      "heroes": [
+        {
+          "hero_id": 2,
+          "games": 50,
+          "wins": 28,
+          "wr": 0.56,
+          "meta_wr": 0.5333,
+          "score": 0.5524
+        },
+        {
+          "hero_id": 14,
+          "games": 30,
+          "wins": 12,
+          "wr": 0.4,
+          "meta_wr": 0.49,
+          "score": 0.436
+        },
+        {
+          "hero_id": 3,
+          "games": 10,
+          "wins": 4,
+          "wr": 0.4,
+          "meta_wr": 0.5,
+          "score": 0.4667
+        }
+      ],
+      "sig_wr": 0.485,
+      "pool_depth": 1
+    },
+    "1003": {
+      "account_id": 1003,
+      "heroes": [
+        {
+          "hero_id": 74,
+          "games": 60,
+          "wins": 36,
+          "wr": 0.6,
+          "meta_wr": 0.5263,
+          "score": 0.5816
+        },
+        {
+          "hero_id": 8,
+          "games": 20,
+          "wins": 11,
+          "wr": 0.55,
+          "meta_wr": 0.55,
+          "score": 0.55
+        }
+      ],
+      "sig_wr": 0.5658,
+      "pool_depth": 2
+    }
+  }
+}

@@ -1,6 +1,19 @@
-# Feature catalog
+# Feature catalog / Каталог признаков
 
-Все признаки считаются **до** исхода текущего матча (нет leakage).
+**EN:** All features are computed **before** the current match outcome (no leakage). Tables below are bilingual in intent: Russian descriptions with English column names as in code.
+
+**RU:** Все признаки считаются **до** исхода текущего матча (нет leakage).
+
+## Data → features / Данные → признаки (обзор)
+
+| Слой | Откуда | Зачем |
+|---|---|---|
+| Matchlists | `data/raw/*_matches.json` | Корпус карт, Elo/form без составов |
+| Details (shards) | `data/raw/details_shards/…` + monolith shim | Player rows, chemistry |
+| Player coverage | `summarize_player_coverage` | Доля корпуса с players; сейчас **100%** (8709/8709) |
+
+Без details матч всё равно участвует в team Elo/form, но player/chem-фичи = 0 и `has_player_stats=0`.  
+Coverage закрыто: дыр 0; не путать с числом shard-файлов на диске (~9641).
 
 ## Team features
 
@@ -33,7 +46,8 @@
 
 ## Player features
 
-Строятся по `account_id` из OpenDota match details. История игрока обновляется **после** матча.
+Строятся по `account_id` из OpenDota match details. История игрока обновляется **после** матча.  
+Player-row: элемент `players[]` с `account_id` ≠ 0/None и известным `team_id` стороны (`detail_to_player_rows`).
 
 | Признак | Источник | Как считается | Зачем | Ожидаемое влияние |
 |---|---|---|---|---|
@@ -74,15 +88,28 @@
 |---|---|---|
 | Home LAN | `src/ti2026/multisource.py` | +30 Elo CN/Shanghai — meta/informational; в μ GS не добавляется |
 | Patch 7.41 | `PATCH_741_START_TS` ≈ 2026-03-24 | **wired** в `compute_sample_weights` (`PATCH_IN_MULT=1.25`) |
-| Fusion | `src/ti2026/fusion.py` | model default 0.65 + analyst; `tune_fusion_weight_loo` = **in-sample** grid (не true LOO) |
-| Market | stub | `market_slot_prior_stub` → None |
+| Fusion | `src/ti2026/fusion.py` | model + analyst + anonymous market + ranking/expert; UI scenarios |
+| Market | `data/ti2026_market_priors.json` | curated `odds_implied` (research only; seeded from POWER_RANKINGS) |
+| Ranking prior | `ranking_slot_prior` | intentional Bayesian soft prior from POWER_RANKINGS |
+| Dual Elo | `TeamStateStore` | `elo_online` / `elo_lan`; GS pairwise `prefer_lan=False` |
+| MoV K | `margin_of_victory_k_scale` | scale Elo K from kill score (fallback duration) |
+| Hero soft prior | `hero_soft_prior.py` | experimental logit shift; `USE_HERO_SOFT_PRIOR=0` default |
+| Swiss uncertainty | `simulate_swiss_stage` | optional sample from strength σ / Glicko RD |
 
 ## Модели
 
 - `scripts/train.py` — XGBoost
-- `scripts/train_compare.py` — XGBoost + CatBoost + LOO-tuned blend
-- Isotonic на pooled LOO — offline eval (не в production joblib)
+- `scripts/train_compare.py` — XGBoost + CatBoost + LOO-tuned blend (**isotonic** when `calibrate=True`)
+- Brier + log-loss в `model_compare.json`
 
 ## Pairwise / UI
 
-`src/ti2026/pairwise.py` — 16×16 P(win); Swiss MC → P(слот); export: `strength_mu ± strength_sigma`, slot heatmap 16×6.
+`src/ti2026/pairwise.py` — 16×16 P(win); Swiss MC → P(слот); export: `strength_mu ± strength_sigma`, slot heatmap 16×6, fusion weight scenarios.
+
+| Число в UI | Смысл |
+|---|---|
+| **μ ± σ** | Сила команды (Elo shrink + Glicko) и неопределённость |
+| Heatmap % | Доля MC-симов, где команда попала в слот компендиума |
+| Пройти / вылететь | Доля симов с advance / eliminate |
+| Strategies | points-optimal, qualify-rank, analyst, fusion (разные веса источников) |
+| Player coverage | 8709/8709 матчей с player details (100%, цель ≥80%) |

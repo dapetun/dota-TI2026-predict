@@ -268,7 +268,7 @@ def summarize_player_coverage(
     matches: pd.DataFrame,
     players: pd.DataFrame,
 ) -> dict:
-    """Coverage stats: how many matches have player rows."""
+    """Share of corpus matches with ≥1 player-row (details ∩ matchlists)."""
     n_matches = int(len(matches)) if matches is not None and not matches.empty else 0
     if players is None or players.empty or n_matches == 0:
         return {

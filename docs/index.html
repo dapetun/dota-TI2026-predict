@@ -3,158 +3,432 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TI 2026 Swiss Predictor</title>
-  <meta name="description" content="Открытый прогноз групповой стадии The International 2026" />
+  <title data-i18n="meta.title">TI 2026 · Прогноз Swiss</title>
+  <meta name="description" data-i18n="meta.description" content="Открытый прогноз групповой стадии The International 2026" />
   <!-- CSP hint: GitHub Pages cannot set HTTP CSP headers from static HTML alone.
        Tighten via Pages/custom headers when available. Fonts: Google Fonts CDN
-       (Instrument Sans + Syne); self-host to drop third-party if needed. -->
+       (Outfit + Source Sans 3); self-host to drop third-party if needed. -->
   <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'"
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
-  <div class="noise" aria-hidden="true"></div>
-  <div class="glow glow-a" aria-hidden="true"></div>
-  <div class="glow glow-b" aria-hidden="true"></div>
+  <div class="atmosphere" aria-hidden="true">
+    <div class="noise"></div>
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+    <div class="embers"></div>
+  </div>
 
-  <header class="site-header">
-    <div class="brand">
-      <span class="brand-mark">TI26</span>
-      <div>
-        <p class="brand-kicker">Open forecast</p>
-        <h1 class="brand-title">Swiss Predictor</h1>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand" href="#board">
+        <span class="brand-aegis" aria-hidden="true">TI</span>
+        <div>
+          <p class="brand-kicker" data-i18n="brand.kicker">Открытый прогноз</p>
+          <p class="brand-script">The International</p>
+          <h1 class="brand-title" data-i18n="brand.title">Прогноз Swiss</h1>
+        </div>
+      </a>
+
+      <p class="nav-group-label" data-i18n="nav.group.participate">Участвуйте</p>
+      <nav class="side-nav" aria-label="Primary">
+        <a href="#board" data-i18n="nav.board">Прогнозы</a>
+        <a href="#standings" data-i18n="nav.standings">Команды</a>
+        <a href="#heatmap" data-i18n="nav.heatmap">Карта слотов</a>
+        <a href="#matchup" data-i18n="nav.matchup">Матч</a>
+      </nav>
+
+      <p class="nav-group-label" data-i18n="nav.group.support">Подробнее</p>
+      <nav class="side-nav" aria-label="Secondary">
+        <a href="#model" data-i18n="nav.model">Модель</a>
+        <a href="#how" data-i18n="nav.how">Как считаем</a>
+        <a href="#rules" data-i18n="nav.rules">Правила</a>
+        <a class="nav-github" href="https://github.com/dapetun/dota-TI2026-predict" id="repo-link" rel="noopener noreferrer" target="_blank" data-i18n="nav.repo">Репозиторий</a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="lang-switch" id="lang-switcher">
+          <span class="sr-only" id="lang-switch-label" data-i18n="lang.label">Язык</span>
+          <button
+            type="button"
+            class="lang-switch-btn"
+            id="lang-switch-btn"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="lang-switch-list"
+            aria-labelledby="lang-switch-label"
+          >
+            <img class="lang-flag" id="lang-switch-flag" src="assets/img/flags/ru.svg" alt="" width="20" height="14" decoding="async" />
+            <span class="lang-switch-text" id="lang-switch-text">Русский</span>
+            <span class="lang-switch-chevron" aria-hidden="true"></span>
+          </button>
+          <ul class="lang-switch-list" id="lang-switch-list" role="listbox" hidden></ul>
+        </div>
       </div>
-    </div>
-    <nav class="nav">
-      <a href="#board">Доска</a>
-      <a href="#standings">Шансы</a>
-      <a href="#heatmap">Heatmap</a>
-      <a href="#matchup">Матч</a>
-      <a href="#model">Модель</a>
-      <a class="nav-github" href="https://github.com/dapetun/dota-TI2026-predict" id="repo-link" rel="noopener noreferrer" target="_blank">Репозиторий</a>
-    </nav>
-  </header>
+    </aside>
 
-  <main>
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">The International 2026 · Group Stage</p>
-        <h2 class="hero-title">Кто проходит Swiss?</h2>
-        <p class="hero-lead" id="hero-lead">
-          16 команд, Swiss до 4 побед/поражений, затем Elimination Round. Ниже — прогнозная доска.
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-title-wrap">
+          <p class="eyebrow" data-i18n="hero.eyebrow">The International 2026 · Групповая стадия</p>
+          <h2 class="page-title" data-i18n="hero.title">Прогнозы</h2>
+          <p class="page-lead" id="hero-lead" data-i18n="hero.lead">
+            16 команд, Swiss до 4 побед или поражений. Ниже — прогнозная доска компендиума.
+          </p>
+        </div>
+        <aside class="hero-card" id="disclaimer-card">
+          <p class="card-label" data-i18n="disclaimer.label">Важно</p>
+          <p id="disclaimer-text">Загрузка…</p>
+          <ul id="meta-warnings" class="meta-warnings" hidden></ul>
+        </aside>
+      </header>
+
+      <div class="hero-meta" id="hero-meta"></div>
+      <p class="fallback-banner" id="fallback-banner" hidden></p>
+
+      <main>
+        <section class="section section-board" id="board">
+          <div class="section-head">
+            <h3 data-i18n="board.title">Доска Swiss</h3>
+            <p data-i18n="board.lead">
+              Прогноз слотов компендиума — не официальная сетка Valve. Слоты: один 4-0, два 4-1, пять на проход, пять на выбывание, два 1-4, один 0-4.
+            </p>
+          </div>
+
+          <div class="mode-panel" id="mode-panel">
+            <div class="mode-panel-head">
+              <div>
+                <p class="mode-panel-label" data-i18n="mode.title">Как собрать доску</p>
+                <p class="mode-panel-help" data-i18n="mode.help">
+                  Выберите источник прогноза. Доска ниже перестроится сразу.
+                </p>
+              </div>
+              <p class="mode-current" id="mode-summary"></p>
+            </div>
+
+            <div class="mode-groups" id="mode-groups" role="tablist" aria-label="Board source"></div>
+            <div class="mode-variants" id="mode-variants"></div>
+
+            <label class="sr-only" for="board-strategy" data-i18n="board.strategy_label">Стратегия доски</label>
+            <select id="board-strategy" class="sr-only-select" tabindex="-1" aria-hidden="true">
+              <option value="points_optimal" data-i18n="strategy.points_optimal">Модель · максимум очков</option>
+              <option value="qualify_rank" data-i18n="strategy.qualify_rank">Модель · по шансу пройти</option>
+              <option value="analyst_consensus" data-i18n="strategy.analyst_consensus">Консенсус аналитиков</option>
+              <option value="fusion" data-i18n="strategy.fusion">Рекомендуемая смесь</option>
+              <option value="fusion_model_heavy" data-i18n="strategy.fusion_model_heavy">Больше доверять модели</option>
+              <option value="fusion_balanced" data-i18n="strategy.fusion_balanced">Баланс источников</option>
+              <option value="fusion_market_lean" data-i18n="strategy.fusion_market_lean">Больше доверять рынку</option>
+              <option value="fusion_analyst_lean" data-i18n="strategy.fusion_analyst_lean">Больше доверять аналитикам</option>
+            </select>
+
+            <div class="fusion-weights" id="fusion-weights" hidden>
+              <p class="fusion-weights-label" data-i18n="fusion.weights_label">Веса источников</p>
+              <p class="fusion-weights-help" id="fusion-weights-help" data-i18n="fusion.weights_help">
+                Готовые смеси и ползунки. Значения независимы и не обязаны давать в сумме 100 — при расчёте доли берутся пропорционально.
+              </p>
+              <div class="fusion-presets" id="fusion-presets"></div>
+              <details class="fusion-advanced">
+                <summary data-i18n="fusion.advanced">Тонкая настройка</summary>
+                <div class="fusion-sliders" id="fusion-sliders"></div>
+              </details>
+              <p class="fusion-score" id="fusion-score"></p>
+              <p class="market-disclaimer" id="market-disclaimer"></p>
+            </div>
+          </div>
+
+          <div class="board swiss-board" id="swiss-board"></div>
+        </section>
+
+        <section class="section" id="standings">
+          <div class="section-head row">
+            <div>
+              <h3 data-i18n="standings.title">Шансы команд</h3>
+              <p data-i18n="standings.lead"><strong>μ ± σ</strong> — оценка силы и неопределённости. «Пройти» / «Вылететь» — доля симуляций Swiss (~50&nbsp;000).</p>
+            </div>
+            <div class="controls">
+              <label class="sr-only" for="sort-by" data-i18n="standings.sort_label">Сортировка</label>
+              <select id="sort-by">
+                <option value="qualify" data-i18n="standings.sort.qualify">По шансу пройти</option>
+                <option value="power" data-i18n="standings.sort.power">По силе</option>
+                <option value="elim" data-i18n="standings.sort.elim">По шансу вылететь</option>
+                <option value="alpha" data-i18n="standings.sort.alpha">А–Я</option>
+              </select>
+              <input id="search" type="search" data-i18n-placeholder="standings.search" placeholder="Найти команду…" />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="standings" id="standings-table">
+              <thead>
+                <tr>
+                  <th data-i18n="standings.th.rank">#</th>
+                  <th data-i18n="standings.th.team">Команда</th>
+                  <th data-i18n="standings.th.region">Регион</th>
+                  <th data-i18n="standings.th.strength">Сила μ±σ</th>
+                  <th data-i18n="standings.th.qualify">Пройти</th>
+                  <th data-i18n="standings.th.elim">Вылететь</th>
+                  <th data-i18n="standings.th.wins">Ожид. побед</th>
+                  <th data-i18n="standings.th.record">Рекорд</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="heatmap">
+          <div class="section-head">
+            <h3 data-i18n="heatmap.title">Карта слотов</h3>
+            <p data-i18n="heatmap.lead">Доля симуляций (%), где команда оказалась в каждом слоте компендиума (16 команд × 6 слотов).</p>
+          </div>
+          <div class="table-wrap heatmap-wrap">
+            <table class="heatmap" id="slot-heatmap"></table>
+          </div>
+        </section>
+
+        <section class="section" id="matchup">
+          <div class="section-head">
+            <h3 data-i18n="matchup.title">Кто кого</h3>
+            <p data-i18n="matchup.lead">Парная вероятность победы (смесь парных оценок или силовой рейтинг).</p>
+          </div>
+          <div class="matchup">
+            <div class="matchup-pick">
+              <label for="team-a" data-i18n="matchup.team_a">Команда A</label>
+              <select id="team-a"></select>
+            </div>
+            <div class="matchup-vs" aria-hidden="true">VS</div>
+            <div class="matchup-pick">
+              <label for="team-b" data-i18n="matchup.team_b">Команда B</label>
+              <select id="team-b"></select>
+            </div>
+          </div>
+          <div class="matchup-result" id="matchup-result"></div>
+        </section>
+
+        <section class="section" id="model">
+          <div class="section-head">
+            <h3 data-i18n="model.title">Состояние модели</h3>
+            <p id="methodology-text" data-i18n="model.lead_fallback">Смесь XGBoost + CatBoost; проверка Leave-One-TI-Out; сила μ±σ.</p>
+          </div>
+          <div class="metrics" id="metrics-grid"></div>
+        </section>
+
+        <section class="section" id="how">
+          <div class="section-head">
+            <h3 data-i18n="how.title">Как считаем</h3>
+            <p>
+              <span data-i18n="how.lead_before">Простыми словами — что за цифры на сайте и откуда они берутся. Детали и каталог признаков — в</span>
+              <a href="https://github.com/dapetun/dota-TI2026-predict/blob/prod/docs/RESULTS.md" rel="noopener noreferrer" target="_blank">RESULTS.md</a>
+              <span data-i18n="how.lead_and">и</span>
+              <a href="https://github.com/dapetun/dota-TI2026-predict/blob/prod/docs/FEATURES.md" rel="noopener noreferrer" target="_blank">FEATURES.md</a>.
+            </p>
+          </div>
+          <div class="how-grid">
+            <article class="how-card">
+              <h4 data-i18n="how.card1.title">1. Данные</h4>
+              <p data-i18n="how.card1.body">Списки матчей (~65 лиг, 8709 карт) + детали составов (осколки OpenDota). Без деталей нет признаков игроков и сыгранности.</p>
+            </article>
+            <article class="how-card">
+              <h4 data-i18n="how.card2.title">2. Покрытие составов</h4>
+              <p data-i18n="how.card2.body">Доля матчей корпуса, где есть состав игроков из деталей. Сейчас 100% (8709/8709) — цель ≥80% выполнена с запасом. Дыр по лигам нет: shards с players покрывают весь корпус.</p>
+            </article>
+            <article class="how-card">
+              <h4 data-i18n="how.card3.title">3. Сила команды</h4>
+              <p data-i18n="how.card3.body">Elo — текущая сила по результатам; Glicko-2 добавляет неопределённость (RD). Форма (~40 дней) — недавний процент побед. Сыгранность — насколько пятёрка сыграна вместе.</p>
+            </article>
+            <article class="how-card">
+              <h4 data-i18n="how.card4.title">4. Матч → Swiss</h4>
+              <p data-i18n="how.card4.body">Модель даёт P(победа) в паре. Затем ~50&nbsp;000 раз разыгрываем весь Swiss и считаем шансы слотов и прохода.</p>
+            </article>
+            <article class="how-card">
+              <h4 data-i18n="how.card5.title">5. Метрики качества</h4>
+              <p data-i18n="how.card5.body">LOO AUC — тест на прошлых TI (ближе к TI 2026). Walk-forward AUC — устойчивость во времени. AUC ~0.5 = монетка; у смеси сейчас LOO ≈0.58, WF ≈0.64.</p>
+            </article>
+            <article class="how-card">
+              <h4 data-i18n="how.card6.title">6. Числа в интерфейсе</h4>
+              <p data-i18n="how.card6.body">μ ± σ — сила ± неопределённость. Карта слотов — % слотов. Стратегии доски: модель / проход / аналитики / смешанный (разные веса источников). Не для ставок.</p>
+            </article>
+          </div>
+          <details class="how-details">
+            <summary data-i18n="how.details_summary">Чуть подробнее (для интересующихся)</summary>
+            <ul>
+              <li data-i18n="how.details_li1">Строка игрока: в деталях есть players[], account_id ≠ 0/None и известен team_id стороны.</li>
+              <li data-i18n="how.details_li2">Покрытие составов: 100% (8709/8709). Детали докачаны по всем лигам корпуса (DLS28/29, EWC 2026, TI14, ESL Birmingham, Wallachia S8, BLAST VI/VII и др.). Need download=0.</li>
+              <li data-i18n="how.details_li3">Полураспад выборки 210д × tier (TI/major/qual/online); форма ~40д; патч ≥7.41 ×1.25.</li>
+              <li data-i18n="how.details_li4">Смесь XGB+CatBoost с весами по LOO log-loss; в production может быть изотоническая калибровка.</li>
+              <li data-i18n="how.details_li5">Нечётный остаток в корзине рекорда Swiss получает bye без авто-победы (упрощение симуляции).</li>
+            </ul>
+          </details>
+        </section>
+
+        <section class="section rules-page" id="rules">
+          <div class="section-head">
+            <p class="eyebrow" data-i18n="rules.eyebrow">The International 2026</p>
+            <h3 data-i18n="rules.title">Правила групповой стадии</h3>
+            <p data-i18n="rules.lead">
+              Краткий вольный пересказ официальных правил Swiss для TI 2026. Это не юридический текст и не замена оригиналу Valve.
+            </p>
+            <p class="rules-official">
+              <a href="https://www.dota2.com/esports/ti15/tirules" rel="noopener noreferrer" target="_blank" data-i18n="rules.official_link">Официальные правила на dota2.com</a>
+            </p>
+          </div>
+
+          <aside class="hero-card rules-disclaimer-card">
+            <p class="card-label" data-i18n="rules.disclaimer_label">Дисклеймер</p>
+            <p data-i18n="rules.disclaimer">
+              Страница — неофициальный пересказ для удобства. При расхождениях верны только официальные правила Valve. Автор не связан с Valve Corporation.
+            </p>
+          </aside>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.dates_title">Даты</h4>
+              <p data-i18n="rules.dates_body">
+                Групповая стадия: 13–16 августа (онлайн). Основной турнир: 20–23 августа, SPD Bank Oriental Sports Center, Шанхай.
+              </p>
+            </div>
+          </div>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.rank_title">Как ранжируют команды</h4>
+              <p data-i18n="rules.rank_intro">Порядок критериев (сверху вниз):</p>
+            </div>
+            <ol class="rules-list">
+              <li data-i18n="rules.rank_1">Число выигранных матчей</li>
+              <li data-i18n="rules.rank_2">Число проигранных матчей</li>
+              <li data-i18n="rules.rank_3">Сумма побед соперников, с которыми играли</li>
+              <li data-i18n="rules.rank_4">Процент выигранных карт</li>
+              <li data-i18n="rules.rank_5">Средний процент побед карт у соперников</li>
+              <li data-i18n="rules.rank_6">Средняя длительность карты (короче — лучше)</li>
+              <li data-i18n="rules.rank_7">Жребий (монетка)</li>
+            </ol>
+          </div>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.pair_title">Общие правила пар Swiss</h4>
+            </div>
+            <ul class="rules-list rules-bullets">
+              <li data-i18n="rules.pair_1">Команды с одинаковым рекордом ставят друг против друга</li>
+              <li data-i18n="rules.pair_2">Повторных пар избегают, когда можно</li>
+              <li data-i18n="rules.pair_3">Стараются минимизировать разрыв в рейтинге между соперниками</li>
+            </ul>
+          </div>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.round_title">Особенности по раундам</h4>
+            </div>
+            <div class="how-grid rules-grid">
+              <article class="how-card">
+                <p data-i18n="rules.round_1">Раунд 1: команды делят на две группы; пары задаёт организатор внутри группы.</p>
+              </article>
+              <article class="how-card">
+                <p data-i18n="rules.round_2">Раунды 2–3: пары только внутри исходной группы.</p>
+              </article>
+              <article class="how-card">
+                <p data-i18n="rules.round_3">Раунд 4: пары только с командами из другой группы.</p>
+              </article>
+              <article class="how-card">
+                <p data-i18n="rules.round_4">Раунд 5 (матчи на выбывание): стараются максимизировать разрыв в рейтинге между соперниками.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.elim_title">Раунд на выбывание</h4>
+              <p data-i18n="rules.elim_body">
+                Лучшая команда 3–2 выбирает любого из пяти соперников 2–3. Следующая по рейтингу 3–2 выбирает из оставшихся — и так далее, пока все не получат пару.
+              </p>
+            </div>
+          </div>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.seed_title">Посев на основной турнир</h4>
+              <p data-i18n="rules.seed_body">
+                Все восемь команд, прошедшие в The International, получают посев по итоговому рейтингу Swiss.
+              </p>
+            </div>
+          </div>
+
+          <div class="rules-section">
+            <div class="section-head">
+              <h4 data-i18n="rules.pick_title">Приоритет выбора (пик / сторона)</h4>
+            </div>
+            <div class="how-grid rules-grid">
+              <article class="how-card">
+                <p data-i18n="rules.pick_bo3">
+                  Bo3: жребий. Победитель выбирает пик или сторону в 1-й карте; проигравший — во 2-й. На 3-й (если есть) — новый жребий.
+                </p>
+              </article>
+              <article class="how-card">
+                <p data-i18n="rules.pick_bo5">
+                  Bo5: 1-я и 3-я — победитель верхней сетки; 2-я и 4-я — победитель нижней; 5-я (если есть) — жребий.
+                </p>
+              </article>
+            </div>
+          </div>
+
+          <p class="rules-trademark" data-i18n="rules.trademark">
+            Dota и логотип Dota — товарные знаки Valve Corporation. © Valve Corporation. Все права защищены.
+          </p>
+        </section>
+
+        <section class="section other-projects-section" aria-labelledby="other-projects-title">
+          <div class="other-projects">
+            <p class="other-projects-label" id="other-projects-title" data-i18n="projects.title">Другие проекты</p>
+            <div class="other-projects-grid">
+              <a
+                class="project-banner"
+                href="https://github.com/dapetun/moex-investment"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <span class="project-banner-name">moex-investment</span>
+                <span class="project-banner-desc" data-i18n="projects.moex.desc">Котировки Мосбиржи и портфель по Марковицу</span>
+              </a>
+              <a
+                class="project-banner"
+                href="https://github.com/dapetun/Keyboard-Sender"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <span class="project-banner-name">Keyboard-Sender</span>
+                <span class="project-banner-desc" data-i18n="projects.keyboard.desc">Помогает пройти мини-игру «Атака автоматонов» из ивента «Тёмный карнавал» в Dota</span>
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="#board" data-i18n="nav.board">Прогнозы</a>
+          <a href="#standings" data-i18n="nav.standings">Команды</a>
+          <a href="#rules" data-i18n="nav.rules">Правила</a>
+          <a href="#how" data-i18n="nav.how">Как считаем</a>
+          <a href="https://github.com/dapetun/dota-TI2026-predict" rel="noopener noreferrer" target="_blank" data-i18n="nav.repo">Репозиторий</a>
+        </nav>
+
+        <p data-i18n="footer.open">Открытый проект. Данные — OpenDota.</p>
+        <p id="footer-stamp"></p>
+        <p class="license-line">
+          <a href="https://github.com/dapetun/dota-TI2026-predict/blob/prod/LICENSE" rel="noopener noreferrer" target="_blank" data-i18n="footer.license">Лицензия MIT</a>
+          · Copyright © 2026 dapetun
         </p>
-        <div class="hero-meta" id="hero-meta"></div>
-        <p class="fallback-banner" id="fallback-banner" hidden></p>
-      </div>
-      <aside class="hero-card" id="disclaimer-card">
-        <p class="card-label">Важно</p>
-        <p id="disclaimer-text">Загрузка…</p>
-        <ul id="meta-warnings" class="meta-warnings" hidden></ul>
-      </aside>
-    </section>
+      </footer>
+    </div>
+  </div>
 
-    <section class="section" id="board">
-      <div class="section-head row">
-        <div>
-          <h3>Swiss board</h3>
-          <p>Слоты компендиума: 4–0×1, 4–1×2, проход×5, выбывание×5, 1–4×2, 0–4×1.</p>
-        </div>
-        <div class="controls">
-          <label class="sr-only" for="board-strategy">Стратегия доски</label>
-          <select id="board-strategy">
-            <option value="points_optimal">Model · points-optimal</option>
-            <option value="qualify_rank">Qualify-rank</option>
-            <option value="analyst_consensus">Analyst consensus</option>
-            <option value="fusion">Fusion model+analyst</option>
-          </select>
-        </div>
-      </div>
-      <div class="board" id="swiss-board"></div>
-    </section>
-
-    <section class="section" id="standings">
-      <div class="section-head row">
-        <div>
-          <h3>Шансы команд</h3>
-          <p>Сортировка и быстрый поиск по таблице.</p>
-        </div>
-        <div class="controls">
-          <label class="sr-only" for="sort-by">Сортировка</label>
-          <select id="sort-by">
-            <option value="qualify">По шансу пройти</option>
-            <option value="power">По силе</option>
-            <option value="elim">По шансу вылететь</option>
-            <option value="alpha">A–Z</option>
-          </select>
-          <input id="search" type="search" placeholder="Найти команду…" />
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="standings" id="standings-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Команда</th>
-              <th>Регион</th>
-              <th>Сила μ±σ</th>
-              <th>Пройти</th>
-              <th>Вылететь</th>
-              <th>Ожид. побед</th>
-              <th>Рекорд</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="section" id="heatmap">
-      <div class="section-head">
-        <h3>Slot heatmap</h3>
-        <p>Вероятности слотов компендиума 16×6 (в %).</p>
-      </div>
-      <div class="table-wrap heatmap-wrap">
-        <table class="heatmap" id="slot-heatmap"></table>
-      </div>
-    </section>
-
-    <section class="section" id="matchup">
-      <div class="section-head">
-        <h3>Кто кого</h3>
-        <p>Парная вероятность победы (blend pairwise или power ranking).</p>
-      </div>
-      <div class="matchup">
-        <div class="matchup-pick">
-          <label for="team-a">Команда A</label>
-          <select id="team-a"></select>
-        </div>
-        <div class="matchup-vs" aria-hidden="true">VS</div>
-        <div class="matchup-pick">
-          <label for="team-b">Команда B</label>
-          <select id="team-b"></select>
-        </div>
-      </div>
-      <div class="matchup-result" id="matchup-result"></div>
-    </section>
-
-    <section class="section" id="model">
-      <div class="section-head">
-        <h3>Состояние модели</h3>
-        <p id="methodology-text">XGBoost + CatBoost blend; Leave-One-TI-Out; сила μ±σ.</p>
-      </div>
-      <div class="metrics" id="metrics-grid"></div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <p>Открытый проект. Данные — OpenDota.</p>
-    <p id="footer-stamp"></p>
-  </footer>
+  <a class="cta-play" href="#board" data-i18n="cta.board">К доске</a>
 
   <script src="assets/js/app.js" type="module"></script>
 </body>

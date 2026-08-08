@@ -1,8 +1,20 @@
 {
-  "source": "Sports.ru",
+  "source": "Sports.ru + Hotspawn",
   "url": "https://cyber.sports.ru/dota2/blogs/3428857.html",
-  "updated_at": "2026-08-06",
-  "note": "11 полных сеток из скриншотов Compendium UI; Misha/редакция — только текст.",
+  "updated_at": "2026-08-08",
+  "note": "Sports.ru: ~10 полных сеток Compendium UI; Hotspawn и др. — partial notes / named slots. Soft power-rank boards — в data/historical/expert_predictions.json.",
+  "sources": [
+    {
+      "id": "sportsru",
+      "url": "https://cyber.sports.ru/dota2/blogs/3428857.html",
+      "as_of": "2026-08-06"
+    },
+    {
+      "id": "hotspawn",
+      "url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "as_of": "2026-08-08"
+    }
+  ],
   "analysts": [
     {
       "id": "ns",
@@ -235,6 +247,44 @@
       "id": "editorial",
       "name": "Редакция Кибера",
       "note": "Топ-3: BetBoom, Spirit, 1w; метка на вылет Yandex и Falcons"
+    },
+    {
+      "id": "hotspawn_lead",
+      "name": "Hotspawn (lead writer)",
+      "source_url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "updated_at": "2026-08-08",
+      "note": "Только явно названные слоты в статье; полная сетка в тексте не опубликована.",
+      "soft": false,
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "Vici": "one_loss",
+        "GamerLegion": "winless"
+      }
+    },
+    {
+      "id": "hotspawn_sophie",
+      "name": "Hotspawn Sophie",
+      "source_url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "updated_at": "2026-08-08",
+      "note": "Partial: Falcons drop in elimination, Liquid survive; Vici advance.",
+      "soft": true
+    },
+    {
+      "id": "hotspawn_owen",
+      "name": "Hotspawn Owen",
+      "source_url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "updated_at": "2026-08-08",
+      "note": "Partial: with lead — Liquid out / Falcons through; Vici advance.",
+      "soft": true
+    },
+    {
+      "id": "hotspawn_daniel",
+      "name": "Hotspawn Daniel",
+      "source_url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "updated_at": "2026-08-08",
+      "note": "Partial: Vici lose elimination; OG called for 0-4 in commentary.",
+      "soft": true
     }
   ]
 }

@@ -135,10 +135,20 @@ def compose_full_pair_row(
     dire_ids: list[int],
     as_of_ts: int,
     tier_weight: float = 2.0,
+    *,
+    prefer_lan: bool = False,
 ) -> dict[str, float]:
-    """Team + player + chemistry features for one radiant/dire orientation."""
+    """Team + player + chemistry features for one radiant/dire orientation.
+
+    Default ``prefer_lan=False`` uses online Elo context for Group Stage pairwise.
+    """
     row = compose_pair_features(
-        team_store, radiant_odota_id, dire_odota_id, as_of_ts, tier_weight=tier_weight
+        team_store,
+        radiant_odota_id,
+        dire_odota_id,
+        as_of_ts,
+        tier_weight=tier_weight,
+        prefer_lan=prefer_lan,
     )
     row.update(compose_player_pair_features(radiant_ids, dire_ids, player_states))
     row.update(
@@ -167,6 +177,8 @@ def predict_pair_proba(
     as_of_ts: int,
     tier_weight: float = 2.0,
     blend_weights: dict[str, float] | None = None,
+    *,
+    prefer_lan: bool = False,
 ) -> float:
     """P(radiant wins map) for one orientation."""
     row = compose_full_pair_row(
@@ -179,6 +191,7 @@ def predict_pair_proba(
         dire_ids,
         as_of_ts,
         tier_weight,
+        prefer_lan=prefer_lan,
     )
     X = pd.DataFrame([{c: float(row.get(c, 0.0)) for c in feature_cols}])
     if isinstance(models, dict) and "xgb" in models and "catboost" in models:
@@ -204,8 +217,17 @@ def build_model_win_matrix(
     team_ids: list[str] | None = None,
     tier_weight: float = 2.0,
     blend_weights: dict[str, float] | None = None,
+    *,
+    prefer_lan: bool = False,
+    apply_hero_soft_prior: bool | None = None,
 ) -> pd.DataFrame:
-    """16×16 map-win matrix; P(A beats B) symmetrized over radiant/dire."""
+    """16×16 map-win matrix; P(A beats B) symmetrized over radiant/dire.
+
+    ``prefer_lan=False`` (default) uses online Elo for Group Stage.
+    Hero soft prior is opt-in via env ``USE_HERO_SOFT_PRIOR=1`` or explicit flag.
+    """
+    import os
+
     team_ids = team_ids or get_team_ids()
     team_store = replay_team_states(matches)
     player_states = replay_player_states(matches, players) if players is not None else {}
@@ -242,6 +264,7 @@ def build_model_win_matrix(
                 as_of,
                 tier_weight,
                 blend_weights,
+                prefer_lan=prefer_lan,
             )
             p_ba = predict_pair_proba(
                 models,
@@ -256,6 +279,16 @@ def build_model_win_matrix(
                 as_of,
                 tier_weight,
                 blend_weights,
+                prefer_lan=prefer_lan,
             )
             mat[i, j] = 0.5 * (p_ab + (1.0 - p_ba))
+
+    use_hero = apply_hero_soft_prior
+    if use_hero is None:
+        use_hero = os.environ.get("USE_HERO_SOFT_PRIOR", "0").strip() in ("1", "true", "True")
+    if use_hero:
+        from src.features.hero_soft_prior import apply_soft_prior_matrix
+
+        mat_df = pd.DataFrame(mat, index=team_ids, columns=team_ids)
+        return apply_soft_prior_matrix(mat_df, lineups)
     return pd.DataFrame(mat, index=team_ids, columns=team_ids)

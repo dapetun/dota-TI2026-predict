@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_SETTINGS_PATH = BASE_DIR / "configs" / "settings.yaml"
 
 # Simulation defaults aligned with SWISS_CONFIG / export.
-DEFAULT_N_SIMULATIONS: int = 20_000
+DEFAULT_N_SIMULATIONS: int = 50_000
 
 
 @lru_cache(maxsize=4)

@@ -1,0 +1,144 @@
+{
+  "disclaimer": "Public media prediction boards curated for research. Not betting advice. Author does not endorse gambling.",
+  "updated_at": "2026-08-08",
+  "experts": [
+    {
+      "id": "hotspawn_ti15",
+      "name": "Hotspawn lead writer",
+      "ti": "TI15",
+      "year": 2026,
+      "source_url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "note": "Partial: only slots named in article prose (Vision 4-0, Yandex+Vici 4-1, GamerLegion 0-4).",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "Vici": "one_loss",
+        "GamerLegion": "winless"
+      },
+      "partial": true
+    },
+    {
+      "id": "gosugamers_ti15",
+      "name": "GosuGamers editorial (KZ)",
+      "ti": "TI15",
+      "year": 2026,
+      "source_url": "https://www.gosugamers.net/dota2/news/78905-the-international-2026-teams-preview-favourites-dark-horses-wildcards-and-underdogs",
+      "note": "Soft Swiss reconstruction from published tiers (favourites / contenders / wildcards / dark horses / underdogs), not a filled Compendium grid.",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "BetBoom": "one_loss",
+        "Falcons": "advance",
+        "Spirit": "advance",
+        "Aurora": "advance",
+        "Liquid": "advance",
+        "1w": "advance",
+        "Xtreme": "eliminate",
+        "Vici": "eliminate",
+        "LGD": "eliminate",
+        "OG": "eliminate",
+        "Nigma": "eliminate",
+        "Resilience": "one_win",
+        "GamerLegion": "one_win",
+        "HULIGANI": "winless"
+      },
+      "partial": false,
+      "soft": true
+    },
+    {
+      "id": "esports_gg_ti15",
+      "name": "esports.gg power rankings (Celsos Ricablanca)",
+      "ti": "TI15",
+      "year": 2026,
+      "source_url": "https://esports.gg/news/dota-2/the-international-2026-qualified-teams-power-rankings-prize-pool/",
+      "note": "Soft Swiss board from published 1–16 power ranking (as_of 2026-08-07), not an official Compendium prediction.",
+      "board": {
+        "Vision": "undefeated",
+        "1w": "one_loss",
+        "Yandex": "one_loss",
+        "Liquid": "advance",
+        "BetBoom": "advance",
+        "Aurora": "advance",
+        "Falcons": "advance",
+        "Spirit": "advance",
+        "LGD": "eliminate",
+        "Xtreme": "eliminate",
+        "OG": "eliminate",
+        "Vici": "eliminate",
+        "Nigma": "eliminate",
+        "GamerLegion": "one_win",
+        "HULIGANI": "one_win",
+        "Resilience": "winless"
+      },
+      "partial": false,
+      "soft": true
+    },
+    {
+      "id": "hotspawn_ti14",
+      "name": "Hotspawn editorial",
+      "ti": "TI14",
+      "year": 2025,
+      "source_url": "https://www.hotspawn.com/dota2/news/best-ti-fantasy-and-team-predictions",
+      "note": "Partial board from published 4-0 / 0-4 picks; remaining slots unknown.",
+      "board": {
+        "Spirit": "undefeated",
+        "Nemesis": "winless"
+      },
+      "partial": true
+    },
+    {
+      "id": "dota2gamers_ti14",
+      "name": "Dota2Gamers editorial",
+      "ti": "TI14",
+      "year": 2025,
+      "source_url": "https://dota2gamers.gg/the-international-2025-predictions-best-ti14/",
+      "note": "Partial: safest 4-0 / likely 0-4.",
+      "board": {
+        "Spirit": "undefeated",
+        "Nemesis": "winless"
+      },
+      "partial": true
+    },
+    {
+      "id": "egamersworld_ti14",
+      "name": "EGamersWorld editorial",
+      "ti": "TI14",
+      "year": 2025,
+      "source_url": "https://egamersworld.com/blog/the-international-2025-compendium-teams-prediction-n-6jut6Gw",
+      "note": "Favorites (advance+) vs outsiders; soft full-board reconstruction from article narrative.",
+      "board": {
+        "Spirit": "undefeated",
+        "Tundra": "one_loss",
+        "Parivision": "one_loss",
+        "Liquid": "advance",
+        "Falcons": "advance",
+        "BetBoom": "advance",
+        "Tidebound": "advance",
+        "Xtreme": "advance",
+        "Aurora": "eliminate",
+        "HEROIC": "eliminate",
+        "Nigma": "eliminate",
+        "Wildcard": "eliminate",
+        "Yakutou": "eliminate",
+        "BOOM": "one_win",
+        "NAVI": "one_win",
+        "Nemesis": "winless"
+      },
+      "partial": false
+    },
+    {
+      "id": "esports_net_ti13",
+      "name": "Esports.net editorial",
+      "ti": "TI13",
+      "year": 2024,
+      "source_url": "https://www.esports.net/news/dota/ti13-compendium-fantasy-guide/",
+      "note": "Fantasy-player focused article; soft group favorites reconstruction (partial).",
+      "board": {
+        "Spirit": "undefeated",
+        "Liquid": "one_loss",
+        "beastcoast": "winless"
+      },
+      "partial": true
+    }
+  ]
+}

@@ -1,165 +1,122 @@
-# TI 2026 Swiss Predictor
+# TI 2026 Swiss Predictor / Прогноз Swiss TI 2026
 
-Открытый ML-проект для прогноза групповой стадии The International 2026 (Dota 2).
+**English** · **Русский**
 
-**Официальные даты TI** ([tirules](https://www.dota2.com/esports/ti15/tirules)): Group Stage **13–16 Aug** (Online); Main Event **20–23 Aug** (Shanghai).
+Open-source ML project for The International 2026 **group stage** (Dota 2 Swiss) predictions.  
+Открытый ML-проект для прогноза **групповой стадии** The International 2026 (швейцарская сетка Dota 2).
 
-## Ветки
+**Official TI dates / Официальные даты** ([tirules](https://www.dota2.com/esports/ti15/tirules)): Group Stage **13–16 Aug** (Online); Main Event **20–23 Aug** (Shanghai).
 
-| Ветка | Назначение |
+> UX inspiration (not a copy): [battlepass.ru/ti2026/predictions](https://battlepass.ru/ti2026/predictions). Official rules: [dota2.com tirules](https://www.dota2.com/esports/ti15/tirules).
+
+## Branches / Ветки
+
+| Branch | Purpose / Назначение |
 |---|---|
-| `prod` | Активная разработка / эксперименты (эта ветка) |
-| `main` | Стабильный снимок для Pages / тега релиза |
+| `prod` | Active development / Активная разработка |
+| `main` | Stable Pages snapshot / Стабильный снимок для Pages |
 
-Не путать: свежие фичи и audit-фиксы идут в **`prod`**, затем cherry-pick / merge в `main` после стабилизации.
+## Web UI / Веб-интерфейс
 
-## Возможности
-
-| Реализовано (v0.3) | В планах (stubs / ROADMAP) |
-|---|---|
-| ETL OpenDota: **65 лиг**, ~8.7k карт | Playoff bracket (`playoff_stub`) |
-| Team Elo + **Glicko-2** ±uncertainty + player + chemistry | Draft / hero embeddings |
-| Tier weights: ti/major/qual/online | Live auto-retrain |
-| XGBoost + CatBoost + LOO-tuned blend | Crowd board / drag-drop |
-| Pairwise → Swiss MC + slot heatmap 16×6 | Polymarket (`market_slot_prior_stub`) |
-| Home LAN (CN Shanghai) + patch 7.41 meta | |
-| Points-optimal board + analyst fusion | |
-| Статичный UI (GitHub Pages) + CSP meta | |
-| CI: pytest + ruff (E9/F) на push/PR | |
-| Docker: `Dockerfile` (python 3.12 / pytest) | |
-
-Текущая модель: **blend pairwise** (XGB + CatBoost, LOO weights) если есть `outputs/model_blend_v1.joblib`; иначе export требует `--allow-power-ranking`.  
-Meta version: **0.3.0-prod**. См. [SECURITY.md](SECURITY.md).
-
-## Canonical pipeline
-
-```text
-scripts/download_data.py --list-only
-scripts/download_details.py          # shards via /explorer (fallback; /matches часто hang)
-scripts/train_compare.py             # XGB + CatBoost + blend
-scripts/build_rosters.py             # optional
-scripts/export_web_data.py           # JSON для UI; по умолчанию --require-blend
-```
-
-Устаревшее вынесено в `legacy/` (pickle / LightGBM / STRATZ). Корневые stubs (`main.py`, `scripts/train_v2.py`, …) только указывают на legacy.
-
-## Веб-интерфейс
-
-Статика в `docs/` — для **GitHub Pages**: https://dapetun.github.io/dota-TI2026-predict/
-
-### Локально
+Static site in `docs/` → GitHub Pages: https://dapetun.github.io/dota-TI2026-predict/
 
 ```powershell
-python scripts/export_web_data.py --allow-power-ranking   # только если нет blend
-# или (после train_compare):
 python scripts/export_web_data.py
 cd docs
 python -m http.server 8080
 ```
 
-Открой http://localhost:8080
+Open http://localhost:8080 (`file://` will not work — `fetch` needs a server).
 
-> Через `file://` не работает: браузер блокирует `fetch` к JSON.
+**UI locales / Языки UI:** `ru` / `en` / `de` / `fr` / `pt` / `es` (flagged switcher in the sidebar, saved in `localStorage`).  
+**Rules / Правила:** section `#rules` on the same page ([docs/index.html](docs/index.html)); [docs/rules.html](docs/rules.html) redirects there. Informal paraphrase of [tirules](https://www.dota2.com/esports/ti15/tirules) + disclaimer (not a Valve document).
 
-UI: Swiss-доска (model / qualify-rank / analyst / fusion), сила **μ ± σ**, heatmap слотов, E[очки] компендиума, chip «N/{n_analysts}» из JSON Sports.ru.  
-Если meta.model = power ranking — явный **banner fallback**.  
-Disclaimer: исследовательский прогноз с неопределённостью — **не для ставок**.  
-Fonts: Google Fonts (Instrument Sans + Syne); CSP meta допускает fonts.googleapis.com / fonts.gstatic.com.
+**Board strategies / Стратегии доски:** pick Model / Analysts / Mixed cards, then a friendly variant. Mixed mode has presets + optional weight sliders (snap to nearest **precomputed** fusion scenario).  
+Смешанный режим: пресеты + опциональные ползунки (ближайший **заранее посчитанный** сценарий; непрерывный пересчёт без нового экспорта пока нельзя).
 
-### Export flags
+**Monte Carlo default / Дефолт симуляций:** `50_000` Swiss sims (`configs/settings.yaml` / `src.config.DEFAULT_N_SIMULATIONS`). Re-run `export_web_data.py` to refresh `predictions.json`.
 
-| Флаг | По умолчанию | Смысл |
-|---|---|---|
-| `--require-blend` / `--no-require-blend` | require=True | Без blend → exit ≠ 0 |
-| `--allow-power-ranking` | off | Явный fallback на power ranking |
-| `--min-player-coverage 0.5` | none | Fail если coverage ниже порога |
-| `--n-simulations` | из `configs/settings.yaml` (20000) | MC sims |
+**License on site / Лицензия на сайте:** MIT · Copyright © 2026 dapetun (footer links to [LICENSE](LICENSE)).
 
-## Обучение модели
+---
+
+## Русский (подробнее)
+
+Открытый ML-проект для прогноза групповой стадии The International 2026 (Dota 2).
+
+### Возможности
+
+| Реализовано (v0.3) | В планах |
+|---|---|
+| ETL OpenDota: **65 лиг**, ~8.7k карт | Playoff bracket |
+| Team Elo + Glicko-2 ±uncertainty + player/chemistry | Draft MC |
+| XGB + CatBoost blend → Swiss MC + heatmap | Crowd board |
+| Points-optimal + multi-source fusion | Live retrain |
+| Anonymous market prior + ranking/expert history | |
+| Статичный UI (GitHub Pages) | |
+
+Текущая модель: **blend pairwise** если есть `outputs/model_blend_v1.joblib`; иначе export требует `--allow-power-ranking`. Meta: **0.3.0-prod**.
+
+### Canonical pipeline
+
+```text
+scripts/download_data.py --list-only
+scripts/download_details.py
+scripts/train_compare.py
+scripts/export_web_data.py
+```
+
+### Analyst & market sources / Аналитики и рынок
+
+- **Analysts:** curated Sports.ru boards in `docs/data/analyst_picks.json` (~10 full compendium grids) + Hotspawn / other partial notes. Used for consensus board + fusion prior (vote shares per slot). Extra TI15 expert/power-rank soft boards live in `data/historical/expert_predictions.json`.
+- **Market:** `data/ti2026_market_priors.json` — Swiss *slot* implied probs for fusion (research only). Refresh via `python scripts/fetch_market_priors.py` (Polymarket Gamma API, no key). Public books have no Swiss-slot markets yet → script derives slots from live **winner** Yes-prices (Bradley–Terry + Swiss MC), sets `is_real_market=true` / `derivation=derived_from_winner_odds`. Empty / `seed_from_ranking` still falls back to POWER_RANKINGS soft priors and export forces `market_weight=0`.
+- **Fusion:** soft weights (model / analysts / market / ranking / expert history) are independent and need not sum to 1 — `fuse_slot_probabilities` renormalizes at blend time (battlepass-style). Production default `DEFAULT_MODEL_WEIGHT=0.65` with residual analysts when market is forced off. In-sample weight tune is diagnostic only. UI presets under «Смешанный».
+
+### Player coverage
+
+| | Value |
+|---|---|
+| Corpus | **8709** match_ids |
+| With players | **8709** |
+| Coverage | **100%** (target ≥80% ✓) |
+| Missing | **0** — details downloaded for full corpus |
+
+### Data / Данные
+
+1. Matchlists TI10–14 + majors/quals (`data/league_candidates.json`).
+2. Details shards: `data/raw/details_shards/…`
+3. Rosters: `src/ti2026/teams.py`, `data/ti2026_rosters.json`
+4. Analyst picks: `docs/data/analyst_picks.json`
+5. Market priors: `data/ti2026_market_priors.json`
+6. Historical experts: `data/historical/expert_predictions.json`
+
+**Disclaimer:** research forecast with high uncertainty — not betting / financial advice. Market prior is anonymous research only; author does not endorse bookmakers.
+
+### License / Лицензия
+
+[MIT](LICENSE). Data — OpenDota (follow their ToS).
+
+---
+
+## English (details)
+
+Open ML project forecasting TI 2026 group-stage Swiss outcomes and compendium slots.
+
+**Pipeline:** matchlists → details → Elo/Glicko/player features → XGB+CatBoost blend → ~50k Swiss Monte Carlo → slot/qualify probs → points-optimal / fusion boards → `docs/data/predictions.json`.
+
+**Validation:** walk-forward + Leave-One-TI-Out (AUC / log-loss). See [docs/RESULTS.md](docs/RESULTS.md), [docs/FEATURES.md](docs/FEATURES.md).
+
+**Training (short):**
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate          # Windows
+# Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-# опционально жёсткие pins:
-# pip install -r requirements.lock.txt
-
-# Discover / review leagues (optional)
-python scripts/discover_leagues.py --min-matches 50 --max-probe 200
-
-# Matchlists (реестр: src/data_collection/tournaments.py)
 python scripts/download_data.py --list-only
-
-# Details (resume-friendly shards + monolith shim)
-python scripts/download_details.py
-
-# XGB + CatBoost + blend
+python scripts/download_details.py --source explorer --rate 1.0 --batch 25
 python scripts/train_compare.py
-
-# Rosters nick→account_id
-python scripts/build_rosters.py
-
-# Экспорт JSON для UI (fail-hard без blend)
 python scripts/export_web_data.py
-
-# Тесты / CI локально
 pytest -q
-
-# Docker
-docker build -t ti2026-predict .
-docker run --rm ti2026-predict
 ```
 
-## Конфиг (truth)
-
-- **Код** — канон для half-life: `RATING_HALF_LIFE_DAYS = 210` в `src/features/sample_weights.py`.
-- **`configs/settings.yaml`** — опциональные overrides через `src.config` (`safe_load`); значения синхронизированы (210d, 20000 sims).
-- Имена команд — SoT: `src/ti2026/teams.py` (`normalize_team_name`).
-
-## Данные
-
-1. Списки матчей: TI10–14 + majors 2023–2026 + quals + mid-tier online (`data/league_candidates.json`).
-2. Словарь OpenDota `team_id` → имя: curated `data/team_id_map.json` (в repo); локальный override — `data/raw/team_id_map.json` (gitignored). Используется только если в matchlist нет имён команд.
-3. Ростеры TI 2026 — `src/ti2026/teams.py`, `data/ti2026_rosters.json` (nick→account curated; там же `open_dota_team_id`).
-4. Признаки: Elo/Glicko-2, form (~40d), sample half-life (~210d), patch≥7.41 mult 1.25, player, chemistry, stitch Jaccard≥0.6.
-5. Details: `data/raw/details_shards/<tournament>/<match_id>.json` (новые; source по умолчанию OpenDota `/explorer`, т.к. `/matches/{id}` часто hang); legacy monolith `match_details.json` читается shim-ом. Stratz deprecated stub. `OPENDOTA_API_KEY` опционален.
-6. Analyst picks — `docs/data/analyst_picks.json` (Sports.ru).
-
-**Дисклеймер:** модель даёт вероятности с высокой неопределённостью; не финансовый совет и не инструмент для ставок.
-
-## Архитектура
-
-```
-data/raw          ← сырые OpenDota JSON (+ details_shards/)
-data/processed    ← canonical_matches.csv
-data/features     ← match_features_xgb.csv
-legacy/           ← устаревшие entrypoints (не для прода)
-src/
-  config.py         ← thin YAML loader
-  data_collection/  ← tournaments.py = SoT реестра лиг; OpenDota only
-  features/         ← match / player / chemistry / stitching / ratings
-  models/
-  ti2026/           ← pairwise, compendium, fusion, multisource
-  simulation/       ← Swiss MC + playoff_stub
-scripts/train_compare.py
-scripts/export_web_data.py
-scripts/discover_leagues.py
-.github/workflows/ci.yml
-Dockerfile
-```
-
-## Валидация
-
-- **Walk-forward** — расширяющееся временное окно.
-- **Leave-One-TI-Out** — тест только на TI_k; train = всё до старта TI_k.
-- Blend weights по LOO log-loss; isotonic — offline eval (не в production blend).
-
-Веса: `0.5**(age/210d) * tier_weight * patch_mult` (+ cold-start down-weight).  
-`patch_mult = 1.25` для матчей после `PATCH_741_START_TS` (см. `compute_sample_weights`).  
-Blend joblib: SHA256 в `model_compare.json` / sidecar `*.joblib.sha256`; load fail on mismatch.
-
-Подробнее: [docs/ROADMAP_v03.md](docs/ROADMAP_v03.md), [docs/FEATURES.md](docs/FEATURES.md), [docs/RESULTS.md](docs/RESULTS.md).
-
-## Лицензия
-
-[MIT](LICENSE). Данные — OpenDota (соблюдайте их ToS).
+More: [docs/ROADMAP_v03.md](docs/ROADMAP_v03.md).

@@ -1,14 +1,48 @@
+import { t, initI18n, onLangChange, localeTag, localizeWarning } from "./i18n.js";
+
 const DATA_URL = "data/predictions.json";
 const BOARD_STORAGE_KEY = "ti2026_board_strategy";
 const ANALYST_THRESHOLD = 5;
 
-const BOARD_COLUMNS = [
-  { key: "undefeated", title: "4–0 · Undefeated", tone: "ok" },
-  { key: "one_loss", title: "4–1 · One loss", tone: "ok" },
-  { key: "advance", title: "Проход · Advancing", tone: "warn" },
-  { key: "eliminate", title: "Выбывание · Out", tone: "warn" },
-  { key: "one_win", title: "1–4 · One win", tone: "bad" },
-  { key: "winless", title: "0–4 · Winless", tone: "bad" },
+const BOARD_COLUMN_KEYS = [
+  { key: "undefeated", titleKey: "col.undefeated", tone: "ok" },
+  { key: "one_loss", titleKey: "col.one_loss", tone: "ok" },
+  { key: "advance", titleKey: "col.advance", tone: "warn" },
+  { key: "eliminate", titleKey: "col.eliminate", tone: "warn" },
+  { key: "one_win", titleKey: "col.one_win", tone: "bad" },
+  { key: "winless", titleKey: "col.winless", tone: "bad" },
+];
+
+const BOARD_ROWS = [
+  ["undefeated", "one_loss", "advance"],
+  ["eliminate", "one_win", "winless"],
+];
+
+const MODE_GROUPS = [
+  {
+    id: "model",
+    titleKey: "mode.group.model",
+    descKey: "mode.group.model_desc",
+    strategies: ["points_optimal", "qualify_rank"],
+  },
+  {
+    id: "analysts",
+    titleKey: "mode.group.analysts",
+    descKey: "mode.group.analysts_desc",
+    strategies: ["analyst_consensus"],
+  },
+  {
+    id: "fusion",
+    titleKey: "mode.group.fusion",
+    descKey: "mode.group.fusion_desc",
+    strategies: [
+      "fusion",
+      "fusion_model_heavy",
+      "fusion_balanced",
+      "fusion_market_lean",
+      "fusion_analyst_lean",
+    ],
+  },
 ];
 
 const VALVE_POINTS_TABLE = [
@@ -44,9 +78,26 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+/** Local team emblem path (PNG preferred; SVG monogram as last resort). */
+function teamLogoSrc(teamId) {
+  const id = encodeURIComponent(String(teamId || "unknown"));
+  return `assets/img/teams/${id}.png`;
+}
+
+/** Team emblem <img>; falls back to monogram SVG, then letter chip. */
+function teamLogoHtml(teamId, shortName, { size = "" } = {}) {
+  const id = String(teamId || shortName || "unknown");
+  const mon = escapeHtml(String(shortName || teamId || "?").slice(0, 3).toUpperCase());
+  const cls = size === "sm" ? "team-logo sm" : "team-logo";
+  const png = `assets/img/teams/${encodeURIComponent(id)}.png`;
+  const svg = `assets/img/teams/${encodeURIComponent(id)}.svg`;
+  // Try PNG → SVG monogram → text chip
+  return `<img class="${cls}" src="${png}" alt="" width="64" height="64" loading="lazy" data-monogram="${mon}" data-fallback-src="${svg}" onerror="if(this.dataset.fallbackSrc){const s=this.dataset.fallbackSrc;delete this.dataset.fallbackSrc;this.src=s;return;}this.onerror=null;this.replaceWith(Object.assign(document.createElement('span'),{className:this.className+' logo-fallback',textContent:this.dataset.monogram}))" />`;
+}
+
 async function loadData() {
   const res = await fetch(DATA_URL);
-  if (!res.ok) throw new Error(`Не удалось загрузить predictions.json (${res.status})`);
+  if (!res.ok) throw new Error(t("error.fetch", { status: res.status }));
   return res.json();
 }
 
@@ -54,9 +105,13 @@ function fmtPct(v) {
   return `${Number(v).toFixed(1)}%`;
 }
 
+function fmtNum(v) {
+  return Number(v).toLocaleString(localeTag());
+}
+
 function valvePointsTooltip() {
-  const rows = VALVE_POINTS_TABLE.map(([k, pts]) => `${k}/16 → ${pts.toLocaleString("ru-RU")}`);
-  return `Очки Valve за точные слоты:\n${rows.join("\n")}`;
+  const rows = VALVE_POINTS_TABLE.map(([k, pts]) => `${k}/16 → ${pts.toLocaleString(localeTag())}`);
+  return `${t("valve.points_title")}\n${rows.join("\n")}`;
 }
 
 function getBoardStrategy() {
@@ -68,6 +123,324 @@ function activeBoard(data) {
   const strategy = getBoardStrategy();
   if (data.boards && data.boards[strategy]) return data.boards[strategy];
   return data.board;
+}
+
+function fusionScenarioKey(strategy) {
+  if (strategy === "fusion") return null;
+  if (strategy && strategy.startsWith("fusion_")) {
+    return strategy.replace(/^fusion_/, "");
+  }
+  return null;
+}
+
+function modeGroupForStrategy(strategy) {
+  return MODE_GROUPS.find((g) => g.strategies.includes(strategy)) || MODE_GROUPS[0];
+}
+
+const FUSION_WEIGHT_KEYS = [
+  "model_weight",
+  "analyst_weight",
+  "market_weight",
+  "ranking_weight",
+  "expert_weight",
+];
+
+const FUSION_WEIGHT_I18N = {
+  model_weight: "fusion.weight.model",
+  analyst_weight: "fusion.weight.analyst",
+  market_weight: "fusion.weight.market",
+  ranking_weight: "fusion.weight.ranking",
+  expert_weight: "fusion.weight.expert",
+};
+
+const FUSION_PRESET_KEYS = [
+  "fusion",
+  "fusion_model_heavy",
+  "fusion_balanced",
+  "fusion_market_lean",
+  "fusion_analyst_lean",
+];
+
+/** Effective shares after renormalizing raw soft weights (matches server fuse). */
+function effectiveWeightShares(weights) {
+  const raw = FUSION_WEIGHT_KEYS.map((k) => Math.max(0, Number(weights[k] || 0)));
+  const total = raw.reduce((s, v) => s + v, 0);
+  if (total <= 0) {
+    return Object.fromEntries(FUSION_WEIGHT_KEYS.map((k) => [k, k === "model_weight" ? 1 : 0]));
+  }
+  return Object.fromEntries(FUSION_WEIGHT_KEYS.map((k, i) => [k, raw[i] / total]));
+}
+
+function scenarioWeightsMap(meta) {
+  const scenarios = meta.fusion_weight_scenarios || {};
+  const out = {};
+  for (const [name, w] of Object.entries(scenarios)) {
+    const model = Number(w.model_weight || 0);
+    const market = Number(w.market_weight || 0);
+    const ranking = Number(w.ranking_weight || 0);
+    const expert = Number(w.expert_weight || 0);
+    const analyst =
+      w.analyst_weight != null
+        ? Number(w.analyst_weight)
+        : Math.max(0, 1 - model - market - ranking - expert);
+    out[`fusion_${name}`] = {
+      model_weight: model,
+      analyst_weight: analyst,
+      market_weight: market,
+      ranking_weight: ranking,
+      expert_weight: expert,
+    };
+  }
+  const model = Number(meta.fusion_model_weight ?? 0.65);
+  const market = Number(meta.fusion_market_weight ?? 0.1);
+  const ranking = Number(meta.fusion_ranking_weight ?? 0.05);
+  const analyst =
+    meta.fusion_analyst_weight != null
+      ? Number(meta.fusion_analyst_weight)
+      : Math.max(0, 1 - model - market - ranking);
+  out.fusion = {
+    model_weight: model,
+    analyst_weight: analyst,
+    market_weight: market,
+    ranking_weight: ranking,
+    expert_weight: 0,
+  };
+  return out;
+}
+
+function weightsDistance(a, b) {
+  return FUSION_WEIGHT_KEYS.reduce(
+    (s, k) => s + Math.abs(Number(a[k] || 0) - Number(b[k] || 0)),
+    0
+  );
+}
+
+/** Pick precomputed fusion_* board closest to draft weights. */
+function nearestFusionStrategy(meta, draftWeights) {
+  const map = scenarioWeightsMap(meta);
+  let best = "fusion_balanced";
+  let bestDist = Infinity;
+  for (const [strategy, w] of Object.entries(map)) {
+    if (strategy === "fusion") continue;
+    const d = weightsDistance(draftWeights, w);
+    if (d < bestDist) {
+      bestDist = d;
+      best = strategy;
+    }
+  }
+  if (weightsDistance(draftWeights, map.fusion) <= bestDist + 0.02) {
+    return "fusion";
+  }
+  return best;
+}
+
+function expectedPointsForStrategy(data, strategy) {
+  const meta = data.meta || {};
+  const compare = meta.board_compare || {};
+  if (compare[strategy]?.expected_points != null) {
+    return Number(compare[strategy].expected_points);
+  }
+  if (strategy === "analyst_consensus" && data.analyst?.expected_points != null) {
+    return Number(data.analyst.expected_points);
+  }
+  const key = fusionScenarioKey(strategy);
+  const scores = meta.fusion_scenario_scores || {};
+  if (key && scores[key]?.expected_points != null) {
+    return Number(scores[key].expected_points);
+  }
+  if (strategy.startsWith("fusion") && meta.fusion_expected_points != null) {
+    return Number(meta.fusion_expected_points);
+  }
+  return meta.expected_compendium_points != null
+    ? Number(meta.expected_compendium_points)
+    : null;
+}
+
+function setBoardStrategy(strategy, data, { persist = true } = {}) {
+  const sel = document.getElementById("board-strategy");
+  if (sel && sel.querySelector(`option[value="${strategy}"]`)) {
+    sel.value = strategy;
+  }
+  if (persist) localStorage.setItem(BOARD_STORAGE_KEY, strategy);
+  renderHero(data);
+  renderModePanel(data);
+  renderFusionWeights(data);
+  renderBoard(data);
+}
+
+function renderModePanel(data) {
+  const groupsEl = document.getElementById("mode-groups");
+  const variantsEl = document.getElementById("mode-variants");
+  const summaryEl = document.getElementById("mode-summary");
+  if (!groupsEl || !variantsEl) return;
+
+  const strategy = getBoardStrategy();
+  const group = modeGroupForStrategy(strategy);
+  const pts = expectedPointsForStrategy(data, strategy);
+
+  groupsEl.innerHTML = MODE_GROUPS.map((g) => {
+    const active = g.id === group.id ? " active" : "";
+    return `<button type="button" class="mode-group${active}" data-group="${g.id}" role="tab" aria-selected="${g.id === group.id}">
+      <span class="mode-group-title">${escapeHtml(t(g.titleKey))}</span>
+      <span class="mode-group-desc">${escapeHtml(t(g.descKey))}</span>
+    </button>`;
+  }).join("");
+
+  groupsEl.querySelectorAll("[data-group]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const g = MODE_GROUPS.find((x) => x.id === btn.getAttribute("data-group"));
+      if (!g) return;
+      const next = g.strategies.includes(strategy) ? strategy : g.strategies[0];
+      setBoardStrategy(next, data);
+    });
+  });
+
+  if (group.id === "fusion") {
+    // Presets live in #fusion-weights — avoid duplicating the same mix buttons here.
+    variantsEl.hidden = true;
+    variantsEl.innerHTML = "";
+  } else if (group.strategies.length > 1) {
+    variantsEl.hidden = false;
+    variantsEl.innerHTML = group.strategies
+      .map((s) => {
+        const active = s === strategy ? " active" : "";
+        const hintKey = `strategy.${s}_hint`;
+        const hint = t(hintKey);
+        const titleAttr =
+          hint && !hint.startsWith("strategy.")
+            ? ` title="${escapeHtml(hint)}"`
+            : "";
+        return `<button type="button" class="mode-variant${active}" data-strategy="${s}"${titleAttr}>${escapeHtml(t(`strategy.${s}`))}</button>`;
+      })
+      .join("");
+    variantsEl.querySelectorAll("[data-strategy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setBoardStrategy(btn.getAttribute("data-strategy"), data);
+      });
+    });
+  } else {
+    variantsEl.hidden = false;
+    variantsEl.innerHTML = `<p class="mode-panel-help" style="margin:0">${escapeHtml(t("mode.analysts_hint"))}</p>`;
+  }
+
+  if (summaryEl) {
+    const ptsText =
+      pts != null
+        ? ` · ${t("mode.points_approx")}: <strong>${Math.round(pts).toLocaleString(localeTag())}</strong>`
+        : "";
+    summaryEl.innerHTML = `${escapeHtml(t("mode.current"))}: <strong>${escapeHtml(t(`strategy.${strategy}`))}</strong>${ptsText}`;
+  }
+}
+
+function renderFusionWeights(data) {
+  const root = document.getElementById("fusion-weights");
+  const sliders = document.getElementById("fusion-sliders");
+  const presets = document.getElementById("fusion-presets");
+  const scoreEl = document.getElementById("fusion-score");
+  const disc = document.getElementById("market-disclaimer");
+  if (!root || !sliders) return;
+  const meta = data.meta || {};
+  const strategy = getBoardStrategy();
+  const isFusion = strategy === "fusion" || strategy.startsWith("fusion_");
+  root.hidden = !isFusion;
+  if (disc) {
+    disc.textContent = meta.market_disclaimer || t("fusion.market_fallback");
+  }
+  if (!isFusion) {
+    sliders.innerHTML = "";
+    if (presets) presets.innerHTML = "";
+    if (scoreEl) scoreEl.textContent = "";
+    return;
+  }
+
+  const map = scenarioWeightsMap(meta);
+  const weights = map[strategy] || map.fusion;
+  const shares = effectiveWeightShares(weights);
+  const rawSum = FUSION_WEIGHT_KEYS.reduce((s, k) => s + Math.max(0, Number(weights[k] || 0)), 0);
+
+  if (presets) {
+    presets.innerHTML = FUSION_PRESET_KEYS.filter((k) => map[k] || k === "fusion")
+      .map((k) => {
+        const active = k === strategy ? " active" : "";
+        const hintKey = `strategy.${k}_hint`;
+        const hint = t(hintKey);
+        const titleAttr =
+          hint && !hint.startsWith("strategy.")
+            ? ` title="${escapeHtml(hint)}"`
+            : "";
+        // Same human labels as strategy.* (single mix chooser lives here)
+        return `<button type="button" class="fusion-preset${active}" data-strategy="${k}"${titleAttr}>${escapeHtml(t(`strategy.${k}`))}</button>`;
+      })
+      .join("");
+    presets.querySelectorAll("[data-strategy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setBoardStrategy(btn.getAttribute("data-strategy"), data);
+      });
+    });
+  }
+
+  sliders.innerHTML =
+    FUSION_WEIGHT_KEYS.map((k) => {
+      const v = Math.round(Number(weights[k] ?? 0) * 100);
+      const eff = Math.round(Number(shares[k] || 0) * 100);
+      return `
+      <label class="fusion-slider-row">
+        <span class="fusion-slider-head">
+          <span>${escapeHtml(t(FUSION_WEIGHT_I18N[k]))}: <strong data-wlabel="${k}">${v}</strong></span>
+          <span class="fusion-slider-eff" data-weff="${k}">${escapeHtml(t("fusion.weight_in_mix"))}: ${eff}%</span>
+        </span>
+        <input type="range" min="0" max="100" step="5" value="${v}" data-weight="${k}" aria-valuetext="${v}" />
+      </label>`;
+    }).join("") +
+    `<p class="fusion-weights-help" style="margin:0.35rem 0 0;grid-column:1/-1">${escapeHtml(
+      t("fusion.weights_raw_sum", { sum: Math.round(rawSum * 100) })
+    )}</p>`;
+
+  const refreshEff = (draft) => {
+    const nextShares = effectiveWeightShares(draft);
+    const nextSum = FUSION_WEIGHT_KEYS.reduce(
+      (s, k) => s + Math.max(0, Number(draft[k] || 0)),
+      0
+    );
+    sliders.querySelectorAll("[data-weff]").forEach((el) => {
+      const key = el.getAttribute("data-weff");
+      const eff = Math.round(Number(nextShares[key] || 0) * 100);
+      el.textContent = `${t("fusion.weight_in_mix")}: ${eff}%`;
+    });
+    const sumEl = sliders.querySelector(".fusion-weights-help");
+    if (sumEl) {
+      sumEl.textContent = t("fusion.weights_raw_sum", { sum: Math.round(nextSum * 100) });
+    }
+  };
+
+  sliders.querySelectorAll("input[data-weight]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const draft = { ...weights };
+      sliders.querySelectorAll("input[data-weight]").forEach((el) => {
+        draft[el.getAttribute("data-weight")] = Number(el.value) / 100;
+        const lab = sliders.querySelector(`[data-wlabel="${el.getAttribute("data-weight")}"]`);
+        if (lab) lab.textContent = `${el.value}`;
+      });
+      refreshEff(draft);
+      const next = nearestFusionStrategy(meta, draft);
+      if (next !== strategy) setBoardStrategy(next, data);
+    });
+  });
+
+  if (scoreEl) {
+    const key = fusionScenarioKey(strategy);
+    const scores = meta.fusion_scenario_scores || {};
+    const pts =
+      (key && scores[key]?.expected_points) ?? meta.fusion_expected_points ?? null;
+    const correct = (key && scores[key]?.expected_correct) ?? null;
+    scoreEl.innerHTML =
+      pts != null
+        ? `${escapeHtml(t("fusion.score"))}: <strong>${Math.round(pts).toLocaleString(localeTag())}</strong>` +
+          (correct != null
+            ? ` · ${escapeHtml(t("fusion.correct_slots"))} ${Number(correct).toFixed(2)}`
+            : "")
+        : "";
+  }
 }
 
 function renderFallbackBanner(data) {
@@ -83,8 +456,7 @@ function renderFallbackBanner(data) {
     return;
   }
   el.hidden = false;
-  el.textContent =
-    "Режим fallback: power ranking (не blend pairwise). Переобучите модель через train_compare.";
+  el.textContent = t("fallback.banner");
 }
 
 function renderHero(data) {
@@ -94,81 +466,123 @@ function renderHero(data) {
   const warnEl = document.getElementById("meta-warnings");
   if (warnEl) {
     const warnings = Array.isArray(meta.warnings) ? meta.warnings : [];
-    if (warnings.length) {
+    const localized = warnings.map(localizeWarning).filter(Boolean);
+    if (localized.length) {
       warnEl.hidden = false;
-      warnEl.innerHTML = warnings
-        .map((w) => `<li>${escapeHtml(w)}</li>`)
-        .join("");
+      warnEl.innerHTML = localized.map((w) => `<li>${escapeHtml(w)}</li>`).join("");
     } else {
       warnEl.hidden = true;
       warnEl.innerHTML = "";
     }
   }
   const strategy = getBoardStrategy();
-  const compare = meta.board_compare || {};
-  const stratPts = compare[strategy]?.expected_points;
-  const ptsVal = stratPts ?? meta.expected_compendium_points;
+  const ptsVal = expectedPointsForStrategy(data, strategy);
   const pts =
     ptsVal != null
-      ? `<span class="chip" title="${escapeHtml(valvePointsTooltip())}">E[очки] <strong>${Math.round(ptsVal).toLocaleString("ru-RU")}</strong></span>`
+      ? `<span class="chip" title="${escapeHtml(valvePointsTooltip())}">${escapeHtml(t("chip.points"))}: <strong>${Math.round(ptsVal).toLocaleString(localeTag())}</strong></span>`
       : "";
-  const analystPts = data.analyst?.expected_points;
-  const analystChip =
-    analystPts != null
-      ? `<span class="chip">Консенсус <strong>${Math.round(analystPts).toLocaleString("ru-RU")}</strong></span>`
-      : "";
-  const fusion =
+  const modelPts = Math.round(Number(ptsVal));
+  const analystPts =
+    data.analyst?.expected_points != null
+      ? Math.round(Number(data.analyst.expected_points))
+      : null;
+  const fusionPts =
     meta.fusion_expected_points != null
-      ? `<span class="chip">Fusion <strong>${Math.round(meta.fusion_expected_points).toLocaleString("ru-RU")}</strong></span>`
-      : "";
+      ? Math.round(Number(meta.fusion_expected_points))
+      : null;
+  let extraPts = "";
+  if (analystPts != null && analystPts !== modelPts) {
+    extraPts += `<span class="chip" title="${escapeHtml(t("title.analyst_pts"))}">${escapeHtml(t("chip.analysts"))}: <strong>${analystPts.toLocaleString(localeTag())}</strong></span>`;
+  }
+  if (
+    fusionPts != null &&
+    fusionPts !== modelPts &&
+    fusionPts !== analystPts
+  ) {
+    extraPts += `<span class="chip" title="${escapeHtml(t("title.fusion_pts"))}">${escapeHtml(t("chip.fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
+  } else if (fusionPts != null && fusionPts !== modelPts && analystPts == null) {
+    extraPts += `<span class="chip" title="${escapeHtml(t("title.fusion_pts"))}">${escapeHtml(t("chip.fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
+  } else if (
+    fusionPts != null &&
+    analystPts != null &&
+    fusionPts === analystPts &&
+    fusionPts !== modelPts &&
+    !extraPts
+  ) {
+    extraPts += `<span class="chip" title="${escapeHtml(t("title.both_pts"))}">${escapeHtml(t("chip.analysts_fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
+  }
+  const modelChipLabel = friendlyModelLabel(meta);
   document.getElementById("hero-meta").innerHTML = `
-    <span class="chip"><strong>${escapeHtml(meta.model_label)}</strong></span>
-    <span class="chip">Симуляций <strong>${Number(meta.n_simulations).toLocaleString("ru-RU")}</strong></span>
+    <span class="chip"><strong>${escapeHtml(modelChipLabel)}</strong></span>
+    <span class="chip">${escapeHtml(t("chip.sims"))}: <strong>${fmtNum(meta.n_simulations)}</strong></span>
     ${pts}
-    ${analystChip}
-    ${fusion}
-    <span class="chip">${escapeHtml(meta.format)}</span>
+    ${extraPts}
+    <span class="chip">${escapeHtml(friendlyFormatLabel(meta.format))}</span>
     <span class="chip">v${escapeHtml(meta.version)}</span>
   `;
   document.getElementById("footer-stamp").textContent =
-    `Обновлено: ${new Date(meta.generated_at).toLocaleString("ru-RU")} · ${meta.model}`;
+    `${t("footer.updated")}: ${new Date(meta.generated_at).toLocaleString(localeTag())}`;
+}
+
+function friendlyModelLabel(meta) {
+  const key = String(meta.model || "");
+  if (key.includes("blend")) return t("chip.model_blend");
+  if (key.includes("power")) return t("chip.model_power");
+  return meta.model_label || t("chip.model_default");
+}
+
+function friendlyFormatLabel(fmt) {
+  if (!fmt) return "Swiss 16→4";
+  if (/16-team Swiss/i.test(fmt) || /Swiss to 4/i.test(fmt)) {
+    return t("format.swiss");
+  }
+  return fmt;
+}
+
+function renderTeamMark(tRow, nAnalysts) {
+  const agree = tRow.analyst_agreement ?? 0;
+  const names = (tRow.analyst_names || []).join(", ");
+  const denom = nAnalysts != null ? String(nAnalysts) : "?";
+  const chip =
+    agree >= ANALYST_THRESHOLD
+      ? `<span class="chip mini" title="${escapeHtml(names)}">${agree}/${denom}</span>`
+      : "";
+  const slotPct = tRow.slot_pct ?? 0;
+  const displayName = escapeHtml(tRow.short || tRow.name);
+  const title = escapeHtml(`${tRow.name || ""}${names ? " · " + names : ""}`);
+  const teamId = tRow.id || tRow.short || tRow.name;
+  return `
+    <article class="team-mark" title="${title}">
+      ${teamLogoHtml(teamId, tRow.short || tRow.name)}
+      <div class="name">${displayName}${chip}</div>
+      <div class="meta">${escapeHtml(tRow.record)} · ${fmtPct(slotPct)}</div>
+      <div class="prob">${fmtPct(tRow.qualify_pct)}</div>
+    </article>`;
 }
 
 function renderBoard(data) {
   const root = document.getElementById("swiss-board");
   const board = activeBoard(data);
   const nAnalysts = data.analyst?.n_analysts;
-  root.innerHTML = BOARD_COLUMNS.map((col) => {
-    const teams = board[col.key] || [];
-    const pills = teams.length
-      ? teams
-          .map((t) => {
-            const agree = t.analyst_agreement ?? 0;
-            const names = (t.analyst_names || []).join(", ");
-            const denom = nAnalysts != null ? String(nAnalysts) : "?";
-            const chip =
-              agree >= ANALYST_THRESHOLD
-                ? `<span class="chip mini" title="${escapeHtml(names)}">${agree}/${denom}</span>`
-                : "";
-            const slotPct = t.slot_pct ?? 0;
-            const displayName = escapeHtml(t.name || t.short);
-            const title = escapeHtml(`${t.name || ""}${names ? " · " + names : ""}`);
-            return `
-          <div class="team-pill" title="${title}">
-            <div>
-              <div class="name">${displayName} ${chip}</div>
-              <div class="meta">${escapeHtml(t.record)} · P(слот) ${fmtPct(slotPct)}</div>
-            </div>
-            <div class="prob">${fmtPct(t.qualify_pct)}</div>
-          </div>`;
-          })
-          .join("")
-      : `<p class="meta" style="color:var(--muted);margin:0;font-size:0.85rem">Пока пусто</p>`;
-    return `
+  const colMap = Object.fromEntries(BOARD_COLUMN_KEYS.map((c) => [c.key, c]));
+
+  root.innerHTML = BOARD_ROWS.map((rowKeys, rowIdx) => {
+    const rowClass = rowIdx === 0 ? "swiss-row advance-row" : "swiss-row elim-row";
+    const cols = rowKeys
+      .map((key) => {
+        const col = colMap[key];
+        const teams = board[col.key] || [];
+        const marks = teams.length
+          ? `<div class="team-slots">${teams.map((tRow) => renderTeamMark(tRow, nAnalysts)).join("")}</div>`
+          : `<p class="meta" style="color:var(--muted);margin:0;font-size:0.85rem;text-align:center">${escapeHtml(t("board.empty"))}</p>`;
+        return `
       <div class="board-col ${col.tone}">
-        <h4>${col.title}</h4>
-        ${pills}
+        <h4>${escapeHtml(t(col.titleKey))}</h4>
+        ${marks}
       </div>`;
+      })
+      .join("");
+    return `<div class="${rowClass}">${cols}</div>`;
   }).join("");
 }
 
@@ -176,7 +590,7 @@ function sortTeams(teams, mode) {
   const copy = [...teams];
   if (mode === "power") copy.sort((a, b) => a.power_rank - b.power_rank);
   else if (mode === "elim") copy.sort((a, b) => b.eliminated_pct - a.eliminated_pct);
-  else if (mode === "alpha") copy.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  else if (mode === "alpha") copy.sort((a, b) => a.name.localeCompare(b.name, localeTag()));
   else copy.sort((a, b) => b.qualify_pct - a.qualify_pct);
   return copy;
 }
@@ -187,45 +601,50 @@ function renderStandings(data) {
   let teams = sortTeams(data.teams, mode);
   if (q) {
     teams = teams.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.short.toLowerCase().includes(q) ||
-        t.region.toLowerCase().includes(q)
+      (row) =>
+        row.name.toLowerCase().includes(q) ||
+        row.short.toLowerCase().includes(q) ||
+        row.region.toLowerCase().includes(q)
     );
   }
   const tbody = document.querySelector("#standings-table tbody");
   tbody.innerHTML = teams
-    .map((t, i) => {
+    .map((row, i) => {
       const strength =
-        t.strength_label ||
-        (t.strength_mu != null
-          ? `${Math.round(t.strength_mu)} ± ${Math.round(t.strength_sigma || 0)}`
+        row.strength_label ||
+        (row.strength_mu != null
+          ? `${Math.round(row.strength_mu)} ± ${Math.round(row.strength_sigma || 0)}`
           : "—");
       const home =
-        t.home_lan_elo > 0 ? ` · home +${t.home_lan_elo}` : "";
+        row.home_lan_elo > 0 ? ` · ${t("rank.home")}${row.home_lan_elo}` : "";
       return `
       <tr>
         <td>${i + 1}</td>
         <td class="team-cell">
-          ${escapeHtml(t.name)}
-          <span class="sub">${escapeHtml(t.source)} · rank ${escapeHtml(t.power_rank)}${escapeHtml(home)}</span>
+          <div class="team-cell-with-logo">
+            ${teamLogoHtml(row.id || row.short, row.short || row.name, { size: "sm" })}
+            <div>
+              ${escapeHtml(row.name)}
+              <span class="sub">${escapeHtml(row.source)} · rank ${escapeHtml(row.power_rank)}${escapeHtml(home)}</span>
+            </div>
+          </div>
         </td>
-        <td>${escapeHtml(t.region)}</td>
-        <td class="strength-cell" title="Elo shrunk ± combined σ">${escapeHtml(strength)}</td>
+        <td>${escapeHtml(row.region)}</td>
+        <td class="strength-cell" title="${escapeHtml(t("title.strength"))}">${escapeHtml(strength)}</td>
         <td>
           <div class="bar">
-            <span>${fmtPct(t.qualify_pct)}</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${Number(t.qualify_pct) || 0}%"></div></div>
+            <span>${fmtPct(row.qualify_pct)}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${Number(row.qualify_pct) || 0}%"></div></div>
           </div>
         </td>
         <td>
           <div class="bar">
-            <span>${fmtPct(t.eliminated_pct)}</span>
-            <div class="bar-track"><div class="bar-fill danger" style="width:${Number(t.eliminated_pct) || 0}%"></div></div>
+            <span>${fmtPct(row.eliminated_pct)}</span>
+            <div class="bar-track"><div class="bar-fill danger" style="width:${Number(row.eliminated_pct) || 0}%"></div></div>
           </div>
         </td>
-        <td>${Number(t.expected_wins).toFixed(2)}</td>
-        <td>${escapeHtml(t.most_likely_record)}</td>
+        <td>${Number(row.expected_wins).toFixed(2)}</td>
+        <td>${escapeHtml(row.most_likely_record)}</td>
       </tr>`;
     })
     .join("");
@@ -234,7 +653,7 @@ function renderStandings(data) {
 function heatColor(pct) {
   const v = Math.max(0, Math.min(100, Number(pct) || 0));
   const alpha = 0.08 + (v / 100) * 0.55;
-  return `rgba(226, 179, 87, ${alpha.toFixed(3)})`;
+  return `rgba(197, 160, 89, ${alpha.toFixed(3)})`;
 }
 
 function renderHeatmap(data) {
@@ -242,10 +661,10 @@ function renderHeatmap(data) {
   if (!root) return;
   const hm = data.slot_heatmap;
   if (!hm || !hm.matrix) {
-    root.innerHTML = "<tbody><tr><td>Нет данных heatmap</td></tr></tbody>";
+    root.innerHTML = `<tbody><tr><td>${escapeHtml(t("heatmap.empty"))}</td></tr></tbody>`;
     return;
   }
-  const head = `<thead><tr><th>Команда</th>${hm.slots
+  const head = `<thead><tr><th>${escapeHtml(t("heatmap.team"))}</th>${hm.slots
     .map((s) => `<th>${escapeHtml(s)}</th>`)
     .join("")}</tr></thead>`;
   const body = hm.matrix
@@ -257,7 +676,10 @@ function renderHeatmap(data) {
             `<td style="background:${heatColor(v)}" title="${escapeHtml(team.name)} · ${Number(v)}%">${Number(v).toFixed(1)}</td>`
         )
         .join("");
-      return `<tr><th scope="row">${escapeHtml(team.short || team.name)}</th>${cells}</tr>`;
+      const logo = teamLogoHtml(team.id || team.short, team.short || team.name, {
+        size: "sm",
+      });
+      return `<tr><th scope="row"><span class="team-cell-with-logo">${logo}<span>${escapeHtml(team.short || team.name)}</span></span></th>${cells}</tr>`;
     })
     .join("");
   root.innerHTML = `${head}<tbody>${body}</tbody>`;
@@ -266,15 +688,17 @@ function renderHeatmap(data) {
 function fillMatchupSelects(data) {
   const opts = data.teams
     .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, "ru"))
-    .map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`)
+    .sort((a, b) => a.name.localeCompare(b.name, localeTag()))
+    .map((row) => `<option value="${escapeHtml(row.id)}">${escapeHtml(row.name)}</option>`)
     .join("");
   const a = document.getElementById("team-a");
   const b = document.getElementById("team-b");
+  const prevA = a.value;
+  const prevB = b.value;
   a.innerHTML = opts;
   b.innerHTML = opts;
-  a.value = data.teams[0]?.id || "";
-  b.value = data.teams[1]?.id || data.teams[0]?.id || "";
+  a.value = prevA || data.teams[0]?.id || "";
+  b.value = prevB || data.teams[1]?.id || data.teams[0]?.id || "";
 }
 
 function findMatchup(data, idA, idB) {
@@ -289,21 +713,23 @@ function findMatchup(data, idA, idB) {
 function renderMatchup(data) {
   const idA = document.getElementById("team-a").value;
   const idB = document.getElementById("team-b").value;
-  const teamA = data.teams.find((t) => t.id === idA);
-  const teamB = data.teams.find((t) => t.id === idB);
+  const teamA = data.teams.find((row) => row.id === idA);
+  const teamB = data.teams.find((row) => row.id === idB);
   const m = findMatchup(data, idA, idB);
   const pa = Math.round(m.p_a * 1000) / 10;
   const pb = Math.round(m.p_b * 1000) / 10;
   document.getElementById("matchup-result").innerHTML = `
     <div class="duel">
       <div class="duel-side">
+        ${teamLogoHtml(teamA?.id || idA, teamA?.short || teamA?.name)}
         <div class="name">${escapeHtml(teamA?.name || idA)}</div>
         <div class="pct" style="color:var(--gold)">${pa}%</div>
       </div>
-      <div class="meta">вероятность победы серии</div>
+      <div class="meta">${escapeHtml(t("matchup.series_win"))}</div>
       <div class="duel-side">
+        ${teamLogoHtml(teamB?.id || idB, teamB?.short || teamB?.name)}
         <div class="name">${escapeHtml(teamB?.name || idB)}</div>
-        <div class="pct" style="color:var(--teal)">${pb}%</div>
+        <div class="pct" style="color:var(--cta-hi)">${pb}%</div>
       </div>
     </div>
     <div class="duel-bar" aria-hidden="true">
@@ -322,47 +748,107 @@ function renderMetrics(data) {
   const cov = m.player_coverage;
   const covLabel =
     cov && cov.coverage != null
-      ? `${Math.round(cov.coverage * 100)}%`
+      ? `${(Number(cov.coverage) * 100).toFixed(1).replace(/\.0$/, "")}%`
       : "—";
+  const missing =
+    cov && cov.n_matches != null && cov.n_matches_with_players != null
+      ? Number(cov.n_matches) - Number(cov.n_matches_with_players)
+      : null;
   const blendAuc = m.blend_leave_one_ti_avg_auc;
   const compare = data.meta?.board_compare || {};
+  const covHint = cov
+    ? [
+        `${cov.n_matches_with_players || 0}/${cov.n_matches || "?"} ${t("metric.coverage_with")}`,
+        t("metric.coverage_ok"),
+        missing != null && missing > 0
+          ? t("metric.coverage_left", { n: missing })
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : t("metric.coverage_hint_base");
+  const covTitle = t("metric.coverage_title");
   const cards = [
     {
-      label: "Leave-One-TI AUC",
-      value: blendAuc ?? m.leave_one_ti_avg_auc ?? "—",
-      hint: blendAuc != null ? "Blend XGB+CatBoost" : "XGBoost team+player",
-    },
-    {
-      label: "Корпус",
+      label: t("metric.loo"),
       value:
-        meta.n_maps != null
-          ? `${meta.n_maps}`
-          : cov?.n_matches ?? "—",
-      hint: meta.n_leagues != null ? `${meta.n_leagues} лиг` : "maps",
+        blendAuc != null
+          ? Number(blendAuc).toFixed(3)
+          : m.leave_one_ti_avg_auc != null
+            ? Number(m.leave_one_ti_avg_auc).toFixed(3)
+            : "—",
+      hint: t("metric.loo_hint"),
     },
     {
-      label: "E[очки] model",
+      label: t("metric.corpus"),
+      value: meta.n_maps != null ? `${meta.n_maps}` : (cov?.n_matches ?? "—"),
+      hint:
+        meta.n_leagues != null
+          ? `${meta.n_leagues} ${t("metric.corpus_hint")}`
+          : t("metric.corpus_hint_fallback"),
+    },
+    {
+      label: t("metric.points"),
       value: compare.points_optimal?.expected_points?.toFixed(0) ?? "—",
-      hint: "Points-optimal board",
+      hint: t("metric.points_hint"),
     },
     {
-      label: "Player coverage",
+      label: t("metric.coverage"),
       value: covLabel,
-      hint: cov
-        ? `${cov.n_matches_with_players || 0} / ${cov.n_matches || "?"} матчей`
-        : "OpenDota details",
+      hint: covHint,
+      title: covTitle,
+      note:
+        missing != null && missing > 0
+          ? t("metric.coverage_note", { n: missing })
+          : null,
     },
   ];
   document.getElementById("metrics-grid").innerHTML = cards
     .map(
       (c) => `
-    <article class="metric">
+    <article class="metric"${c.title ? ` title="${escapeHtml(c.title)}"` : ""}>
       <p class="label">${escapeHtml(c.label)}</p>
-      <p class="value">${escapeHtml(c.value)}</p>
+      <p class="value">${escapeHtml(String(c.value))}</p>
       <p class="hint">${escapeHtml(c.hint)}</p>
+      ${c.note ? `<p class="note">${escapeHtml(c.note)}</p>` : ""}
     </article>`
     )
     .join("");
+}
+
+function bindNavSpy() {
+  const links = [...document.querySelectorAll(".side-nav a[href^='#']")];
+  const sections = links
+    .map((a) => document.querySelector(a.getAttribute("href")))
+    .filter(Boolean);
+  if (!sections.length || !("IntersectionObserver" in window)) return;
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      const id = `#${visible.target.id}`;
+      links.forEach((a) => {
+        a.classList.toggle("is-active", a.getAttribute("href") === id);
+      });
+    },
+    { rootMargin: "-20% 0px -55% 0px", threshold: [0.1, 0.35, 0.6] }
+  );
+  sections.forEach((sec) => io.observe(sec));
+}
+
+function rerenderAll(data) {
+  if (!data) return;
+  renderHero(data);
+  renderModePanel(data);
+  renderBoard(data);
+  renderFusionWeights(data);
+  renderStandings(data);
+  renderHeatmap(data);
+  renderMatchup(data);
+  renderMetrics(data);
 }
 
 function bind(data) {
@@ -379,25 +865,38 @@ function bind(data) {
     boardSel.addEventListener("change", () => {
       localStorage.setItem(BOARD_STORAGE_KEY, boardSel.value);
       renderHero(data);
+      renderModePanel(data);
+      renderFusionWeights(data);
       renderBoard(data);
     });
   }
+  bindNavSpy();
+  onLangChange(() => rerenderAll(data));
 }
 
 async function main() {
+  initI18n();
   try {
     DATA = await loadData();
-    renderHero(DATA);
-    renderBoard(DATA);
     fillMatchupSelects(DATA);
+    const boardSel = document.getElementById("board-strategy");
+    const saved = localStorage.getItem(BOARD_STORAGE_KEY);
+    if (boardSel && saved && boardSel.querySelector(`option[value="${saved}"]`)) {
+      boardSel.value = saved;
+    }
+    renderHero(DATA);
+    renderModePanel(DATA);
+    renderBoard(DATA);
+    renderFusionWeights(DATA);
     renderStandings(DATA);
     renderHeatmap(DATA);
     renderMatchup(DATA);
     renderMetrics(DATA);
     bind(DATA);
   } catch (err) {
-    document.getElementById("disclaimer-text").textContent =
-      `Ошибка загрузки данных: ${err.message}. Открой через локальный сервер или GitHub Pages.`;
+    document.getElementById("disclaimer-text").textContent = t("error.load", {
+      msg: err.message,
+    });
     console.error(err);
   }
 }

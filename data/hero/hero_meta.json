@@ -1,0 +1,13 @@
+{
+  "source": "fixture",
+  "usable_in_production": false,
+  "note": "Offline fixture for tests — synthetic hero meta. Soft prior skips this file.",
+  "heroes": {
+    "1": {"name": "Anti-Mage", "games": 1000, "wins": 520, "winrate": 0.52},
+    "2": {"name": "Axe", "games": 900, "wins": 480, "winrate": 0.5333},
+    "3": {"name": "Bane", "games": 800, "wins": 400, "winrate": 0.5},
+    "8": {"name": "Juggernaut", "games": 1100, "wins": 605, "winrate": 0.55},
+    "14": {"name": "Pudge", "games": 2000, "wins": 980, "winrate": 0.49},
+    "74": {"name": "Invoker", "games": 950, "wins": 500, "winrate": 0.5263}
+  }
+}

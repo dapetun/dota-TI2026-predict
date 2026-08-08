@@ -2,7 +2,7 @@
 #
 # Optional overrides loaded via src.config.load_settings().
 # Canonical defaults also live in code (RATING_HALF_LIFE_DAYS=210,
-# DEFAULT_N_SIMULATIONS=20000, SWISS_CONFIG). Keep YAML in sync when changing.
+# DEFAULT_N_SIMULATIONS=50000, SWISS_CONFIG). Keep YAML in sync when changing.
 #
 # STRATZ keys below are legacy documentation only — prod uses OpenDota.
 
@@ -88,7 +88,7 @@ models:
     min_samples_leaf: 5
 
 simulation:
-  n_simulations: 20000
+  n_simulations: 50000
   swiss_rounds: 5
   wins_to_qualify: 4
   losses_to_eliminate: 4

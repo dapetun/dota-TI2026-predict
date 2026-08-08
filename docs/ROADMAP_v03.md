@@ -172,7 +172,7 @@
 |---|---|---|
 | Playoff / double-elim MC | **stub** `implemented=False` | `src/simulation/playoff_stub.py` |
 | Draft / hero embeddings | design only | `docs/HERO_DRAFT_PLAN.md` |
-| Polymarket / market prior | **stub** returns `None` | `multisource.market_slot_prior_stub` |
+| Polymarket / market prior | curated JSON; empty → seed from POWER_RANKINGS (`is_real_market=false`, export market_w=0) | `data/ti2026_market_priors.json` + `load_market_priors` |
 
 Полная реализация — после ≥80% player coverage и стабильного LOO. Не импортировать несуществующие модули.
 

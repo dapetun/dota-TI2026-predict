@@ -18,7 +18,7 @@ DEFAULT_PICKS_PATH = Path(__file__).resolve().parents[2] / "docs" / "data" / "an
 
 
 def load_analyst_picks(path: str | Path | None = None) -> dict:
-    """Load analyst picks JSON (Sports.ru compendium grids)."""
+    """Load analyst picks JSON (full grids + partial notes)."""
     path = Path(path or DEFAULT_PICKS_PATH)
     with open(path, encoding="utf-8") as f:
         return json.load(f)
@@ -33,15 +33,31 @@ def normalize_analyst_board(board: dict[str, str]) -> dict[str, str]:
     return out
 
 
-def analyst_assignments(picks_data: dict | None = None) -> list[dict[str, str]]:
-    """List of team_id -> slot_key per analyst."""
+def _rows_with_boards(data: dict, *, include_partial: bool) -> list[dict]:
+    """Analyst / partial rows that carry a non-empty board."""
+    rows = list(data.get("analysts") or [])
+    if include_partial:
+        rows.extend(data.get("partial") or [])
+    return [row for row in rows if row.get("board")]
+
+
+def analyst_assignments(
+    picks_data: dict | None = None,
+    *,
+    include_partial: bool = True,
+) -> list[dict[str, str]]:
+    """List of team_id -> slot_key per analyst (partial boards may be incomplete)."""
     data = picks_data or load_analyst_picks()
-    out: list[dict[str, str]] = []
-    for row in data.get("analysts", []):
-        board = row.get("board") or {}
-        if board:
-            out.append(normalize_analyst_board(board))
-    return out
+    return [
+        normalize_analyst_board(row.get("board") or {})
+        for row in _rows_with_boards(data, include_partial=include_partial)
+    ]
+
+
+def full_analyst_count(picks_data: dict | None = None) -> int:
+    """Number of complete Sports.ru-style grids (denominator for UI chips)."""
+    data = picks_data or load_analyst_picks()
+    return sum(1 for row in (data.get("analysts") or []) if row.get("board"))
 
 
 def slot_vote_counts(
@@ -72,10 +88,10 @@ def analyst_names_for_slot(
     slot_key: str,
     picks_data: dict | None = None,
 ) -> list[str]:
-    """Analyst names agreeing on team slot."""
+    """Analyst names agreeing on team slot (includes partial boards)."""
     data = picks_data or load_analyst_picks()
     names: list[str] = []
-    for row in data.get("analysts", []):
+    for row in _rows_with_boards(data, include_partial=True):
         board = normalize_analyst_board(row.get("board") or {})
         if board.get(team_id) == slot_key:
             names.append(str(row.get("name", row.get("id", ""))))
@@ -86,8 +102,15 @@ def consensus_assignment(
     predictions: list[dict],
     assignments: list[dict[str, str]] | None = None,
 ) -> dict[str, str]:
-    """Majority-vote board; tie-break by model P(slot)."""
-    assignments = assignments or analyst_assignments()
+    """Majority-vote board; tie-break by model P(slot).
+
+    Defaults to full grids only — partial boards lack capacity coverage.
+    """
+    assignments = (
+        assignments
+        if assignments is not None
+        else analyst_assignments(include_partial=False)
+    )
     n_analysts = len(assignments)
     if n_analysts == 0:
         return {p["id"]: "advance" for p in predictions}
@@ -151,14 +174,36 @@ def score_board_assignment(
     }
 
 
+def _partial_export_rows(data: dict) -> list[dict]:
+    """Compact partial notes / boards for predictions.json."""
+    out: list[dict] = []
+    for row in data.get("partial") or []:
+        entry = {
+            "id": row.get("id"),
+            "name": row.get("name"),
+            "note": row.get("note"),
+            "soft": bool(row.get("soft")),
+            "source_url": row.get("source_url"),
+            "updated_at": row.get("updated_at"),
+        }
+        board = row.get("board") or {}
+        if board:
+            entry["board"] = normalize_analyst_board(board)
+            entry["n_slots"] = len(entry["board"])
+        out.append(entry)
+    return out
+
+
 def consensus_summary(
     predictions: list[dict],
     picks_data: dict | None = None,
 ) -> dict:
     """Votes and agreement metadata for export/UI."""
     data = picks_data or load_analyst_picks()
-    assignments = analyst_assignments(data)
-    n = len(assignments)
+    assignments = analyst_assignments(data, include_partial=True)
+    n_full = full_analyst_count(data)
+    # UI denominator stays full-grid count; partial votes still add to chips.
+    n = n_full
     team_ids = get_team_ids()
     per_team: dict[str, dict] = {}
     for tid in team_ids:
@@ -170,12 +215,20 @@ def consensus_summary(
             "consensus_count": votes[best_slot],
             "n_analysts": n,
         }
-    assignment = consensus_assignment(predictions, assignments)
+    # Capacity fill uses full grids only — partial boards are incomplete.
+    full_assignments = analyst_assignments(data, include_partial=False)
+    assignment = consensus_assignment(predictions, full_assignments)
     scores = score_board_assignment(assignment, predictions)
+    partial_rows = _partial_export_rows(data)
     return {
         "n_analysts": n,
+        "n_partial": len(partial_rows),
+        "n_partial_boards": sum(1 for row in partial_rows if row.get("board")),
         "source": data.get("source"),
         "url": data.get("url"),
+        "note": data.get("note"),
+        "sources": data.get("sources") or [],
+        "partial": partial_rows,
         "per_team": per_team,
         "assignment": assignment,
         "expected_correct": scores["expected_correct"],
