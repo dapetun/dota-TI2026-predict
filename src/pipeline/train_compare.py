@@ -60,6 +60,20 @@ def _avg_brier(folds: list[FoldResult]) -> float | None:
     return float(np.mean([f.brier for f in folds]))
 
 
+def _avg_auc_recent(
+    folds: list[FoldResult],
+    *,
+    keys: tuple[str, ...] = ("TI12", "TI13", "TI14"),
+) -> float | None:
+    """Mean AUC on recent TI folds only (prefix match on fold name)."""
+    selected = [f for f in folds if any(str(f.fold).startswith(k) for k in keys)]
+    return _avg_auc(selected)
+
+
+def _fold_auc_map(folds: list[FoldResult]) -> dict[str, float]:
+    return {str(f.fold): round(float(f.auc), 3) for f in folds}
+
+
 def run_model_compare(
     raw_dir: str = "data/raw",
     processed_dir: str = "data/processed",
@@ -69,6 +83,10 @@ def run_model_compare(
     stitch_teams: bool = True,
     lan_only_chemistry: bool = False,
     half_life_days: float | None = None,
+    min_games: int = 0,
+    prefer_lan: bool = False,
+    majors_only: bool = False,
+    patch_weight: bool = True,
 ) -> dict:
     """Train XGB + CatBoost + blend; write comparison metrics."""
     if half_life_days is None:
@@ -84,6 +102,11 @@ def run_model_compare(
     if matches.empty:
         raise FileNotFoundError(f"No matchlists in {raw_dir}")
 
+    if majors_only and "tier" in matches.columns:
+        before = len(matches)
+        matches = matches[matches["tier"].isin(["ti", "major"])].copy()
+        logger.info("majors_only: %s -> %s rows", before, len(matches))
+
     players = load_player_matches(raw_dir)
     stitch_n = 0
     if stitch_teams and not players.empty:
@@ -98,7 +121,9 @@ def run_model_compare(
     if not players.empty:
         save_player_matches(players, processed_dir)
 
-    team_features = build_match_feature_matrix(matches, min_games=5)
+    team_features = build_match_feature_matrix(
+        matches, min_games=min_games, prefer_lan=prefer_lan
+    )
     player_features = build_player_match_features(matches, players)
     chemistry = build_chemistry_features(matches, players, lan_only=lan_only_chemistry)
     features = merge_team_and_player_features(team_features, player_features)
@@ -129,7 +154,7 @@ def run_model_compare(
     logger.info("%s", summarize_results(cat_result))
     cat_path = save_catboost_result(cat_result, output_dir, stem="catboost_v1")
 
-    logger.info("--- Blend (LOO-tuned XGB + CatBoost, isotonic when calibrate=True) ---")
+    logger.info("--- Blend (nested LOO weight tune; isotonic on full OOF) ---")
     blend_result = train_blend_pipeline(
         features,
         feature_cols=feature_cols,
@@ -137,6 +162,25 @@ def run_model_compare(
         half_life_days=half_life_days,
     )
     logger.info("%s", summarize_blend(blend_result))
+
+    cat_loo = _avg_auc(cat_result.leave_one_ti) or 0.0
+    blend_loo = _avg_auc(blend_result.leave_one_ti) or 0.0
+    shipped_weights = dict(blend_result.params.get("weights") or {"xgb": 0.25, "catboost": 0.75})
+    if cat_loo + 1e-9 >= blend_loo:
+        shipped_weights = {"xgb": 0.0, "catboost": 1.0}
+        blend_result.params["weights"] = shipped_weights
+        blend_result.params["production_choice"] = "catboost_only"
+        logger.info(
+            "Production weights -> CatBoost-only (LOO AUC %.3f >= blend %.3f)",
+            cat_loo,
+            blend_loo,
+        )
+        # Re-attach calibrator for cat-only OOF is approximate; keep blend calibrator off.
+        if isinstance(blend_result.model, dict):
+            blend_result.model.pop("isotonic_calibrator", None)
+            blend_result.params["calibrated"] = False
+    else:
+        blend_result.params["production_choice"] = "blend"
 
     calibrated_note = bool(blend_result.params.get("calibrated"))
     out = Path(output_dir)
@@ -154,7 +198,7 @@ def run_model_compare(
     blend_sha256 = write_sha256_sidecar(blend_path)
 
     comparison = {
-        "version": "0.3.0-prod",
+        "version": "0.3.2",
         "player_coverage": coverage,
         "n_features_rows": len(features),
         "n_feature_cols": len(feature_cols),
@@ -163,14 +207,20 @@ def run_model_compare(
         "team_stitch_remaps": stitch_n,
         "lan_only_chemistry": lan_only_chemistry,
         "half_life_days": half_life_days,
-        "patch_741_start_ts": PATCH_741_START_TS,
-        "patch_sample_mult": PATCH_IN_MULT,
+        "min_games": min_games,
+        "prefer_lan": prefer_lan,
+        "majors_only": majors_only,
+        "patch_weight": patch_weight,
+        "patch_741_start_ts": PATCH_741_START_TS if patch_weight else None,
+        "patch_sample_mult": PATCH_IN_MULT if patch_weight else 1.0,
         "model_blend_path": str(blend_path),
         "model_blend_sha256": blend_sha256,
         "models": {
             "xgboost": {
                 "walk_forward_avg_auc": _avg_auc(xgb_result.walk_forward),
                 "leave_one_ti_avg_auc": _avg_auc(xgb_result.leave_one_ti),
+                "leave_one_ti_recent_avg_auc": _avg_auc_recent(xgb_result.leave_one_ti),
+                "leave_one_ti_fold_auc": _fold_auc_map(xgb_result.leave_one_ti),
                 "walk_forward_avg_logloss": _avg_ll(xgb_result.walk_forward),
                 "leave_one_ti_avg_logloss": _avg_ll(xgb_result.leave_one_ti),
                 "walk_forward_avg_brier": _avg_brier(xgb_result.walk_forward),
@@ -180,6 +230,8 @@ def run_model_compare(
             "catboost": {
                 "walk_forward_avg_auc": _avg_auc(cat_result.walk_forward),
                 "leave_one_ti_avg_auc": _avg_auc(cat_result.leave_one_ti),
+                "leave_one_ti_recent_avg_auc": _avg_auc_recent(cat_result.leave_one_ti),
+                "leave_one_ti_fold_auc": _fold_auc_map(cat_result.leave_one_ti),
                 "walk_forward_avg_logloss": _avg_ll(cat_result.walk_forward),
                 "leave_one_ti_avg_logloss": _avg_ll(cat_result.leave_one_ti),
                 "walk_forward_avg_brier": _avg_brier(cat_result.walk_forward),
@@ -189,12 +241,16 @@ def run_model_compare(
             "blend": {
                 "walk_forward_avg_auc": _avg_auc(blend_result.walk_forward),
                 "leave_one_ti_avg_auc": _avg_auc(blend_result.leave_one_ti),
+                "leave_one_ti_recent_avg_auc": _avg_auc_recent(blend_result.leave_one_ti),
+                "leave_one_ti_fold_auc": _fold_auc_map(blend_result.leave_one_ti),
                 "walk_forward_avg_logloss": _avg_ll(blend_result.walk_forward),
                 "leave_one_ti_avg_logloss": _avg_ll(blend_result.leave_one_ti),
                 "walk_forward_avg_brier": _avg_brier(blend_result.walk_forward),
                 "leave_one_ti_avg_brier": _avg_brier(blend_result.leave_one_ti),
                 "weights": blend_result.params.get("weights"),
                 "isotonic_calibrated": calibrated_note,
+                "production_choice": blend_result.params.get("production_choice"),
+                "loo_weight_tuning": blend_result.params.get("loo_weight_tuning"),
             },
         },
     }

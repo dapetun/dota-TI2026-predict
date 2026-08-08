@@ -194,6 +194,105 @@ def evaluate_blend_folds(
     )
 
 
+def evaluate_blend_folds_nested_loo(
+    df: pd.DataFrame,
+    loo_folds: list[tuple[str, np.ndarray, np.ndarray]],
+    feature_cols: list[str],
+    *,
+    half_life_days: float = RATING_HALF_LIFE_DAYS,
+    xgb_params: dict | None = None,
+    cat_params: dict | None = None,
+    grid: list[float] | None = None,
+    calibrate: bool = True,
+) -> tuple[list[FoldResult], dict[str, float], Any | None]:
+    """Honest LOO: one OOF pass; tune weights on other folds' OOF only.
+
+    Avoids refitting models per outer fold. Production weights/calibrator use
+    all folds' OOF (same as before for the shipped artifact).
+    """
+    from sklearn.isotonic import IsotonicRegression
+    from sklearn.metrics import (
+        accuracy_score,
+        brier_score_loss,
+        log_loss,
+        precision_score,
+        recall_score,
+        roc_auc_score,
+    )
+
+    grid = grid or [0.0, 0.25, 0.5, 0.75, 1.0]
+    X = df[feature_cols]
+    y = df["radiant_win"].to_numpy(dtype=int)
+
+    fold_px: list[np.ndarray] = []
+    fold_pc: list[np.ndarray] = []
+    fold_y: list[np.ndarray] = []
+    fold_meta: list[tuple[str, int, int]] = []
+
+    for fold_name, train_idx, test_idx in loo_folds:
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+        ref = float(df.iloc[train_idx]["start_time"].max())
+        sw = compute_sample_weights(
+            df.iloc[train_idx], reference_time=ref, half_life_days=half_life_days
+        )
+        xgb = fit_xgboost(X_train, y_train, sw, params=xgb_params, calibrate=False)
+        cat = fit_catboost(X_train, y_train, sw, params=cat_params)
+        fold_px.append(xgb.predict_proba(X_test)[:, 1])
+        fold_pc.append(cat.predict_proba(X_test)[:, 1])
+        fold_y.append(y_test)
+        fold_meta.append((str(fold_name), len(train_idx), len(test_idx)))
+
+    def _best_weight(px_parts: list[np.ndarray], pc_parts: list[np.ndarray], y_parts: list[np.ndarray]) -> float:
+        if not y_parts:
+            return 0.5
+        y_arr = np.concatenate(y_parts)
+        px = np.concatenate(px_parts)
+        pc = np.concatenate(pc_parts)
+        best_w, best_ll = 0.5, float("inf")
+        for w_x in grid:
+            blend = w_x * px + (1.0 - w_x) * pc
+            ll = float(log_loss(y_arr, blend, labels=[0, 1]))
+            if ll < best_ll:
+                best_ll = ll
+                best_w = w_x
+        return float(best_w)
+
+    results: list[FoldResult] = []
+    for i, ((fold_name, n_train, n_test), px_i, pc_i, y_i) in enumerate(
+        zip(fold_meta, fold_px, fold_pc, fold_y)
+    ):
+        inner_px = [p for j, p in enumerate(fold_px) if j != i]
+        inner_pc = [p for j, p in enumerate(fold_pc) if j != i]
+        inner_y = [p for j, p in enumerate(fold_y) if j != i]
+        w_x = _best_weight(inner_px, inner_pc, inner_y)
+        # Score outer fold without isotonic (calibrator fitted on tiny inner OOF overfits).
+        pred = np.clip(w_x * px_i + (1.0 - w_x) * pc_i, 1e-6, 1.0 - 1e-6)
+        y_hat = (pred >= 0.5).astype(int)
+        results.append(
+            FoldResult(
+                fold=fold_name,
+                n_train=n_train,
+                n_test=n_test,
+                auc=float(roc_auc_score(y_i, pred)) if len(np.unique(y_i)) > 1 else 0.5,
+                log_loss=float(log_loss(y_i, pred, labels=[0, 1])),
+                brier=float(brier_score_loss(y_i, pred)),
+                accuracy=float(accuracy_score(y_i, y_hat)),
+                precision=float(precision_score(y_i, y_hat, zero_division=0)),
+                recall=float(recall_score(y_i, y_hat, zero_division=0)),
+            )
+        )
+
+    prod_w = _best_weight(fold_px, fold_pc, fold_y)
+    prod_weights = {"xgb": prod_w, "catboost": float(1.0 - prod_w)}
+    calibrator = None
+    if calibrate and fold_y:
+        blend = prod_w * np.concatenate(fold_px) + (1.0 - prod_w) * np.concatenate(fold_pc)
+        calibrator = IsotonicRegression(out_of_bounds="clip")
+        calibrator.fit(blend, np.concatenate(fold_y))
+    return results, prod_weights, calibrator
+
+
 def train_blend_pipeline(
     features_df: pd.DataFrame,
     feature_cols: list[str],
@@ -204,16 +303,17 @@ def train_blend_pipeline(
     cat_params: dict | None = None,
     calibrate: bool = False,
 ) -> TrainResult:
-    """Train final XGB+CatBoost blend and report walk-forward / LOO-TI metrics."""
+    """Train final XGB+CatBoost blend; LOO metrics use nested weight tuning."""
     df = features_df.sort_values("start_time").reset_index(drop=True)
 
     wf_raw = walk_forward_splits(df, n_splits=n_walk_folds)
     wf_folds = [(i + 1, tr, te) for i, (tr, te) in enumerate(wf_raw)]
     loo_folds = leave_one_ti_splits(df)
-    tuned_weights, isotonic_cal = tune_blend_weights_loo(
+
+    nested_loo, tuned_weights, isotonic_cal = evaluate_blend_folds_nested_loo(
         df,
-        feature_cols,
         loo_folds,
+        feature_cols,
         half_life_days=half_life_days,
         xgb_params=xgb_params,
         cat_params=cat_params,
@@ -222,15 +322,6 @@ def train_blend_pipeline(
     walk_results = evaluate_blend_folds(
         df,
         wf_folds,
-        feature_cols,
-        half_life_days=half_life_days,
-        xgb_params=xgb_params,
-        cat_params=cat_params,
-        blend_weights=tuned_weights,
-    )
-    loo_results = evaluate_blend_folds(
-        df,
-        loo_folds,
         feature_cols,
         half_life_days=half_life_days,
         xgb_params=xgb_params,
@@ -256,13 +347,14 @@ def train_blend_pipeline(
         "xgb": xgb_params,
         "catboost": cat_params,
         "calibrated": isotonic_cal is not None,
+        "loo_weight_tuning": "nested",
     }
 
     return TrainResult(
         model=bundle,
         feature_cols=feature_cols,
         walk_forward=walk_results,
-        leave_one_ti=loo_results,
+        leave_one_ti=nested_loo,
         feature_importance={},
         params=params,
         model_name="xgb_catboost_blend",

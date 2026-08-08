@@ -30,6 +30,9 @@ CHEMISTRY_FEATURE_COLUMNS = [
     "r_roster_stability_60d",
     "d_roster_stability_60d",
     "diff_roster_stability_60d",
+    "r_days_since_full5",
+    "d_days_since_full5",
+    "diff_days_since_full5",
 ]
 
 _WINDOW_90D = 90 * 86400
@@ -149,6 +152,7 @@ def build_chemistry_features(
     pair_wins: dict[tuple[int, int], int] = {}
     last_roster: dict[int, set[int]] = {}
     roster_hist: dict[int, list[tuple[int, set[int]]]] = defaultdict(list)
+    last_full5: dict[int, dict[frozenset[int], int]] = defaultdict(dict)
     rows: list[dict] = []
     ordered = matches.sort_values("start_time").reset_index(drop=True)
 
@@ -182,10 +186,21 @@ def build_chemistry_features(
                 if d_team
                 else 0.0
             )
+            r_ds5 = 0.0
+            d_ds5 = 0.0
+            if r_team and len(r_ids) >= 5:
+                key = frozenset(r_ids[:5])
+                prev = last_full5[r_team].get(key)
+                r_ds5 = float((now - prev) / 86400.0) if prev is not None else 365.0
+            if d_team and len(d_ids) >= 5:
+                key = frozenset(d_ids[:5])
+                prev = last_full5[d_team].get(key)
+                d_ds5 = float((now - prev) / 86400.0) if prev is not None else 365.0
         else:
             r_mean = d_mean = r_min = d_min = r_90 = d_90 = 0.0
             r_pwr = d_pwr = 0.5
             r_jac = d_jac = r_stab = d_stab = 0.0
+            r_ds5 = d_ds5 = 0.0
             r_ids = d_ids = []
             r_team = d_team = 0
 
@@ -211,6 +226,9 @@ def build_chemistry_features(
                 "r_roster_stability_60d": r_stab,
                 "d_roster_stability_60d": d_stab,
                 "diff_roster_stability_60d": r_stab - d_stab,
+                "r_days_since_full5": r_ds5,
+                "d_days_since_full5": d_ds5,
+                "diff_days_since_full5": r_ds5 - d_ds5,
             }
         )
 
@@ -224,9 +242,13 @@ def build_chemistry_features(
             if r_team:
                 last_roster[r_team] = set(r_ids)
                 roster_hist[r_team].append((now, set(r_ids)))
+                if len(r_ids) >= 5:
+                    last_full5[r_team][frozenset(r_ids[:5])] = now
             if d_team:
                 last_roster[d_team] = set(d_ids)
                 roster_hist[d_team].append((now, set(d_ids)))
+                if len(d_ids) >= 5:
+                    last_full5[d_team][frozenset(d_ids[:5])] = now
 
     return pd.DataFrame(rows)
 
@@ -240,6 +262,7 @@ class ChemistryState:
     pair_wins: dict[tuple[int, int], int] = field(default_factory=dict)
     last_roster: dict[int, set[int]] = field(default_factory=dict)
     roster_hist: dict[int, list[tuple[int, set[int]]]] = field(default_factory=dict)
+    last_full5: dict[int, dict[frozenset[int], int]] = field(default_factory=dict)
 
 
 def replay_chemistry_state(
@@ -284,9 +307,13 @@ def replay_chemistry_state(
         if r_team:
             state.last_roster[r_team] = set(r_ids)
             state.roster_hist.setdefault(r_team, []).append((now, set(r_ids)))
+            if len(r_ids) >= 5:
+                state.last_full5.setdefault(r_team, {})[frozenset(r_ids[:5])] = now
         if d_team:
             state.last_roster[d_team] = set(d_ids)
             state.roster_hist.setdefault(d_team, []).append((now, set(d_ids)))
+            if len(d_ids) >= 5:
+                state.last_full5.setdefault(d_team, {})[frozenset(d_ids[:5])] = now
     return state
 
 
@@ -313,6 +340,13 @@ def compose_chemistry_pair_features(
     d_stab = _roster_stability_60d(
         state.roster_hist.get(dire_team_id, []), set(dire_ids), as_of_ts
     )
+    r_ds5 = d_ds5 = 0.0
+    if radiant_team_id and len(radiant_ids) >= 5:
+        prev = state.last_full5.get(radiant_team_id, {}).get(frozenset(radiant_ids[:5]))
+        r_ds5 = float((as_of_ts - prev) / 86400.0) if prev is not None else 365.0
+    if dire_team_id and len(dire_ids) >= 5:
+        prev = state.last_full5.get(dire_team_id, {}).get(frozenset(dire_ids[:5]))
+        d_ds5 = float((as_of_ts - prev) / 86400.0) if prev is not None else 365.0
     has = bool(radiant_ids and dire_ids)
     return {
         "r_chem_mean": r_mean,
@@ -334,6 +368,9 @@ def compose_chemistry_pair_features(
         "r_roster_stability_60d": r_stab,
         "d_roster_stability_60d": d_stab,
         "diff_roster_stability_60d": r_stab - d_stab,
+        "r_days_since_full5": r_ds5,
+        "d_days_since_full5": d_ds5,
+        "diff_days_since_full5": r_ds5 - d_ds5,
     }
 
 

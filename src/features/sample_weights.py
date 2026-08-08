@@ -14,7 +14,7 @@ import pandas as pd
 from src.ti2026.multisource import PATCH_741_START_TS, PATCH_IN_MULT
 
 # Rating / training sample half-life (days). Form uses FORM_HALF_LIFE_DAYS elsewhere.
-RATING_HALF_LIFE_DAYS: float = 210.0
+RATING_HALF_LIFE_DAYS: float = 180.0
 # Down-weight matches where both sides are cold-start.
 COLD_START_GP_THRESHOLD: int = 8
 COLD_START_WEIGHT: float = 0.55
@@ -27,7 +27,7 @@ def exponential_time_weights(
 ) -> np.ndarray:
     """Weight samples by age relative to a reference timestamp.
 
-    Half-life of 210 days keeps ~1–1.5 years of history informative for ratings.
+    Half-life of 180 days keeps ~1–1.5 years of history informative for ratings.
     """
     times = np.asarray(start_times, dtype=float)
     age_days = np.maximum(0.0, (float(reference_time) - times) / 86400.0)
@@ -50,7 +50,7 @@ def compute_sample_weights(
     Why this scheme:
     - Esports meta drifts with patches; equal weight on old matches hurts.
     - High-tier LAN/TI results transfer better to TI group stage.
-    - 210-day half-life keeps rating continuity; form is decayed separately (~40d).
+    - 180-day half-life keeps rating continuity; form is decayed separately (~40d).
     - Both-sides cold-start matches get down-weighted.
     - Matches after patch_start_ts get ``patch_mult`` (default PATCH_IN_MULT).
     """

@@ -18,19 +18,8 @@ const BOARD_ROWS = [
   ["eliminate", "one_win", "winless"],
 ];
 
+/** Only fusion UI is exposed; model/analyst boards remain in data for presets. */
 const MODE_GROUPS = [
-  {
-    id: "model",
-    titleKey: "mode.group.model",
-    descKey: "mode.group.model_desc",
-    strategies: ["points_optimal", "qualify_rank"],
-  },
-  {
-    id: "analysts",
-    titleKey: "mode.group.analysts",
-    descKey: "mode.group.analysts_desc",
-    strategies: ["analyst_consensus"],
-  },
   {
     id: "fusion",
     titleKey: "mode.group.fusion",
@@ -44,6 +33,12 @@ const MODE_GROUPS = [
     ],
   },
 ];
+
+const LEGACY_STRATEGIES = new Set([
+  "points_optimal",
+  "qualify_rank",
+  "analyst_consensus",
+]);
 
 const VALVE_POINTS_TABLE = [
   [0, 0],
@@ -116,7 +111,11 @@ function valvePointsTooltip() {
 
 function getBoardStrategy() {
   const sel = document.getElementById("board-strategy");
-  return sel?.value || localStorage.getItem(BOARD_STORAGE_KEY) || "points_optimal";
+  let strategy = sel?.value || localStorage.getItem(BOARD_STORAGE_KEY) || "fusion";
+  if (LEGACY_STRATEGIES.has(strategy) || !String(strategy).startsWith("fusion")) {
+    strategy = "fusion";
+  }
+  return strategy;
 }
 
 function activeBoard(data) {
@@ -272,56 +271,22 @@ function renderModePanel(data) {
   const groupsEl = document.getElementById("mode-groups");
   const variantsEl = document.getElementById("mode-variants");
   const summaryEl = document.getElementById("mode-summary");
-  if (!groupsEl || !variantsEl) return;
-
-  const strategy = getBoardStrategy();
-  const group = modeGroupForStrategy(strategy);
-  const pts = expectedPointsForStrategy(data, strategy);
-
-  groupsEl.innerHTML = MODE_GROUPS.map((g) => {
-    const active = g.id === group.id ? " active" : "";
-    return `<button type="button" class="mode-group${active}" data-group="${g.id}" role="tab" aria-selected="${g.id === group.id}">
-      <span class="mode-group-title">${escapeHtml(t(g.titleKey))}</span>
-      <span class="mode-group-desc">${escapeHtml(t(g.descKey))}</span>
-    </button>`;
-  }).join("");
-
-  groupsEl.querySelectorAll("[data-group]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const g = MODE_GROUPS.find((x) => x.id === btn.getAttribute("data-group"));
-      if (!g) return;
-      const next = g.strategies.includes(strategy) ? strategy : g.strategies[0];
-      setBoardStrategy(next, data);
-    });
-  });
-
-  if (group.id === "fusion") {
-    // Presets live in #fusion-weights — avoid duplicating the same mix buttons here.
+  // Source tiles removed — only fusion mix UI remains.
+  if (groupsEl) {
+    groupsEl.hidden = true;
+    groupsEl.innerHTML = "";
+  }
+  if (variantsEl) {
     variantsEl.hidden = true;
     variantsEl.innerHTML = "";
-  } else if (group.strategies.length > 1) {
-    variantsEl.hidden = false;
-    variantsEl.innerHTML = group.strategies
-      .map((s) => {
-        const active = s === strategy ? " active" : "";
-        const hintKey = `strategy.${s}_hint`;
-        const hint = t(hintKey);
-        const titleAttr =
-          hint && !hint.startsWith("strategy.")
-            ? ` title="${escapeHtml(hint)}"`
-            : "";
-        return `<button type="button" class="mode-variant${active}" data-strategy="${s}"${titleAttr}>${escapeHtml(t(`strategy.${s}`))}</button>`;
-      })
-      .join("");
-    variantsEl.querySelectorAll("[data-strategy]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        setBoardStrategy(btn.getAttribute("data-strategy"), data);
-      });
-    });
-  } else {
-    variantsEl.hidden = false;
-    variantsEl.innerHTML = `<p class="mode-panel-help" style="margin:0">${escapeHtml(t("mode.analysts_hint"))}</p>`;
   }
+
+  const strategy = getBoardStrategy();
+  if (!String(strategy).startsWith("fusion")) {
+    setBoardStrategy("fusion", data);
+    return;
+  }
+  const pts = expectedPointsForStrategy(data, strategy);
 
   if (summaryEl) {
     const ptsText =
@@ -772,12 +737,22 @@ function renderMetrics(data) {
     {
       label: t("metric.loo"),
       value:
-        blendAuc != null
-          ? Number(blendAuc).toFixed(3)
-          : m.leave_one_ti_avg_auc != null
-            ? Number(m.leave_one_ti_avg_auc).toFixed(3)
-            : "—",
+        m.leave_one_ti_recent_avg_auc != null
+          ? Number(m.leave_one_ti_recent_avg_auc).toFixed(3)
+          : blendAuc != null
+            ? Number(blendAuc).toFixed(3)
+            : m.leave_one_ti_avg_auc != null
+              ? Number(m.leave_one_ti_avg_auc).toFixed(3)
+              : "—",
       hint: t("metric.loo_hint"),
+    },
+    {
+      label: t("metric.wf"),
+      value:
+        m.walk_forward_avg_auc != null
+          ? Number(m.walk_forward_avg_auc).toFixed(3)
+          : "—",
+      hint: t("metric.wf_hint"),
     },
     {
       label: t("metric.corpus"),

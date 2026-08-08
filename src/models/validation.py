@@ -69,10 +69,15 @@ def walk_forward_splits(
 
 def leave_one_ti_splits(
     df: pd.DataFrame,
-    min_train: int = 30,
+    min_train: int = 1000,
     min_test: int = 15,
 ) -> list[tuple[str, np.ndarray, np.ndarray]]:
-    """Leave-One-TI-Out: train on earlier matches, test on held-out TI."""
+    """Leave-One-TI-Out: train on earlier matches, test on held-out TI.
+
+    ``min_train`` defaults to 1000 so early TI folds with almost no prior
+    corpus (e.g. TI11 after only TI10) are skipped — those AUCs ≈0.5 and
+    drown the average without informing TI2026.
+    """
     splits: list[tuple[str, np.ndarray, np.ndarray]] = []
     for ti_key in TI_KEYS:
         test_mask = df["tournament"] == ti_key

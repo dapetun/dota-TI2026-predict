@@ -166,6 +166,9 @@ def build_export_win_matrix(
                 f"pairwise sparse ({mapped} directed edges < {MIN_PAIRWISE_EDGES})",
                 allow_power_ranking=allow_power_ranking,
             )
+        choice = (bundle.get("params") or {}).get("production_choice")
+        if choice == "catboost_only":
+            return matrix, "catboost_pairwise_v1", "CatBoost pairwise"
         return matrix, "blend_pairwise_v1", "Blend pairwise"
     except BlendRequiredError:
         raise
@@ -234,11 +237,19 @@ def load_model_metrics() -> dict:
             raw = json.load(f)
         wf = raw.get("walk_forward", [])
         loo = raw.get("leave_one_ti", [])
+        recent = [
+            x
+            for x in loo
+            if any(str(x.get("fold", "")).startswith(k) for k in ("TI12", "TI13", "TI14"))
+        ]
         metrics = {
             "walk_forward_avg_logloss": round(float(np.mean([x["log_loss"] for x in wf])), 4) if wf else None,
             "walk_forward_avg_auc": round(float(np.mean([x["auc"] for x in wf])), 3) if wf else None,
             "leave_one_ti_avg_logloss": round(float(np.mean([x["log_loss"] for x in loo])), 4) if loo else None,
             "leave_one_ti_avg_auc": round(float(np.mean([x["auc"] for x in loo])), 3) if loo else None,
+            "leave_one_ti_recent_avg_auc": (
+                round(float(np.mean([x["auc"] for x in recent])), 3) if recent else None
+            ),
             "leave_one_ti": [
                 {
                     "ti": x["fold"],
@@ -270,14 +281,29 @@ def load_model_metrics() -> dict:
             with open(COMPARE_PATH, encoding="utf-8") as f:
                 cmp = json.load(f)
             metrics["model_compare"] = cmp.get("models")
-            blend = (cmp.get("models") or {}).get("blend") or {}
-            if blend.get("leave_one_ti_avg_auc") is not None:
+            models = cmp.get("models") or {}
+            blend = models.get("blend") or {}
+            cat = models.get("catboost") or {}
+            # Prefer production CatBoost headline when shipped as catboost_only.
+            prod = blend.get("production_choice") or ""
+            headline = cat if prod == "catboost_only" else blend
+            if headline.get("leave_one_ti_avg_auc") is not None:
                 metrics["blend_leave_one_ti_avg_auc"] = round(
-                    float(blend["leave_one_ti_avg_auc"]), 3
+                    float(headline["leave_one_ti_avg_auc"]), 3
                 )
+            if headline.get("leave_one_ti_recent_avg_auc") is not None:
+                metrics["leave_one_ti_recent_avg_auc"] = round(
+                    float(headline["leave_one_ti_recent_avg_auc"]), 3
+                )
+            if headline.get("walk_forward_avg_auc") is not None:
+                metrics["walk_forward_avg_auc"] = round(
+                    float(headline["walk_forward_avg_auc"]), 3
+                )
+            if blend.get("leave_one_ti_avg_logloss") is not None:
                 metrics["blend_leave_one_ti_avg_logloss"] = round(
                     float(blend["leave_one_ti_avg_logloss"]), 4
                 )
+            metrics["production_choice"] = prod or None
         except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
             print(f"Warning: could not parse model_compare.json: {exc}")
     return metrics
@@ -593,7 +619,7 @@ def export_predictions(
         "Рыночные вероятности — только исследовательский сигнал. "
         "Автор не рекламирует букмекеров. Не для ставок и не финансовый совет."
     )
-    if model_key.startswith("blend"):
+    if not is_fallback:
         disclaimer = (
             "Это исследовательский прогноз Swiss-доски и слотов компендиума TI 2026. "
             "Считается по матчевым данным: модель + мнения аналитиков + рыночные "
@@ -639,7 +665,7 @@ def export_predictions(
             "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
             "sample_uncertainty": use_uncertainty,
-            "version": "0.3.0-prod",
+            "version": "0.3.2",
             "board_strategy": "points_optimal",
             "expected_compendium_points": board_compare["points_optimal"]["expected_points"],
             "expected_correct_slots": board_compare["points_optimal"]["expected_correct"],

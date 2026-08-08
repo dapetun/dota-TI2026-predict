@@ -40,7 +40,7 @@ TI2026_TEAMS = {
         "region": "EU",
         "source": "Direct Invite",
         "roster": ["Pure", "bzm", "33", "Ari", "Whitemon"],
-        "aliases": ["Tundra Esports", "1w", "1win", "1win Team", "Iron Wing"],
+        "aliases": ["Tundra Esports", "1w", "1win", "1win Team", "Iron Wing", "iron-wing"],
     },
     "Xtreme": {
         "full_name": "Xtreme Gaming",

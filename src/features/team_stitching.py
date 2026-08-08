@@ -52,21 +52,25 @@ def build_team_stitch_map(
     matches: pd.DataFrame | None = None,
     *,
     threshold: float = 0.6,
+    recent_lineups: int = 8,
 ) -> dict[int, int]:
     """Map OpenDota team_id → canonical parent team_id via roster overlap.
 
-    Union-find over pairs of team_ids whose latest 5-man lineups share
-    Jaccard ≥ threshold. Parent = smallest team_id in the component
-    (stable, deterministic).
+    Union-find over pairs of team_ids whose lineups share Jaccard ≥ threshold.
+    Uses the max Jaccard across up to ``recent_lineups`` recent 5-mans per team
+    (not only the latest), so mid-history rebrands still stitch.
+    Parent = smallest team_id in the component (stable, deterministic).
     """
     hist = build_team_lineup_history(players, matches)
     if not hist:
         return {}
 
-    latest: dict[int, frozenset[int]] = {
-        tid: lineups[-1][1] for tid, lineups in hist.items() if lineups
+    recent: dict[int, list[frozenset[int]]] = {
+        tid: [lu for _, lu in lineups[-recent_lineups:]]
+        for tid, lineups in hist.items()
+        if lineups
     }
-    ids = sorted(latest.keys())
+    ids = sorted(recent.keys())
     parent: dict[int, int] = {tid: tid for tid in ids}
 
     def find(x: int) -> int:
@@ -84,9 +88,18 @@ def build_team_stitch_map(
         else:
             parent[ra] = rb
 
+    def max_jaccard(a: int, b: int) -> float:
+        best = 0.0
+        for la in recent[a]:
+            for lb in recent[b]:
+                best = max(best, jaccard(la, lb))
+                if best >= threshold:
+                    return best
+        return best
+
     for i, a in enumerate(ids):
         for b in ids[i + 1 :]:
-            if jaccard(latest[a], latest[b]) >= threshold:
+            if max_jaccard(a, b) >= threshold:
                 union(a, b)
 
     return {tid: find(tid) for tid in ids}

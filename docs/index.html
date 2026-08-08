@@ -75,18 +75,16 @@
 
     <div class="app-main">
       <header class="topbar">
-        <div class="topbar-title-wrap">
-          <p class="eyebrow" data-i18n="hero.eyebrow">The International 2026 · Групповая стадия</p>
-          <h2 class="page-title" data-i18n="hero.title">Прогнозы</h2>
-          <p class="page-lead" id="hero-lead" data-i18n="hero.lead">
-            16 команд, Swiss до 4 побед или поражений. Ниже — прогнозная доска компендиума.
-          </p>
-        </div>
-        <aside class="hero-card" id="disclaimer-card">
-          <p class="card-label" data-i18n="disclaimer.label">Важно</p>
-          <p id="disclaimer-text">Загрузка…</p>
+        <p class="eyebrow" data-i18n="hero.eyebrow">The International 2026 · Групповая стадия</p>
+        <h2 class="page-title" data-i18n="hero.title">Прогнозы</h2>
+        <p class="page-lead" id="hero-lead" data-i18n="hero.lead">
+          16 команд · Swiss до 4 побед или поражений
+        </p>
+        <details class="topbar-note" id="disclaimer-card">
+          <summary data-i18n="disclaimer.summary">Не для ставок · кратко о прогнозе</summary>
+          <p id="disclaimer-text" data-i18n="disclaimer.loading">Загрузка…</p>
           <ul id="meta-warnings" class="meta-warnings" hidden></ul>
-        </aside>
+        </details>
       </header>
 
       <div class="hero-meta" id="hero-meta"></div>
@@ -104,16 +102,13 @@
           <div class="mode-panel" id="mode-panel">
             <div class="mode-panel-head">
               <div>
-                <p class="mode-panel-label" data-i18n="mode.title">Как собрать доску</p>
-                <p class="mode-panel-help" data-i18n="mode.help">
-                  Выберите источник прогноза. Доска ниже перестроится сразу.
-                </p>
+                <p class="mode-panel-label" data-i18n="mode.title">Смешивание источников</p>
               </div>
               <p class="mode-current" id="mode-summary"></p>
             </div>
 
-            <div class="mode-groups" id="mode-groups" role="tablist" aria-label="Board source"></div>
-            <div class="mode-variants" id="mode-variants"></div>
+            <div class="mode-groups" id="mode-groups" hidden></div>
+            <div class="mode-variants" id="mode-variants" hidden></div>
 
             <label class="sr-only" for="board-strategy" data-i18n="board.strategy_label">Стратегия доски</label>
             <select id="board-strategy" class="sr-only-select" tabindex="-1" aria-hidden="true">

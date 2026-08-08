@@ -49,6 +49,16 @@ def test_load_analyst_picks_includes_hotspawn_partial():
     assert any(s.get("id") == "hotspawn" for s in (data.get("sources") or []))
 
 
+def test_load_analyst_picks_includes_battlepass_unique():
+    data = load_analyst_picks()
+    ids = {row["id"] for row in data["analysts"]}
+    assert "battlepass_finargot" in ids or "battlepass_daxak" in ids or "battlepass_limitless" in ids
+    assert any(s.get("id") == "battlepass" for s in (data.get("sources") or []))
+    assert "battlepass" in str(data.get("source") or "").lower()
+    # No duplicate Sports.ru person under battlepass_ prefix for ns
+    assert "battlepass_ns" not in ids
+
+
 def test_consensus_summary_exports_partial_meta():
     preds = _fake_predictions()
     summary = consensus_summary(preds)

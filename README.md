@@ -55,7 +55,7 @@ Open http://localhost:8080 (`file://` will not work — `fetch` needs a server).
 | Anonymous market prior + ranking/expert history | |
 | Статичный UI (GitHub Pages) | |
 
-Текущая модель: **blend pairwise** если есть `outputs/model_blend_v1.joblib`; иначе export требует `--allow-power-ranking`. Meta: **0.3.0-prod**.
+Текущая модель: **CatBoost pairwise** (production `xgb=0`/`catboost=1` в `model_blend_v1.joblib`); иначе export требует `--allow-power-ranking`. Meta: **0.3.2** · LOO AUC **0.608** (TI12–14).
 
 ### Canonical pipeline
 
@@ -102,7 +102,7 @@ scripts/export_web_data.py
 
 Open ML project forecasting TI 2026 group-stage Swiss outcomes and compendium slots.
 
-**Pipeline:** matchlists → details → Elo/Glicko/player features → XGB+CatBoost blend → ~50k Swiss Monte Carlo → slot/qualify probs → points-optimal / fusion boards → `docs/data/predictions.json`.
+**Pipeline:** matchlists → details → Elo/Glicko/player features → CatBoost (production) → ~50k Swiss Monte Carlo → slot/qualify probs → points-optimal / fusion boards → `docs/data/predictions.json`.
 
 **Validation:** walk-forward + Leave-One-TI-Out (AUC / log-loss). See [docs/RESULTS.md](docs/RESULTS.md), [docs/FEATURES.md](docs/FEATURES.md).
 

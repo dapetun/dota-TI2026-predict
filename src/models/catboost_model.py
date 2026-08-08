@@ -22,6 +22,7 @@ from src.models.validation import (
 )
 
 DEFAULT_CATBOOST_PARAMS: dict[str, Any] = {
+    # Kept at proven LOO settings; deeper/longer configs hurt TI12–13 hold-outs.
     "iterations": 300,
     "learning_rate": 0.05,
     "depth": 5,

@@ -1,8 +1,8 @@
 {
-  "source": "Sports.ru + Hotspawn",
+  "source": "Sports.ru + Hotspawn + battlepass.ru",
   "url": "https://cyber.sports.ru/dota2/blogs/3428857.html",
   "updated_at": "2026-08-08",
-  "note": "Sports.ru: ~10 полных сеток Compendium UI; Hotspawn и др. — partial notes / named slots. Soft power-rank boards — в data/historical/expert_predictions.json.",
+  "note": "Sports.ru: ~10 полных сеток Compendium UI; Hotspawn и др. — partial notes / named slots. Soft power-rank boards — в data/historical/expert_predictions.json. battlepass.ru: новые уникальные сетки (без дублей Sports.ru/Hotspawn); только заявленные слоты автора, без model-fill.",
   "sources": [
     {
       "id": "sportsru",
@@ -12,6 +12,11 @@
     {
       "id": "hotspawn",
       "url": "https://www.hotspawn.com/dota2/news/the-international-2026-group-stage-predictions-heres-what-we-picked",
+      "as_of": "2026-08-08"
+    },
+    {
+      "id": "battlepass",
+      "url": "https://battlepass.ru/ti2026/predictions",
       "as_of": "2026-08-08"
     }
   ],
@@ -232,6 +237,72 @@
         "LGD": "eliminate",
         "OG": "eliminate",
         "Resilience": "one_win",
+        "GamerLegion": "one_win",
+        "HULIGANI": "winless"
+      }
+    },
+    {
+      "id": "battlepass_finargot",
+      "name": "finargot",
+      "board": {
+        "Falcons": "undefeated",
+        "Yandex": "one_loss",
+        "Vision": "one_loss",
+        "BetBoom": "advance",
+        "Liquid": "advance",
+        "Aurora": "advance",
+        "1w": "advance",
+        "Spirit": "advance",
+        "Xtreme": "eliminate",
+        "Nigma": "eliminate",
+        "LGD": "eliminate",
+        "Vici": "eliminate",
+        "HULIGANI": "eliminate",
+        "GamerLegion": "one_win",
+        "OG": "one_win",
+        "Resilience": "winless"
+      }
+    },
+    {
+      "id": "battlepass_limitless",
+      "name": "Ярослав «Limitless» Паршин",
+      "board": {
+        "Vision": "undefeated",
+        "Yandex": "one_loss",
+        "Vici": "one_loss",
+        "BetBoom": "advance",
+        "Liquid": "advance",
+        "Falcons": "advance",
+        "Aurora": "advance",
+        "Spirit": "advance",
+        "Xtreme": "eliminate",
+        "OG": "eliminate",
+        "HULIGANI": "eliminate",
+        "Resilience": "eliminate",
+        "1w": "eliminate",
+        "LGD": "one_win",
+        "Nigma": "one_win",
+        "GamerLegion": "winless"
+      }
+    },
+    {
+      "id": "battlepass_daxak",
+      "name": "Daxak",
+      "board": {
+        "Spirit": "undefeated",
+        "Vision": "one_loss",
+        "Yandex": "one_loss",
+        "1w": "advance",
+        "Vici": "advance",
+        "BetBoom": "advance",
+        "Falcons": "advance",
+        "Liquid": "advance",
+        "Xtreme": "eliminate",
+        "OG": "eliminate",
+        "Resilience": "eliminate",
+        "Aurora": "eliminate",
+        "LGD": "eliminate",
+        "Nigma": "one_win",
         "GamerLegion": "one_win",
         "HULIGANI": "winless"
       }

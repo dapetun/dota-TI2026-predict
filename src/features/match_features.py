@@ -420,11 +420,15 @@ def build_match_feature_matrix(
     matches: pd.DataFrame,
     elo_k_base: float = 20.0,
     min_games: int = 5,
+    *,
+    prefer_lan: bool = False,
 ) -> pd.DataFrame:
     """Build pre-match features chronologically.
 
     Ratings and form are updated AFTER each row is emitted, so there is no
     leakage from the current match outcome into its own features.
+
+    Default ``prefer_lan=False`` matches TI Group Stage pairwise (online Elo).
     """
     if matches.empty:
         return pd.DataFrame()
@@ -448,9 +452,8 @@ def build_match_feature_matrix(
         tier_w = float(getattr(m, "tier_weight", 1.0) if has_tier_w else 1.0) or 1.0
         r_win = bool(m.radiant_win)
         is_lan = bool(getattr(m, "is_lan", True)) if has_lan else True
-        # Train features use unified/LAN-leaning context (prefer_lan=True).
         feats = compose_pair_features(
-            store, r_id, d_id, t, tier_weight=tier_w, prefer_lan=True
+            store, r_id, d_id, t, tier_weight=tier_w, prefer_lan=prefer_lan
         )
         rows.append(
             {
