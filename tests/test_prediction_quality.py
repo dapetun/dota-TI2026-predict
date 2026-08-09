@@ -248,3 +248,19 @@ def test_build_player_signature_schema():
     assert sig["account_id"] == 42
     assert sig["heroes"][0]["hero_id"] == 8
     assert "score" in sig["heroes"][0]
+
+
+def test_ece_and_known_draft_shift():
+    from src.evaluation.metrics import classification_metrics, expected_calibration_error
+    from src.features.hero_soft_prior import apply_known_draft_logit_shift
+
+    y = np.array([0, 0, 1, 1, 1, 0, 1, 0])
+    p = np.array([0.1, 0.2, 0.8, 0.7, 0.9, 0.3, 0.6, 0.4])
+    ece = expected_calibration_error(y, p, n_bins=5)
+    assert 0.0 <= ece <= 1.0
+    m = classification_metrics(y, p)
+    assert "ece" in m
+
+    # Fixture meta → no-op (usable_in_production false)
+    p2 = apply_known_draft_logit_shift(0.55, [1, 2, 3, 4, 5], [6, 7, 8, 9, 10])
+    assert abs(p2 - 0.55) < 1e-9

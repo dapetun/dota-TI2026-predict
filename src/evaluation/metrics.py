@@ -20,6 +20,34 @@ from sklearn.metrics import (
 )
 
 
+def expected_calibration_error(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    n_bins: int = 10,
+) -> float:
+    """Weighted ECE = Σ (n_b / N) · |acc_b − conf_b| over equal-width bins."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.asarray(y_prob, dtype=float)
+    n = len(y_true)
+    if n == 0:
+        return 0.0
+    bins = np.linspace(0.0, 1.0, n_bins + 1)
+    ece = 0.0
+    for i in range(n_bins):
+        lo, hi = bins[i], bins[i + 1]
+        if i == n_bins - 1:
+            mask = (y_prob >= lo) & (y_prob <= hi)
+        else:
+            mask = (y_prob >= lo) & (y_prob < hi)
+        count = int(mask.sum())
+        if count == 0:
+            continue
+        acc = float(y_true[mask].mean())
+        conf = float(y_prob[mask].mean())
+        ece += (count / n) * abs(acc - conf)
+    return float(ece)
+
+
 def classification_metrics(y_true: np.ndarray, y_prob: np.ndarray) -> dict[str, float]:
     """Compute core probabilistic and threshold metrics.
 
@@ -29,6 +57,7 @@ def classification_metrics(y_true: np.ndarray, y_prob: np.ndarray) -> dict[str, 
     metrics = {
         "log_loss": float(log_loss(y_true, y_prob, labels=[0, 1])),
         "brier": float(brier_score_loss(y_true, y_prob)),
+        "ece": expected_calibration_error(y_true, y_prob),
         "accuracy": float(accuracy_score(y_true, preds)),
         "precision": float(precision_score(y_true, preds, zero_division=0)),
         "recall": float(recall_score(y_true, preds, zero_division=0)),

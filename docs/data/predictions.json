@@ -2,21 +2,23 @@
   "meta": {
     "title": "TI 2026 Swiss Predictions",
     "subtitle": "Open-source group-stage forecast",
-    "generated_at": "2026-08-08T17:24:17.304014+00:00",
+    "generated_at": "2026-08-08T20:59:06.759033+00:00",
     "model": "catboost_pairwise_v1",
     "model_label": "CatBoost pairwise",
     "is_power_ranking_fallback": false,
-    "disclaimer": "Это исследовательский прогноз Swiss-доски и слотов компендиума TI 2026. Считается по матчевым данным: модель + мнения аналитиков + рыночные вероятности. Неопределённость высокая — не для ставок и не финансовый совет. Рыночные вероятности — только исследовательский сигнал. Автор не рекламирует букмекеров. Не для ставок и не финансовый совет.",
-    "market_disclaimer": "Рыночные вероятности — только исследовательский сигнал. Автор не рекламирует букмекеров. Не для ставок и не финансовый совет.",
+    "disclaimer": "Это исследовательский прогноз Swiss-доски и слотов компендиума TI 2026. Считается по матчевым данным: модель + мнения аналитиков + рыночные вероятности. Неопределённость высокая — не для ставок и не финансовый совет. Рынок: Polymarket winner → проекция Swiss-слотов (Bradley–Terry + MC). Это не букмекерские линии 4-0 / вылет. Исследовательский сигнал, не для ставок.",
+    "market_disclaimer": "Рынок: Polymarket winner → проекция Swiss-слотов (Bradley–Terry + MC). Это не букмекерские линии 4-0 / вылет. Исследовательский сигнал, не для ставок.",
     "research_disclaimer": "All fusion sources (model, analyst, anonymous market odds_implied, ranking/expert-history) are research signals only.",
     "warnings": [
+      "Market prior derived from Polymarket tournament-winner Yes prices (not Swiss slot books); treat as soft / partial.",
       "In-sample tune suggested model_weight=0.25; export uses production default 0.65."
     ],
     "format": "16-team Swiss to 4, 5 rounds Bo3 + ER (5 of 10)",
     "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
     "n_simulations": 50000,
     "sample_uncertainty": true,
-    "version": "0.3.2",
+    "version": "0.3.3",
+    "swiss_phase": "pre_gs_snapshot",
     "board_strategy": "points_optimal",
     "expected_compendium_points": 2230.1,
     "expected_correct_slots": 7.299,
@@ -79,27 +81,32 @@
     "fusion_scenario_scores": {
       "model_heavy": {
         "expected_correct": 7.035,
-        "expected_points": 2048.0
+        "expected_points": 2048.1
       },
       "balanced": {
-        "expected_correct": 6.763,
-        "expected_points": 1866.7
+        "expected_correct": 6.764,
+        "expected_points": 1867.8
       },
       "market_lean": {
-        "expected_correct": 6.689,
-        "expected_points": 1821.8
+        "expected_correct": 6.697,
+        "expected_points": 1827.3
       },
       "analyst_lean": {
-        "expected_correct": 7.301,
-        "expected_points": 2230.9
+        "expected_correct": 7.305,
+        "expected_points": 2233.9
       }
     },
     "market_priors_meta": {
       "source": "polymarket_gamma_api",
       "seeded_from_ranking": false,
       "is_real_market": true,
+      "derivation": "derived_from_winner_odds",
+      "partial": true,
       "updated_at": "2026-08-08",
-      "disclaimer": "Research signal only. The author does not support or endorse gambling operators. Implied probabilities are for Bayesian fusion — not betting advice."
+      "fetched_at_utc": "2026-08-08T20:41:03+00:00",
+      "note": "No public Swiss-slot markets on Polymarket/OddsPortal as of fetch. teams{} are Swiss fantasy-slot probs derived from live tournament-WINNER Yes prices via Bradley–Terry + project Swiss Monte Carlo (n_sims=5000, strength_power=0.5). Winner≠Swiss strength — treat as soft market prior.",
+      "disclaimer": "Research signal only. The author does not support or endorse gambling operators. Implied probabilities are for Bayesian fusion — not betting advice.",
+      "swiss_slot_markets_found": []
     },
     "expert_history_scores": [
       {
@@ -170,7 +177,7 @@
     "home_lan_elo": 30.0,
     "patch_741_start_ts": 1774310400,
     "methodology": "Мы берём результаты матчей турниров и оцениваем силу каждой команды.\nУ 100% матчей корпуса (8709/8709) есть составы игроков; остальные ещё без скачанных деталей.\nМодель сравнивает две команды и говорит, кто вероятнее победит.\nЗатем много раз проигрываем весь Swiss-турнир и смотрим, куда чаще попадает каждая команда.\nКачество проверяем на прошлых TI и на свежих матчах.\nИтоговый прогноз смешивает модель с мнениями аналитиков и рыночными вероятностями.\nЧисло μ ± σ на сайте — сила команды ± насколько мы в ней уверены.\nТехнические подробности — в разделе «Как считаем» ниже.",
-    "calibration_policy": "XGB pipeline: optional isotonic on final fit. Blend production: isotonic when calibrate=True in train_compare. Brier + log-loss reported in model_compare metrics.",
+    "calibration_policy": "Production CatBoost-only: no isotonic. Brier + ECE + log-loss in model_compare / calibration_report.md. Isotonic is experiment-only; ship only on LOO gain.",
     "swiss_bye_policy": "Odd leftover in a Swiss record bucket gets an implicit bye (no auto-win). Intentional MC simplification vs real TI Swiss.",
     "player_coverage_gate": {
       "warn_below": 0.5,
@@ -1383,7 +1390,7 @@
           "short": "Vision",
           "record": "4–0",
           "qualify_pct": 96.2,
-          "slot_pct": 33.37,
+          "slot_pct": 33.29,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1404,7 +1411,7 @@
           "short": "Aurora",
           "record": "4–1",
           "qualify_pct": 95.8,
-          "slot_pct": 28.32,
+          "slot_pct": 28.5,
           "analyst_agreement": 1,
           "analyst_names": [
             "Arteezy"
@@ -1416,7 +1423,7 @@
           "short": "Yandex",
           "record": "4–1",
           "qualify_pct": 43.3,
-          "slot_pct": 22.52,
+          "slot_pct": 22.53,
           "analyst_agreement": 12,
           "analyst_names": [
             "sikle",
@@ -1441,7 +1448,7 @@
           "short": "Liquid",
           "record": "Проход",
           "qualify_pct": 78.7,
-          "slot_pct": 58.57,
+          "slot_pct": 58.47,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -1462,7 +1469,7 @@
           "short": "Falcons",
           "record": "Проход",
           "qualify_pct": 84.2,
-          "slot_pct": 55.07,
+          "slot_pct": 55.04,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1481,7 +1488,7 @@
           "short": "Spirit",
           "record": "Проход",
           "qualify_pct": 86.1,
-          "slot_pct": 54.41,
+          "slot_pct": 54.38,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -1522,7 +1529,7 @@
           "short": "BetBoom",
           "record": "Проход",
           "qualify_pct": 91.6,
-          "slot_pct": 46.66,
+          "slot_pct": 46.72,
           "analyst_agreement": 7,
           "analyst_names": [
             "Fishman",
@@ -1542,7 +1549,7 @@
           "short": "LGD",
           "record": "Выбывание",
           "qualify_pct": 17.8,
-          "slot_pct": 56.6,
+          "slot_pct": 56.74,
           "analyst_agreement": 10,
           "analyst_names": [
             "NS",
@@ -1563,7 +1570,7 @@
           "short": "OG",
           "record": "Выбывание",
           "qualify_pct": 22.6,
-          "slot_pct": 54.85,
+          "slot_pct": 54.86,
           "analyst_agreement": 9,
           "analyst_names": [
             "NS",
@@ -1583,7 +1590,7 @@
           "short": "Nigma",
           "record": "Выбывание",
           "qualify_pct": 32.5,
-          "slot_pct": 52.08,
+          "slot_pct": 52.05,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1602,7 +1609,7 @@
           "short": "GamerLegion",
           "record": "Выбывание",
           "qualify_pct": 18.5,
-          "slot_pct": 48.73,
+          "slot_pct": 48.62,
           "analyst_agreement": 3,
           "analyst_names": [
             "sikle",
@@ -1616,7 +1623,7 @@
           "short": "Xtreme",
           "record": "Выбывание",
           "qualify_pct": 44.8,
-          "slot_pct": 47.38,
+          "slot_pct": 47.48,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -1639,7 +1646,7 @@
           "short": "HULIGANI",
           "record": "1–4",
           "qualify_pct": 7.6,
-          "slot_pct": 32.59,
+          "slot_pct": 32.63,
           "analyst_agreement": 4,
           "analyst_names": [
             "NS",
@@ -1654,7 +1661,7 @@
           "short": "Resilience",
           "record": "1–4",
           "qualify_pct": 6.8,
-          "slot_pct": 29.83,
+          "slot_pct": 29.76,
           "analyst_agreement": 3,
           "analyst_names": [
             "Topson",
@@ -1670,7 +1677,7 @@
           "short": "Vici",
           "record": "0–4",
           "qualify_pct": 4.7,
-          "slot_pct": 22.28,
+          "slot_pct": 22.27,
           "analyst_agreement": 0,
           "analyst_names": []
         }
@@ -1684,7 +1691,7 @@
           "short": "Vision",
           "record": "4–0",
           "qualify_pct": 96.2,
-          "slot_pct": 31.72,
+          "slot_pct": 31.68,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1705,7 +1712,7 @@
           "short": "BetBoom",
           "record": "4–1",
           "qualify_pct": 91.6,
-          "slot_pct": 31.52,
+          "slot_pct": 31.5,
           "analyst_agreement": 5,
           "analyst_names": [
             "sikle",
@@ -1721,7 +1728,7 @@
           "short": "Aurora",
           "record": "4–1",
           "qualify_pct": 95.8,
-          "slot_pct": 32.19,
+          "slot_pct": 32.28,
           "analyst_agreement": 1,
           "analyst_names": [
             "Arteezy"
@@ -1735,7 +1742,7 @@
           "short": "Liquid",
           "record": "Проход",
           "qualify_pct": 78.7,
-          "slot_pct": 58.36,
+          "slot_pct": 58.31,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -1756,7 +1763,7 @@
           "short": "Falcons",
           "record": "Проход",
           "qualify_pct": 84.2,
-          "slot_pct": 55.71,
+          "slot_pct": 55.69,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1775,7 +1782,7 @@
           "short": "Spirit",
           "record": "Проход",
           "qualify_pct": 86.1,
-          "slot_pct": 53.21,
+          "slot_pct": 53.19,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -1816,7 +1823,7 @@
           "short": "Yandex",
           "record": "Проход",
           "qualify_pct": 43.3,
-          "slot_pct": 34.44,
+          "slot_pct": 34.49,
           "analyst_agreement": 0,
           "analyst_names": []
         }
@@ -1828,7 +1835,7 @@
           "short": "LGD",
           "record": "Выбывание",
           "qualify_pct": 17.8,
-          "slot_pct": 55.44,
+          "slot_pct": 55.51,
           "analyst_agreement": 10,
           "analyst_names": [
             "NS",
@@ -1869,7 +1876,7 @@
           "short": "GamerLegion",
           "record": "Выбывание",
           "qualify_pct": 18.5,
-          "slot_pct": 53.77,
+          "slot_pct": 53.72,
           "analyst_agreement": 3,
           "analyst_names": [
             "sikle",
@@ -1883,7 +1890,7 @@
           "short": "Nigma",
           "record": "Выбывание",
           "qualify_pct": 32.5,
-          "slot_pct": 51.6,
+          "slot_pct": 51.58,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1902,7 +1909,7 @@
           "short": "Xtreme",
           "record": "Выбывание",
           "qualify_pct": 44.8,
-          "slot_pct": 44.9,
+          "slot_pct": 44.94,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -1925,7 +1932,7 @@
           "short": "HULIGANI",
           "record": "1–4",
           "qualify_pct": 7.6,
-          "slot_pct": 33.19,
+          "slot_pct": 33.21,
           "analyst_agreement": 4,
           "analyst_names": [
             "NS",
@@ -1940,7 +1947,7 @@
           "short": "Resilience",
           "record": "1–4",
           "qualify_pct": 6.8,
-          "slot_pct": 32.15,
+          "slot_pct": 32.11,
           "analyst_agreement": 3,
           "analyst_names": [
             "Topson",
@@ -1970,7 +1977,7 @@
           "short": "Vision",
           "record": "4–0",
           "qualify_pct": 96.2,
-          "slot_pct": 31.13,
+          "slot_pct": 31.01,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -1991,7 +1998,7 @@
           "short": "Aurora",
           "record": "4–1",
           "qualify_pct": 95.8,
-          "slot_pct": 26.07,
+          "slot_pct": 26.34,
           "analyst_agreement": 1,
           "analyst_names": [
             "Arteezy"
@@ -2003,7 +2010,7 @@
           "short": "Yandex",
           "record": "4–1",
           "qualify_pct": 43.3,
-          "slot_pct": 24.33,
+          "slot_pct": 24.35,
           "analyst_agreement": 12,
           "analyst_names": [
             "sikle",
@@ -2028,7 +2035,7 @@
           "short": "Liquid",
           "record": "Проход",
           "qualify_pct": 78.7,
-          "slot_pct": 57.18,
+          "slot_pct": 57.03,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2049,7 +2056,7 @@
           "short": "Falcons",
           "record": "Проход",
           "qualify_pct": 84.2,
-          "slot_pct": 55.53,
+          "slot_pct": 55.47,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2068,7 +2075,7 @@
           "short": "Spirit",
           "record": "Проход",
           "qualify_pct": 86.1,
-          "slot_pct": 50.73,
+          "slot_pct": 50.68,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2089,7 +2096,7 @@
           "short": "1w",
           "record": "Проход",
           "qualify_pct": 68.8,
-          "slot_pct": 50.39,
+          "slot_pct": 50.4,
           "analyst_agreement": 9,
           "analyst_names": [
             "Fishman",
@@ -2109,7 +2116,7 @@
           "short": "BetBoom",
           "record": "Проход",
           "qualify_pct": 91.6,
-          "slot_pct": 48.08,
+          "slot_pct": 48.16,
           "analyst_agreement": 7,
           "analyst_names": [
             "Fishman",
@@ -2129,7 +2136,7 @@
           "short": "LGD",
           "record": "Выбывание",
           "qualify_pct": 17.8,
-          "slot_pct": 54.93,
+          "slot_pct": 55.14,
           "analyst_agreement": 10,
           "analyst_names": [
             "NS",
@@ -2150,7 +2157,7 @@
           "short": "Nigma",
           "record": "Выбывание",
           "qualify_pct": 32.5,
-          "slot_pct": 53.29,
+          "slot_pct": 53.24,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2169,7 +2176,7 @@
           "short": "OG",
           "record": "Выбывание",
           "qualify_pct": 22.6,
-          "slot_pct": 52.81,
+          "slot_pct": 52.82,
           "analyst_agreement": 9,
           "analyst_names": [
             "NS",
@@ -2189,7 +2196,7 @@
           "short": "GamerLegion",
           "record": "Выбывание",
           "qualify_pct": 18.5,
-          "slot_pct": 46.01,
+          "slot_pct": 45.85,
           "analyst_agreement": 3,
           "analyst_names": [
             "sikle",
@@ -2203,7 +2210,7 @@
           "short": "Xtreme",
           "record": "Выбывание",
           "qualify_pct": 44.8,
-          "slot_pct": 44.8,
+          "slot_pct": 44.95,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2221,45 +2228,46 @@
       ],
       "one_win": [
         {
-          "id": "HULIGANI",
-          "name": "HULIGANI",
-          "short": "HULIGANI",
-          "record": "1–4",
-          "qualify_pct": 7.6,
-          "slot_pct": 32.46,
-          "analyst_agreement": 4,
-          "analyst_names": [
-            "NS",
-            "sikle",
-            "Nix",
-            "Roger"
-          ]
-        },
-        {
           "id": "Resilience",
           "name": "Team Resilience",
           "short": "Resilience",
           "record": "1–4",
           "qualify_pct": 6.8,
-          "slot_pct": 28.96,
+          "slot_pct": 28.86,
           "analyst_agreement": 3,
           "analyst_names": [
             "Topson",
             "Reddit 100k sim",
             "OneJey"
           ]
-        }
-      ],
-      "winless": [
+        },
         {
           "id": "Vici",
           "name": "Vici Gaming",
           "short": "Vici",
-          "record": "0–4",
+          "record": "1–4",
           "qualify_pct": 4.7,
-          "slot_pct": 19.58,
+          "slot_pct": 22.35,
           "analyst_agreement": 0,
           "analyst_names": []
+        }
+      ],
+      "winless": [
+        {
+          "id": "HULIGANI",
+          "name": "HULIGANI",
+          "short": "HULIGANI",
+          "record": "0–4",
+          "qualify_pct": 7.6,
+          "slot_pct": 29.73,
+          "analyst_agreement": 5,
+          "analyst_names": [
+            "Topson",
+            "Reddit 100k sim",
+            "Sqreen",
+            "OneJey",
+            "Daxak"
+          ]
         }
       ]
     },
@@ -2271,7 +2279,7 @@
           "short": "Vision",
           "record": "4–0",
           "qualify_pct": 96.2,
-          "slot_pct": 29.33,
+          "slot_pct": 29.1,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2292,7 +2300,7 @@
           "short": "Yandex",
           "record": "4–1",
           "qualify_pct": 43.3,
-          "slot_pct": 25.12,
+          "slot_pct": 25.15,
           "analyst_agreement": 12,
           "analyst_names": [
             "sikle",
@@ -2315,7 +2323,7 @@
           "short": "Aurora",
           "record": "4–1",
           "qualify_pct": 95.8,
-          "slot_pct": 24.11,
+          "slot_pct": 24.65,
           "analyst_agreement": 1,
           "analyst_names": [
             "Arteezy"
@@ -2329,7 +2337,7 @@
           "short": "Liquid",
           "record": "Проход",
           "qualify_pct": 78.7,
-          "slot_pct": 55.49,
+          "slot_pct": 55.19,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2350,7 +2358,7 @@
           "short": "Falcons",
           "record": "Проход",
           "qualify_pct": 84.2,
-          "slot_pct": 55.0,
+          "slot_pct": 54.9,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2369,7 +2377,7 @@
           "short": "Spirit",
           "record": "Проход",
           "qualify_pct": 86.1,
-          "slot_pct": 49.89,
+          "slot_pct": 49.78,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2390,7 +2398,7 @@
           "short": "BetBoom",
           "record": "Проход",
           "qualify_pct": 91.6,
-          "slot_pct": 49.01,
+          "slot_pct": 49.16,
           "analyst_agreement": 7,
           "analyst_names": [
             "Fishman",
@@ -2408,7 +2416,7 @@
           "short": "1w",
           "record": "Проход",
           "qualify_pct": 68.8,
-          "slot_pct": 48.81,
+          "slot_pct": 48.83,
           "analyst_agreement": 9,
           "analyst_names": [
             "Fishman",
@@ -2430,7 +2438,7 @@
           "short": "LGD",
           "record": "Выбывание",
           "qualify_pct": 17.8,
-          "slot_pct": 54.79,
+          "slot_pct": 55.21,
           "analyst_agreement": 10,
           "analyst_names": [
             "NS",
@@ -2451,7 +2459,7 @@
           "short": "Nigma",
           "record": "Выбывание",
           "qualify_pct": 32.5,
-          "slot_pct": 54.25,
+          "slot_pct": 54.14,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2470,7 +2478,7 @@
           "short": "OG",
           "record": "Выбывание",
           "qualify_pct": 22.6,
-          "slot_pct": 50.45,
+          "slot_pct": 50.48,
           "analyst_agreement": 9,
           "analyst_names": [
             "NS",
@@ -2490,7 +2498,7 @@
           "short": "Xtreme",
           "record": "Выбывание",
           "qualify_pct": 44.8,
-          "slot_pct": 44.27,
+          "slot_pct": 44.57,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2511,7 +2519,7 @@
           "short": "Vici",
           "record": "Выбывание",
           "qualify_pct": 4.7,
-          "slot_pct": 37.26,
+          "slot_pct": 37.56,
           "analyst_agreement": 5,
           "analyst_names": [
             "sikle",
@@ -2529,7 +2537,7 @@
           "short": "GamerLegion",
           "record": "1–4",
           "qualify_pct": 18.5,
-          "slot_pct": 30.37,
+          "slot_pct": 30.52,
           "analyst_agreement": 9,
           "analyst_names": [
             "NS",
@@ -2549,7 +2557,7 @@
           "short": "Resilience",
           "record": "1–4",
           "qualify_pct": 6.8,
-          "slot_pct": 26.5,
+          "slot_pct": 26.29,
           "analyst_agreement": 3,
           "analyst_names": [
             "Topson",
@@ -2565,7 +2573,7 @@
           "short": "HULIGANI",
           "record": "0–4",
           "qualify_pct": 7.6,
-          "slot_pct": 34.23,
+          "slot_pct": 34.2,
           "analyst_agreement": 5,
           "analyst_names": [
             "Topson",
@@ -2585,7 +2593,7 @@
           "short": "Vision",
           "record": "4–0",
           "qualify_pct": 96.2,
-          "slot_pct": 38.2,
+          "slot_pct": 38.12,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2606,7 +2614,7 @@
           "short": "BetBoom",
           "record": "4–1",
           "qualify_pct": 91.6,
-          "slot_pct": 31.95,
+          "slot_pct": 31.92,
           "analyst_agreement": 5,
           "analyst_names": [
             "sikle",
@@ -2622,7 +2630,7 @@
           "short": "Yandex",
           "record": "4–1",
           "qualify_pct": 43.3,
-          "slot_pct": 39.7,
+          "slot_pct": 39.71,
           "analyst_agreement": 12,
           "analyst_names": [
             "sikle",
@@ -2647,7 +2655,7 @@
           "short": "Liquid",
           "record": "Проход",
           "qualify_pct": 78.7,
-          "slot_pct": 60.23,
+          "slot_pct": 60.13,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2668,7 +2676,7 @@
           "short": "Spirit",
           "record": "Проход",
           "qualify_pct": 86.1,
-          "slot_pct": 57.59,
+          "slot_pct": 57.56,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2689,7 +2697,7 @@
           "short": "1w",
           "record": "Проход",
           "qualify_pct": 68.8,
-          "slot_pct": 54.59,
+          "slot_pct": 54.6,
           "analyst_agreement": 9,
           "analyst_names": [
             "Fishman",
@@ -2709,7 +2717,7 @@
           "short": "Falcons",
           "record": "Проход",
           "qualify_pct": 84.2,
-          "slot_pct": 54.08,
+          "slot_pct": 54.04,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2728,7 +2736,7 @@
           "short": "Aurora",
           "record": "Проход",
           "qualify_pct": 95.8,
-          "slot_pct": 42.73,
+          "slot_pct": 43.03,
           "analyst_agreement": 8,
           "analyst_names": [
             "NS",
@@ -2749,7 +2757,7 @@
           "short": "LGD",
           "record": "Выбывание",
           "qualify_pct": 17.8,
-          "slot_pct": 59.18,
+          "slot_pct": 59.32,
           "analyst_agreement": 10,
           "analyst_names": [
             "NS",
@@ -2770,7 +2778,7 @@
           "short": "OG",
           "record": "Выбывание",
           "qualify_pct": 22.6,
-          "slot_pct": 55.54,
+          "slot_pct": 55.55,
           "analyst_agreement": 9,
           "analyst_names": [
             "NS",
@@ -2790,7 +2798,7 @@
           "short": "Xtreme",
           "record": "Выбывание",
           "qualify_pct": 44.8,
-          "slot_pct": 53.09,
+          "slot_pct": 53.19,
           "analyst_agreement": 10,
           "analyst_names": [
             "sikle",
@@ -2811,7 +2819,7 @@
           "short": "Nigma",
           "record": "Выбывание",
           "qualify_pct": 32.5,
-          "slot_pct": 52.44,
+          "slot_pct": 52.41,
           "analyst_agreement": 8,
           "analyst_names": [
             "sikle",
@@ -2830,7 +2838,7 @@
           "short": "Vici",
           "record": "Выбывание",
           "qualify_pct": 4.7,
-          "slot_pct": 32.84,
+          "slot_pct": 32.94,
           "analyst_agreement": 5,
           "analyst_names": [
             "sikle",
@@ -2848,7 +2856,7 @@
           "short": "GamerLegion",
           "record": "1–4",
           "qualify_pct": 18.5,
-          "slot_pct": 37.28,
+          "slot_pct": 37.33,
           "analyst_agreement": 9,
           "analyst_names": [
             "NS",
@@ -2868,7 +2876,7 @@
           "short": "HULIGANI",
           "record": "1–4",
           "qualify_pct": 7.6,
-          "slot_pct": 31.12,
+          "slot_pct": 31.16,
           "analyst_agreement": 4,
           "analyst_names": [
             "NS",
@@ -2885,7 +2893,7 @@
           "short": "Resilience",
           "record": "0–4",
           "qualify_pct": 6.8,
-          "slot_pct": 29.49,
+          "slot_pct": 29.47,
           "analyst_agreement": 7,
           "analyst_names": [
             "NS",
@@ -3596,9 +3604,9 @@
       "gp": 499.0,
       "glicko_rd": 63.2,
       "records": {
-        "4-0": 38.2,
-        "4-1": 33.98,
-        "advance": 21.25,
+        "4-0": 38.12,
+        "4-1": 34.03,
+        "advance": 21.27,
         "eliminate": 3.61,
         "1-4": 1.59,
         "0-4": 1.37,
@@ -3606,9 +3614,9 @@
         "swiss_2-3": 4.8
       },
       "board": {
-        "undefeated": 38.2,
-        "one_loss": 33.98,
-        "advance": 21.25,
+        "undefeated": 38.12,
+        "one_loss": 34.03,
+        "advance": 21.27,
         "eliminate": 3.61,
         "one_win": 1.59,
         "winless": 1.37
@@ -3647,22 +3655,22 @@
       "gp": 233.0,
       "glicko_rd": 62.5,
       "records": {
-        "4-0": 13.9,
-        "4-1": 21.44,
-        "advance": 42.73,
-        "eliminate": 18.27,
-        "1-4": 2.16,
-        "0-4": 1.55,
+        "4-0": 14.02,
+        "4-1": 21.62,
+        "advance": 43.03,
+        "eliminate": 17.72,
+        "1-4": 2.12,
+        "0-4": 1.54,
         "swiss_3-2": 28.9,
         "swiss_2-3": 5.0
       },
       "board": {
-        "undefeated": 13.9,
-        "one_loss": 21.44,
-        "advance": 42.73,
-        "eliminate": 18.27,
-        "one_win": 2.16,
-        "winless": 1.55
+        "undefeated": 14.02,
+        "one_loss": 21.62,
+        "advance": 43.03,
+        "eliminate": 17.72,
+        "one_win": 2.12,
+        "winless": 1.54
       }
     },
     {
@@ -3698,21 +3706,21 @@
       "gp": 753.0,
       "glicko_rd": 62.4,
       "records": {
-        "4-0": 11.53,
-        "4-1": 31.95,
-        "advance": 46.83,
-        "eliminate": 6.19,
-        "1-4": 1.96,
+        "4-0": 11.51,
+        "4-1": 31.92,
+        "advance": 46.88,
+        "eliminate": 6.22,
+        "1-4": 1.93,
         "0-4": 1.51,
         "swiss_3-2": 43.8,
         "swiss_2-3": 10.1
       },
       "board": {
-        "undefeated": 11.53,
-        "one_loss": 31.95,
-        "advance": 46.83,
-        "eliminate": 6.19,
-        "one_win": 1.96,
+        "undefeated": 11.51,
+        "one_loss": 31.92,
+        "advance": 46.88,
+        "eliminate": 6.22,
+        "one_win": 1.93,
         "winless": 1.51
       }
     },
@@ -3749,22 +3757,22 @@
       "gp": 755.0,
       "glicko_rd": 62.5,
       "records": {
-        "4-0": 11.5,
-        "4-1": 16.37,
-        "advance": 57.59,
+        "4-0": 11.59,
+        "4-1": 16.3,
+        "advance": 57.56,
         "eliminate": 9.99,
-        "1-4": 2.8,
-        "0-4": 1.8,
+        "1-4": 2.79,
+        "0-4": 1.82,
         "swiss_3-2": 48.5,
         "swiss_2-3": 16.6
       },
       "board": {
-        "undefeated": 11.5,
-        "one_loss": 16.37,
-        "advance": 57.59,
+        "undefeated": 11.59,
+        "one_loss": 16.3,
+        "advance": 57.56,
         "eliminate": 9.99,
-        "one_win": 2.8,
-        "winless": 1.8
+        "one_win": 2.79,
+        "winless": 1.82
       }
     },
     {
@@ -3800,21 +3808,21 @@
       "gp": 661.0,
       "glicko_rd": 63.6,
       "records": {
-        "4-0": 10.9,
-        "4-1": 15.61,
-        "advance": 54.08,
+        "4-0": 10.93,
+        "4-1": 15.62,
+        "advance": 54.04,
         "eliminate": 15.21,
-        "1-4": 2.57,
+        "1-4": 2.56,
         "0-4": 1.64,
         "swiss_3-2": 51.8,
         "swiss_2-3": 19.1
       },
       "board": {
-        "undefeated": 10.9,
-        "one_loss": 15.61,
-        "advance": 54.08,
+        "undefeated": 10.93,
+        "one_loss": 15.62,
+        "advance": 54.04,
         "eliminate": 15.21,
-        "one_win": 2.57,
+        "one_win": 2.56,
         "winless": 1.64
       }
     },
@@ -3851,22 +3859,22 @@
       "gp": 862.0,
       "glicko_rd": 62.4,
       "records": {
-        "4-0": 4.15,
-        "4-1": 10.28,
-        "advance": 60.23,
-        "eliminate": 20.47,
-        "1-4": 3.1,
-        "0-4": 1.78,
+        "4-0": 4.18,
+        "4-1": 10.21,
+        "advance": 60.13,
+        "eliminate": 20.64,
+        "1-4": 3.09,
+        "0-4": 1.77,
         "swiss_3-2": 50.9,
         "swiss_2-3": 26.1
       },
       "board": {
-        "undefeated": 4.15,
-        "one_loss": 10.28,
-        "advance": 60.23,
-        "eliminate": 20.47,
-        "one_win": 3.1,
-        "winless": 1.78
+        "undefeated": 4.18,
+        "one_loss": 10.21,
+        "advance": 60.13,
+        "eliminate": 20.64,
+        "one_win": 3.09,
+        "winless": 1.77
       }
     },
     {
@@ -3902,21 +3910,21 @@
       "gp": 792.0,
       "glicko_rd": 61.8,
       "records": {
-        "4-0": 3.25,
-        "4-1": 10.91,
-        "advance": 54.59,
-        "eliminate": 24.92,
-        "1-4": 4.2,
+        "4-0": 3.2,
+        "4-1": 10.85,
+        "advance": 54.6,
+        "eliminate": 24.99,
+        "1-4": 4.23,
         "0-4": 2.1,
         "swiss_3-2": 47.5,
         "swiss_2-3": 32.1
       },
       "board": {
-        "undefeated": 3.25,
-        "one_loss": 10.91,
-        "advance": 54.59,
-        "eliminate": 24.92,
-        "one_win": 4.2,
+        "undefeated": 3.2,
+        "one_loss": 10.85,
+        "advance": 54.6,
+        "eliminate": 24.99,
+        "one_win": 4.23,
         "winless": 2.1
       }
     },
@@ -3953,21 +3961,21 @@
       "gp": 113.0,
       "glicko_rd": 62.8,
       "records": {
-        "4-0": 2.3,
-        "4-1": 4.86,
-        "advance": 30.43,
-        "eliminate": 53.09,
-        "1-4": 6.63,
+        "4-0": 2.26,
+        "4-1": 4.87,
+        "advance": 30.35,
+        "eliminate": 53.19,
+        "1-4": 6.64,
         "0-4": 2.71,
         "swiss_3-2": 36.7,
         "swiss_2-3": 44.6
       },
       "board": {
-        "undefeated": 2.3,
-        "one_loss": 4.86,
-        "advance": 30.43,
-        "eliminate": 53.09,
-        "one_win": 6.63,
+        "undefeated": 2.26,
+        "one_loss": 4.87,
+        "advance": 30.35,
+        "eliminate": 53.19,
+        "one_win": 6.64,
         "winless": 2.71
       }
     },
@@ -4004,21 +4012,21 @@
       "gp": 120.0,
       "glicko_rd": 62.5,
       "records": {
-        "4-0": 7.69,
-        "4-1": 39.7,
-        "advance": 22.26,
+        "4-0": 7.57,
+        "4-1": 39.71,
+        "advance": 22.36,
         "eliminate": 22.43,
-        "1-4": 5.58,
+        "1-4": 5.59,
         "0-4": 2.37,
         "swiss_3-2": 35.7,
         "swiss_2-3": 46.1
       },
       "board": {
-        "undefeated": 7.69,
-        "one_loss": 39.7,
-        "advance": 22.26,
+        "undefeated": 7.57,
+        "one_loss": 39.71,
+        "advance": 22.36,
         "eliminate": 22.43,
-        "one_win": 5.58,
+        "one_win": 5.59,
         "winless": 2.37
       }
     },
@@ -4055,22 +4063,22 @@
       "gp": 340.0,
       "glicko_rd": 63.1,
       "records": {
-        "4-0": 1.78,
-        "4-1": 3.33,
-        "advance": 17.75,
-        "eliminate": 52.44,
-        "1-4": 20.84,
-        "0-4": 3.87,
+        "4-0": 1.77,
+        "4-1": 3.35,
+        "advance": 17.76,
+        "eliminate": 52.41,
+        "1-4": 20.85,
+        "0-4": 3.88,
         "swiss_3-2": 32.0,
         "swiss_2-3": 47.8
       },
       "board": {
-        "undefeated": 1.78,
-        "one_loss": 3.33,
-        "advance": 17.75,
-        "eliminate": 52.44,
-        "one_win": 20.84,
-        "winless": 3.87
+        "undefeated": 1.77,
+        "one_loss": 3.35,
+        "advance": 17.76,
+        "eliminate": 52.41,
+        "one_win": 20.85,
+        "winless": 3.88
       }
     },
     {
@@ -4107,21 +4115,21 @@
       "glicko_rd": 62.5,
       "records": {
         "4-0": 1.7,
-        "4-1": 2.73,
+        "4-1": 2.74,
         "advance": 10.61,
-        "eliminate": 55.54,
-        "1-4": 24.2,
-        "0-4": 5.24,
+        "eliminate": 55.55,
+        "1-4": 24.19,
+        "0-4": 5.23,
         "swiss_3-2": 26.4,
         "swiss_2-3": 49.6
       },
       "board": {
         "undefeated": 1.7,
-        "one_loss": 2.73,
+        "one_loss": 2.74,
         "advance": 10.61,
-        "eliminate": 55.54,
-        "one_win": 24.2,
-        "winless": 5.24
+        "eliminate": 55.55,
+        "one_win": 24.19,
+        "winless": 5.23
       }
     },
     {
@@ -4159,20 +4167,20 @@
       "records": {
         "4-0": 1.53,
         "4-1": 2.42,
-        "advance": 8.98,
-        "eliminate": 38.93,
-        "1-4": 37.28,
-        "0-4": 10.85,
+        "advance": 8.99,
+        "eliminate": 38.82,
+        "1-4": 37.33,
+        "0-4": 10.9,
         "swiss_3-2": 24.6,
         "swiss_2-3": 51.0
       },
       "board": {
         "undefeated": 1.53,
         "one_loss": 2.42,
-        "advance": 8.98,
-        "eliminate": 38.93,
-        "one_win": 37.28,
-        "winless": 10.85
+        "advance": 8.99,
+        "eliminate": 38.82,
+        "one_win": 37.33,
+        "winless": 10.9
       }
     },
     {
@@ -4208,22 +4216,22 @@
       "gp": 361.0,
       "glicko_rd": 62.0,
       "records": {
-        "4-0": 1.69,
-        "4-1": 2.69,
-        "advance": 12.63,
-        "eliminate": 59.18,
-        "1-4": 18.26,
-        "0-4": 5.55,
+        "4-0": 1.71,
+        "4-1": 2.66,
+        "advance": 12.59,
+        "eliminate": 59.32,
+        "1-4": 18.2,
+        "0-4": 5.52,
         "swiss_3-2": 21.9,
         "swiss_2-3": 48.6
       },
       "board": {
-        "undefeated": 1.69,
-        "one_loss": 2.69,
-        "advance": 12.63,
-        "eliminate": 59.18,
-        "one_win": 18.26,
-        "winless": 5.55
+        "undefeated": 1.71,
+        "one_loss": 2.66,
+        "advance": 12.59,
+        "eliminate": 59.32,
+        "one_win": 18.2,
+        "winless": 5.52
       }
     },
     {
@@ -4261,20 +4269,20 @@
       "records": {
         "4-0": 1.47,
         "4-1": 1.79,
-        "advance": 4.62,
-        "eliminate": 29.74,
-        "1-4": 31.12,
-        "0-4": 31.23,
+        "advance": 4.61,
+        "eliminate": 29.72,
+        "1-4": 31.16,
+        "0-4": 31.22,
         "swiss_3-2": 9.1,
         "swiss_2-3": 33.6
       },
       "board": {
         "undefeated": 1.47,
         "one_loss": 1.79,
-        "advance": 4.62,
-        "eliminate": 29.74,
-        "one_win": 31.12,
-        "winless": 31.23
+        "advance": 4.61,
+        "eliminate": 29.72,
+        "one_win": 31.16,
+        "winless": 31.22
       }
     },
     {
@@ -4310,22 +4318,22 @@
       "gp": 6.0,
       "glicko_rd": 182.3,
       "records": {
-        "4-0": 1.56,
-        "4-1": 2.12,
-        "advance": 6.59,
-        "eliminate": 33.62,
-        "1-4": 26.62,
-        "0-4": 29.49,
+        "4-0": 1.58,
+        "4-1": 2.13,
+        "advance": 6.55,
+        "eliminate": 33.72,
+        "1-4": 26.55,
+        "0-4": 29.47,
         "swiss_3-2": 8.7,
         "swiss_2-3": 38.3
       },
       "board": {
-        "undefeated": 1.56,
-        "one_loss": 2.12,
-        "advance": 6.59,
-        "eliminate": 33.62,
-        "one_win": 26.62,
-        "winless": 29.49
+        "undefeated": 1.58,
+        "one_loss": 2.13,
+        "advance": 6.55,
+        "eliminate": 33.72,
+        "one_win": 26.55,
+        "winless": 29.47
       }
     },
     {
@@ -4361,22 +4369,22 @@
       "gp": 2.0,
       "glicko_rd": 260.5,
       "records": {
-        "4-0": 1.69,
-        "4-1": 7.9,
-        "advance": 26.24,
-        "eliminate": 32.84,
-        "1-4": 16.51,
-        "0-4": 14.81,
+        "4-0": 1.67,
+        "4-1": 7.87,
+        "advance": 26.12,
+        "eliminate": 32.94,
+        "1-4": 16.59,
+        "0-4": 14.8,
         "swiss_3-2": 6.0,
         "swiss_2-3": 26.4
       },
       "board": {
-        "undefeated": 1.69,
-        "one_loss": 7.9,
-        "advance": 26.24,
-        "eliminate": 32.84,
-        "one_win": 16.51,
-        "winless": 14.81
+        "undefeated": 1.67,
+        "one_loss": 7.87,
+        "advance": 26.12,
+        "eliminate": 32.94,
+        "one_win": 16.59,
+        "winless": 14.8
       }
     }
   ],

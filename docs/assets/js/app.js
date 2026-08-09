@@ -309,7 +309,17 @@ function renderFusionWeights(data) {
   const isFusion = strategy === "fusion" || strategy.startsWith("fusion_");
   root.hidden = !isFusion;
   if (disc) {
-    disc.textContent = t("fusion.market_fallback");
+    const mmeta = meta.market_priors_meta || {};
+    const derivation = String(mmeta.derivation || "");
+    if (mmeta.seeded_from_ranking || mmeta.is_real_market === false) {
+      disc.textContent = t("fusion.market_fallback");
+    } else if (derivation === "derived_from_winner_odds") {
+      disc.textContent = t("fusion.market_derived");
+    } else if (derivation === "direct_slot") {
+      disc.textContent = t("fusion.market_direct");
+    } else {
+      disc.textContent = t("fusion.market_fallback");
+    }
   }
   if (!isFusion) {
     sliders.innerHTML = "";
@@ -477,11 +487,29 @@ function renderHero(data) {
     extraPts += `<span class="chip" title="${escapeHtml(t("title.both_pts"))}">${escapeHtml(t("chip.analysts_fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
   }
   const modelChipLabel = friendlyModelLabel(meta);
+  const mmeta = meta.market_priors_meta || {};
+  let marketChip = "";
+  if (mmeta.seeded_from_ranking || mmeta.is_real_market === false) {
+    marketChip = `<span class="chip chip-warn" title="${escapeHtml(t("fusion.market_fallback"))}">${escapeHtml(t("chip.market_seeded"))}</span>`;
+  } else if (String(mmeta.derivation || "") === "derived_from_winner_odds") {
+    marketChip = `<span class="chip" title="${escapeHtml(t("fusion.market_derived"))}">${escapeHtml(t("chip.market_derived"))}</span>`;
+  } else if (String(mmeta.derivation || "") === "direct_slot") {
+    marketChip = `<span class="chip" title="${escapeHtml(t("fusion.market_direct"))}">${escapeHtml(t("chip.market_direct"))}</span>`;
+  } else if (mmeta.is_real_market) {
+    marketChip = `<span class="chip">${escapeHtml(t("chip.market_live"))}</span>`;
+  }
+  const phase = String(meta.swiss_phase || "pre_gs_snapshot");
+  const phaseChip =
+    phase && phase !== "pre_gs_snapshot"
+      ? `<span class="chip">${escapeHtml(t("chip.swiss_phase_live"))}</span>`
+      : `<span class="chip">${escapeHtml(t("chip.swiss_phase_pre"))}</span>`;
   document.getElementById("hero-meta").innerHTML = `
     <span class="chip"><strong>${escapeHtml(modelChipLabel)}</strong></span>
     <span class="chip">${escapeHtml(t("chip.sims"))}: <strong>${fmtNum(meta.n_simulations)}</strong></span>
     ${pts}
     ${extraPts}
+    ${marketChip}
+    ${phaseChip}
     <span class="chip">${escapeHtml(friendlyFormatLabel(meta.format))}</span>
     <span class="chip">v${escapeHtml(meta.version)}</span>
   `;

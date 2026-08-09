@@ -2,12 +2,12 @@
   "disclaimer": "Research signal only. The author does not support or endorse gambling operators. Implied probabilities are for Bayesian fusion — not betting advice.",
   "source": "polymarket_gamma_api",
   "updated_at": "2026-08-08",
-  "fetched_at_utc": "2026-08-08T10:15:00+00:00",
+  "fetched_at_utc": "2026-08-08T20:41:03+00:00",
   "seed_from_ranking": false,
   "is_real_market": true,
   "derivation": "derived_from_winner_odds",
   "partial": true,
-  "note": "No public Swiss-slot markets on Polymarket/OddsPortal as of fetch. teams{} are Swiss fantasy-slot probs derived from live tournament-WINNER Yes prices via Bradley–Terry + project Swiss Monte Carlo (n_sims=25000, strength_power=0.5). Winner≠Swiss strength — treat as soft market prior.",
+  "note": "No public Swiss-slot markets on Polymarket/OddsPortal as of fetch. teams{} are Swiss fantasy-slot probs derived from live tournament-WINNER Yes prices via Bradley–Terry + project Swiss Monte Carlo (n_sims=5000, strength_power=0.5). Winner≠Swiss strength — treat as soft market prior.",
   "method": {
     "api": "https://gamma-api.polymarket.com/events?slug=the-international-2026-winner-20260629212545745",
     "docs": "https://docs.polymarket.com/",
@@ -18,10 +18,10 @@
       "Normalize Yes prices to sum=1 (independent markets de-vig).",
       "Strength s_i = p_i ** 0.5.",
       "Bradley–Terry P(i>j) = s_i/(s_i+s_j), clipped to [0.02, 0.98].",
-      "simulate_swiss_stage Monte Carlo n_sims=25000, seed=42.",
+      "simulate_swiss_stage Monte Carlo n_sims=5000, seed=42.",
       "Map prob_4_0→undefeated, prob_4_1→one_loss, …; renormalize per team."
     ],
-    "n_sims": 25000,
+    "n_sims": 5000,
     "rng_seed": 42,
     "strength_power": 0.5,
     "swiss_slot_markets_found": [],
@@ -55,21 +55,21 @@
   },
   "how_to_enable_real_market": [
     "Run: python scripts/fetch_market_priors.py",
-    "Or paste curated Swiss-slot implied probs into teams{} and set seed_from_ranking=false, is_real_market=true.",
+    "Or paste curated Swiss-slot implied probs into teams{} and set seed_from_ranking=false, is_real_market=true, derivation=direct_slot.",
     "Re-run scripts/export_web_data.py — market_weight stays non-zero only when is_real_market and not seeded."
   ],
   "tournament_winner_reference": {
-    "note": "Live Polymarket winner Yes prices (pre-normalization). NOT Swiss slot books — used only as derivation input.",
+    "note": "Live Polymarket winner Yes prices (pre-normalization). NOT Swiss slot books — used only as derivation input when derivation=derived_from_winner_odds.",
     "polymarket": {
       "url": "https://polymarket.com/event/the-international-2026-winner-20260629212545745",
       "api": "https://gamma-api.polymarket.com/events?slug=the-international-2026-winner-20260629212545745",
       "as_of": "2026-08-08",
-      "fetched_at_utc": "2026-08-08T10:15:00+00:00",
+      "fetched_at_utc": "2026-08-08T20:41:03+00:00",
       "market": "The International 2026: Winner",
-      "volume": 103560.719713,
-      "liquidity": 778157.62121,
+      "volume": 104041.439031,
+      "liquidity": 724851.6727,
       "raw_yes_price": {
-        "Aurora": 0.065,
+        "Aurora": 0.075,
         "BetBoom": 0.105,
         "Falcons": 0.095,
         "Liquid": 0.075,
@@ -80,35 +80,35 @@
         "Vision": 0.215,
         "HULIGANI": 0.0015,
         "Nigma": 0.0155,
-        "Resilience": 0.024,
+        "Resilience": 0.0245,
         "Vici": 0.0345,
         "OG": 0.0065,
         "GamerLegion": 0.0055,
         "LGD": 0.0205
       },
       "normalized_implied": {
-        "Aurora": 0.060719,
-        "BetBoom": 0.098085,
-        "Falcons": 0.088744,
-        "Liquid": 0.070061,
-        "1w": 0.060719,
-        "Xtreme": 0.039701,
-        "Yandex": 0.200841,
-        "Spirit": 0.079402,
-        "Vision": 0.200841,
-        "HULIGANI": 0.001401,
-        "Nigma": 0.014479,
-        "Resilience": 0.022419,
-        "Vici": 0.032228,
-        "OG": 0.006072,
-        "GamerLegion": 0.005138,
-        "LGD": 0.01915
+        "Aurora": 0.06938,
+        "BetBoom": 0.097132,
+        "Falcons": 0.087882,
+        "Liquid": 0.06938,
+        "1w": 0.06013,
+        "Xtreme": 0.039315,
+        "Yandex": 0.19889,
+        "Spirit": 0.078631,
+        "Vision": 0.19889,
+        "HULIGANI": 0.001388,
+        "Nigma": 0.014339,
+        "Resilience": 0.022664,
+        "Vici": 0.031915,
+        "OG": 0.006013,
+        "GamerLegion": 0.005088,
+        "LGD": 0.018964
       },
       "markets": {
         "Aurora": {
           "label": "Aurora Gaming",
           "slug": "will-aurora-gaming-win-the-international-2026-20260629212053614",
-          "yes_price": 0.065
+          "yes_price": 0.075
         },
         "BetBoom": {
           "label": "BoomBoys",
@@ -163,7 +163,7 @@
         "Resilience": {
           "label": "Team Resilience",
           "slug": "will-team-resilience-win-the-international-2026-20260629212053625",
-          "yes_price": 0.024
+          "yes_price": 0.0245
         },
         "Vici": {
           "label": "Vici Gaming",
@@ -261,132 +261,132 @@
   },
   "teams": {
     "Yandex": {
-      "undefeated": 0.24975,
-      "one_loss": 0.32967,
-      "advance": 0.381618,
+      "undefeated": 0.237762,
+      "one_loss": 0.330669,
+      "advance": 0.391608,
       "eliminate": 0.035964,
-      "one_win": 0.002997,
-      "winless": 0.0
-    },
-    "Vision": {
-      "undefeated": 0.251748,
-      "one_loss": 0.333666,
-      "advance": 0.371628,
-      "eliminate": 0.038961,
       "one_win": 0.003996,
       "winless": 0.0
     },
+    "Vision": {
+      "undefeated": 0.244,
+      "one_loss": 0.339,
+      "advance": 0.374,
+      "eliminate": 0.039,
+      "one_win": 0.004,
+      "winless": 0.0
+    },
     "BetBoom": {
-      "undefeated": 0.105,
-      "one_loss": 0.232,
-      "advance": 0.526,
-      "eliminate": 0.12,
-      "one_win": 0.016,
+      "undefeated": 0.103,
+      "one_loss": 0.229,
+      "advance": 0.531,
+      "eliminate": 0.123,
+      "one_win": 0.013,
       "winless": 0.001
     },
     "Falcons": {
-      "undefeated": 0.087,
-      "one_loss": 0.215,
-      "advance": 0.523,
-      "eliminate": 0.156,
-      "one_win": 0.018,
-      "winless": 0.001
+      "undefeated": 0.09009,
+      "one_loss": 0.216216,
+      "advance": 0.51952,
+      "eliminate": 0.156156,
+      "one_win": 0.017017,
+      "winless": 0.001001
     },
     "Spirit": {
-      "undefeated": 0.076,
-      "one_loss": 0.189,
-      "advance": 0.515,
-      "eliminate": 0.195,
-      "one_win": 0.023,
-      "winless": 0.002
-    },
-    "Liquid": {
-      "undefeated": 0.061938,
-      "one_loss": 0.171828,
-      "advance": 0.4995,
-      "eliminate": 0.236763,
-      "one_win": 0.026973,
-      "winless": 0.002997
-    },
-    "Aurora": {
-      "undefeated": 0.053053,
-      "one_loss": 0.146146,
-      "advance": 0.468468,
-      "eliminate": 0.295295,
-      "one_win": 0.033033,
+      "undefeated": 0.085085,
+      "one_loss": 0.182182,
+      "advance": 0.511512,
+      "eliminate": 0.195195,
+      "one_win": 0.022022,
       "winless": 0.004004
     },
+    "Aurora": {
+      "undefeated": 0.065065,
+      "one_loss": 0.164164,
+      "advance": 0.498498,
+      "eliminate": 0.24024,
+      "one_win": 0.029029,
+      "winless": 0.003003
+    },
+    "Liquid": {
+      "undefeated": 0.065065,
+      "one_loss": 0.164164,
+      "advance": 0.489489,
+      "eliminate": 0.253253,
+      "one_win": 0.026026,
+      "winless": 0.002002
+    },
     "1w": {
-      "undefeated": 0.052947,
-      "one_loss": 0.146853,
-      "advance": 0.452547,
-      "eliminate": 0.308691,
-      "one_win": 0.034965,
-      "winless": 0.003996
+      "undefeated": 0.048,
+      "one_loss": 0.141,
+      "advance": 0.453,
+      "eliminate": 0.316,
+      "one_win": 0.038,
+      "winless": 0.004
     },
     "Xtreme": {
-      "undefeated": 0.025974,
-      "one_loss": 0.086913,
-      "advance": 0.343656,
-      "eliminate": 0.468531,
-      "one_win": 0.065934,
-      "winless": 0.008991
+      "undefeated": 0.022022,
+      "one_loss": 0.088088,
+      "advance": 0.335335,
+      "eliminate": 0.478478,
+      "one_win": 0.067067,
+      "winless": 0.009009
     },
     "Vici": {
-      "undefeated": 0.018,
-      "one_loss": 0.062,
-      "advance": 0.296,
-      "eliminate": 0.525,
-      "one_win": 0.087,
-      "winless": 0.012
+      "undefeated": 0.016,
+      "one_loss": 0.059,
+      "advance": 0.284,
+      "eliminate": 0.535,
+      "one_win": 0.095,
+      "winless": 0.011
     },
     "Resilience": {
-      "undefeated": 0.008991,
-      "one_loss": 0.036963,
-      "advance": 0.224775,
-      "eliminate": 0.566434,
-      "one_win": 0.13986,
-      "winless": 0.022977
+      "undefeated": 0.011,
+      "one_loss": 0.038,
+      "advance": 0.22,
+      "eliminate": 0.577,
+      "one_win": 0.133,
+      "winless": 0.021
     },
     "LGD": {
-      "undefeated": 0.006,
-      "one_loss": 0.03,
-      "advance": 0.187,
-      "eliminate": 0.578,
-      "one_win": 0.169,
-      "winless": 0.03
+      "undefeated": 0.008,
+      "one_loss": 0.027,
+      "advance": 0.183,
+      "eliminate": 0.592,
+      "one_win": 0.163,
+      "winless": 0.027
     },
     "Nigma": {
-      "undefeated": 0.003996,
-      "one_loss": 0.014985,
-      "advance": 0.132867,
-      "eliminate": 0.585415,
-      "one_win": 0.216783,
-      "winless": 0.045954
+      "undefeated": 0.003,
+      "one_loss": 0.017,
+      "advance": 0.134,
+      "eliminate": 0.582,
+      "one_win": 0.217,
+      "winless": 0.047
     },
     "OG": {
       "undefeated": 0.0,
-      "one_loss": 0.003,
+      "one_loss": 0.004,
       "advance": 0.044,
-      "eliminate": 0.418,
-      "one_win": 0.396,
-      "winless": 0.139
+      "eliminate": 0.419,
+      "one_win": 0.395,
+      "winless": 0.138
     },
     "GamerLegion": {
       "undefeated": 0.0,
       "one_loss": 0.001001,
-      "advance": 0.03003,
-      "eliminate": 0.374374,
-      "one_win": 0.431431,
-      "winless": 0.163163
+      "advance": 0.031031,
+      "eliminate": 0.363363,
+      "one_win": 0.436436,
+      "winless": 0.168168
     },
     "HULIGANI": {
       "undefeated": 0.0,
       "one_loss": 0.0,
-      "advance": 0.003,
-      "eliminate": 0.097,
-      "one_win": 0.336,
-      "winless": 0.564
+      "advance": 0.002,
+      "eliminate": 0.095,
+      "one_win": 0.34,
+      "winless": 0.563
     }
   }
 }

@@ -38,6 +38,22 @@ Open http://localhost:8080 (`file://` will not work — `fetch` needs a server).
 
 **License on site / Лицензия на сайте:** MIT · Copyright © 2026 dapetun (footer links to [LICENSE](LICENSE)).
 
+### Обновление перед / во время GS (SoT)
+
+Group Stage **13–16 Aug**. Во время групп — свежий export, не retrain.
+
+```powershell
+python scripts/fetch_market_priors.py
+python scripts/fetch_battlepass_experts.py
+python scripts/export_web_data.py
+# commit docs/data + push prod/main (по approve)
+```
+
+Проверка без записи: `python scripts/fetch_market_priors.py --dry-run`  
+Sensitivity рынка: `python scripts/fetch_market_priors.py --sensitivity`  
+После GS: `python scripts/gs_postmortem.py` → `outputs/gs_postmortem.md` → appendix в RESULTS.  
+`train_compare` без новых details / смены фич **не** гонять mid-GS.
+
 ---
 
 ## Русский (подробнее)
@@ -55,7 +71,7 @@ Open http://localhost:8080 (`file://` will not work — `fetch` needs a server).
 | Anonymous market prior + ranking/expert history | |
 | Статичный UI (GitHub Pages) | |
 
-Текущая модель: **CatBoost pairwise** (production `xgb=0`/`catboost=1` в `model_blend_v1.joblib`); иначе export требует `--allow-power-ranking`. Meta: **0.3.2** · LOO AUC **0.608** (TI12–14).
+Текущая модель: **CatBoost pairwise** (production `xgb=0`/`catboost=1` в `model_blend_v1.joblib`); иначе export требует `--allow-power-ranking`. Meta: **0.3.3** · LOO AUC **0.608** (TI12–14).
 
 ### Canonical pipeline
 

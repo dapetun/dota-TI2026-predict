@@ -100,3 +100,53 @@ def hero_artifacts_available(
     return Path(meta_path or DEFAULT_HERO_META_PATH).exists() and Path(
         sig_path or DEFAULT_SIGNATURES_PATH
     ).exists()
+
+
+def team_draft_meta_fit(
+    hero_ids: list[int],
+    *,
+    meta: dict | None = None,
+) -> float:
+    """Mean hero meta WR for a known 5-hero draft (0.5 if unknown)."""
+    if meta is None:
+        try:
+            meta = load_hero_meta()
+        except FileNotFoundError:
+            return 0.5
+    heroes = meta.get("heroes") or {}
+    scores: list[float] = []
+    for hid in hero_ids:
+        entry = heroes.get(str(hid)) or heroes.get(hid)
+        if not entry:
+            continue
+        wr = entry.get("wr", entry.get("winrate", entry.get("pro_wr")))
+        if wr is None:
+            continue
+        scores.append(float(wr))
+    if not scores:
+        return 0.5
+    return float(np.mean(scores))
+
+
+def apply_known_draft_logit_shift(
+    p: float,
+    radiant_heroes: list[int],
+    dire_heroes: list[int],
+    *,
+    lambda_: float = DEFAULT_LAMBDA,
+    meta: dict | None = None,
+) -> float:
+    """Logit-shift P(radiant win) using known draft meta-fit (HERO_DRAFT level A live).
+
+    Skips silently if hero meta is missing / fixture-only.
+    """
+    try:
+        meta = meta or load_hero_meta()
+    except FileNotFoundError:
+        return float(p)
+    source = str(meta.get("source") or "").lower()
+    if "fixture" in source or meta.get("usable_in_production") is False:
+        return float(p)
+    fit_r = team_draft_meta_fit(radiant_heroes, meta=meta)
+    fit_d = team_draft_meta_fit(dire_heroes, meta=meta)
+    return apply_soft_prior(p, fit_r, fit_d, lambda_=lambda_)

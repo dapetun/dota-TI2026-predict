@@ -1,0 +1,6 @@
+{
+  "phase": "pre_gs_snapshot",
+  "note": "Fill series[] during Group Stage (13–16 Aug). Export sets meta.swiss_phase from this file when series are present.",
+  "updated_at": null,
+  "series": []
+}

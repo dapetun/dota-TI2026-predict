@@ -134,7 +134,7 @@
 
 - Heatmap 16×6 P(slot).
 - `μ ± σ` силы.
-- Drag-drop + live E[очки] (позже).
+- Drag-drop + live E[очки]: **отложено** — fusion presets + слайдеры закрывают UX.
 - Секция методики на русском.
 
 ---
@@ -170,7 +170,7 @@
 
 | Feature | Статус | Где |
 |---|---|---|
-| Playoff / double-elim MC | **stub** `implemented=False` | `src/simulation/playoff_stub.py` |
+| Playoff / double-elim MC | **thin single-elim** `simulate_playoffs()` + stub | `src/simulation/playoff_stub.py` |
 | Draft / hero embeddings | design only | `docs/HERO_DRAFT_PLAN.md` |
 | Polymarket / market prior | curated JSON; empty → seed from POWER_RANKINGS (`is_real_market=false`, export market_w=0) | `data/ti2026_market_priors.json` + `load_market_priors` |
 

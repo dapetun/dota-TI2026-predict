@@ -60,6 +60,12 @@ def _avg_brier(folds: list[FoldResult]) -> float | None:
     return float(np.mean([f.brier for f in folds]))
 
 
+def _avg_ece(folds: list[FoldResult]) -> float | None:
+    if not folds:
+        return None
+    return float(np.mean([getattr(f, "ece", 0.0) for f in folds]))
+
+
 def _avg_auc_recent(
     folds: list[FoldResult],
     *,
@@ -198,7 +204,7 @@ def run_model_compare(
     blend_sha256 = write_sha256_sidecar(blend_path)
 
     comparison = {
-        "version": "0.3.2",
+        "version": "0.3.3",
         "player_coverage": coverage,
         "n_features_rows": len(features),
         "n_feature_cols": len(feature_cols),
@@ -225,6 +231,8 @@ def run_model_compare(
                 "leave_one_ti_avg_logloss": _avg_ll(xgb_result.leave_one_ti),
                 "walk_forward_avg_brier": _avg_brier(xgb_result.walk_forward),
                 "leave_one_ti_avg_brier": _avg_brier(xgb_result.leave_one_ti),
+                "walk_forward_avg_ece": _avg_ece(xgb_result.walk_forward),
+                "leave_one_ti_avg_ece": _avg_ece(xgb_result.leave_one_ti),
                 "metrics_path": str(xgb_path),
             },
             "catboost": {
@@ -236,6 +244,8 @@ def run_model_compare(
                 "leave_one_ti_avg_logloss": _avg_ll(cat_result.leave_one_ti),
                 "walk_forward_avg_brier": _avg_brier(cat_result.walk_forward),
                 "leave_one_ti_avg_brier": _avg_brier(cat_result.leave_one_ti),
+                "walk_forward_avg_ece": _avg_ece(cat_result.walk_forward),
+                "leave_one_ti_avg_ece": _avg_ece(cat_result.leave_one_ti),
                 "metrics_path": str(cat_path),
             },
             "blend": {
@@ -247,16 +257,62 @@ def run_model_compare(
                 "leave_one_ti_avg_logloss": _avg_ll(blend_result.leave_one_ti),
                 "walk_forward_avg_brier": _avg_brier(blend_result.walk_forward),
                 "leave_one_ti_avg_brier": _avg_brier(blend_result.leave_one_ti),
+                "walk_forward_avg_ece": _avg_ece(blend_result.walk_forward),
+                "leave_one_ti_avg_ece": _avg_ece(blend_result.leave_one_ti),
                 "weights": blend_result.params.get("weights"),
                 "isotonic_calibrated": calibrated_note,
                 "production_choice": blend_result.params.get("production_choice"),
                 "loo_weight_tuning": blend_result.params.get("loo_weight_tuning"),
             },
         },
+        "feature_ship_rule": {
+            "min_delta_loo_auc": 0.005,
+            "require_logloss_not_worse": True,
+            "note": (
+                "Ship a new feature only if ΔLOO AUC (TI12–14) ≥ +0.005 "
+                "and LOO log-loss is not worse than the current baseline."
+            ),
+        },
     }
     cmp_path = out / "model_compare.json"
     with open(cmp_path, "w", encoding="utf-8") as f:
         json.dump(comparison, f, indent=2)
+
+    cal_path = out / "calibration_report.md"
+    cat_m = comparison["models"]["catboost"]
+    cal_path.write_text(
+        "\n".join(
+            [
+                "# Calibration report (from train_compare)",
+                "",
+                "Production: **CatBoost-only**, isotonic off.",
+                "",
+                "| Split | AUC | Brier | ECE | LL |",
+                "|---|---:|---:|---:|---:|",
+                (
+                    f"| LOO (all folds) | {cat_m.get('leave_one_ti_avg_auc')} | "
+                    f"{cat_m.get('leave_one_ti_avg_brier')} | "
+                    f"{cat_m.get('leave_one_ti_avg_ece')} | "
+                    f"{cat_m.get('leave_one_ti_avg_logloss')} |"
+                ),
+                (
+                    f"| LOO recent TI12–14 | {cat_m.get('leave_one_ti_recent_avg_auc')} | "
+                    f"— | — | — |"
+                ),
+                (
+                    f"| Walk-forward | {cat_m.get('walk_forward_avg_auc')} | "
+                    f"{cat_m.get('walk_forward_avg_brier')} | "
+                    f"{cat_m.get('walk_forward_avg_ece')} | "
+                    f"{cat_m.get('walk_forward_avg_logloss')} |"
+                ),
+                "",
+                "Isotonic: experiment only; ship only if LOO gain holds.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    logger.info("Calibration report -> %s", cal_path)
 
     logger.info("Comparison -> %s", cmp_path)
     return comparison

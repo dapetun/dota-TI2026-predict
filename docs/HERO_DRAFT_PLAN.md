@@ -1,7 +1,12 @@
 # Hero / Draft слой — дизайн (v0.3.x → v0.4)
 
-Дата: 2026-08-06 · статус: **дизайн, без реализации**  
-Связано: [ROADMAP_v03.md](ROADMAP_v03.md), [FEATURES.md](FEATURES.md)
+Дата: 2026-08-08 · статус: **A soft prior + known-draft logit shift реализованы** (default off)  
+Связано: [ROADMAP_v03.md](ROADMAP_v03.md), [FEATURES.md](FEATURES.md), `src/features/hero_soft_prior.py`
+
+- Roster soft prior: `apply_soft_prior_matrix` + env `USE_HERO_SOFT_PRIOR=1`
+- Live known-draft: `apply_known_draft_logit_shift(p, radiant_heroes, dire_heroes)`
+- Fetch meta: `python scripts/build_hero_meta.py --fetch` (retries + cache)
+- Draft MC (вариант B) — по-прежнему P2 / post-Swiss
 
 Цель: использовать signature-героев игроков и винрейты (meta high-MMR + личный pub WR + pro history), чтобы корректировать P(win) до/после драфта — **аддитивно**, не блокируя текущий Swiss/pairwise пайплайн (фаза A corpus expansion).
 

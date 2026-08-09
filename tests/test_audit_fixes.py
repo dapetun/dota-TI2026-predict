@@ -24,7 +24,7 @@ from src.ti2026.teams import normalize_team_name as teams_normalize
 
 
 def test_rating_half_life_default_constant():
-    assert RATING_HALF_LIFE_DAYS == 210.0
+    assert RATING_HALF_LIFE_DAYS == 180.0
 
 
 @pytest.mark.parametrize(
@@ -96,7 +96,7 @@ def test_config_half_life_from_yaml():
     from src.config import load_settings, sample_half_life_days
 
     load_settings.cache_clear()
-    assert sample_half_life_days() == 210.0
+    assert sample_half_life_days() == 180.0
 
 
 def test_resolve_opendota_single_scan():
@@ -274,11 +274,22 @@ def test_detail_shards_preferred_over_monolith(tmp_path):
 
 
 def test_playoff_stub_safe():
-    from src.simulation.playoff_stub import simulate_playoffs_stub
+    from src.simulation.playoff_stub import simulate_playoffs, simulate_playoffs_stub
 
     out = simulate_playoffs_stub(["A", "B"])
     assert out["implemented"] is False
     assert out["champion_probs"] == {}
+
+    teams = [f"T{i}" for i in range(8)]
+    mat = __import__("pandas").DataFrame(0.5, index=teams, columns=teams)
+    for i, a in enumerate(teams):
+        for j, b in enumerate(teams):
+            if i != j:
+                mat.loc[a, b] = 0.55 if i < j else 0.45
+    live = simulate_playoffs(mat, teams, n_simulations=500, rng_seed=1)
+    assert live["implemented"] is True
+    assert abs(sum(live["champion_probs"].values()) - 1.0) < 1e-6
+    assert live["champion_probs"]["T0"] > live["champion_probs"]["T7"]
 
 
 def test_export_meta_contract_keys():

@@ -218,6 +218,74 @@ def winner_probs_to_slot_priors(
     return out
 
 
+def top4_slot_mass(teams: dict[str, dict[str, float]]) -> float:
+    """Sum of undefeated+one_loss+advance mass across all teams (≈8.0 capacity)."""
+    keys = ("undefeated", "one_loss", "advance")
+    return float(sum(probs.get(k, 0.0) for probs in teams.values() for k in keys))
+
+
+def try_direct_slot_priors(swiss_markets: list[dict]) -> dict[str, dict[str, float]] | None:
+    """If Gamma exposes Swiss-slot markets, parse them into teams{} priors.
+
+    Returns None when markets are missing or incomplete — caller keeps
+    winner→BT derivation. Slot keyword → fantasy key mapping is best-effort.
+    """
+    if not swiss_markets:
+        return None
+    slot_keywords = {
+        "undefeated": ("undefeated", "4-0", "4–0", "without a loss"),
+        "one_loss": ("4-1", "4–1", "one loss"),
+        "advance": ("advance", "qualify", "top 8", "through groups"),
+        "eliminate": ("eliminat", "fail to advance", "out of groups"),
+        "one_win": ("1-4", "1–4"),
+        "winless": ("0-4", "0–4", "winless"),
+    }
+    team_ids = get_team_ids()
+    # slug → fetch event
+    accumulated: dict[str, dict[str, float]] = {t: {} for t in team_ids}
+    for row in swiss_markets:
+        slug = row.get("slug")
+        if not slug:
+            continue
+        try:
+            event = fetch_winner_event(str(slug))
+        except Exception:  # noqa: BLE001 — discovery best-effort
+            continue
+        title_l = (event.get("title") or row.get("title") or "").lower()
+        slot_key = None
+        for sk, kws in slot_keywords.items():
+            if any(k in title_l for k in kws):
+                slot_key = sk
+                break
+        if slot_key is None:
+            continue
+        priced = extract_winner_yes_prices(event)
+        if len(priced) < 8:
+            continue
+        raw = {t: float(priced[t]["yes_price"]) for t in priced}
+        # Only keep known TI teams; renormalize within available.
+        known = {t: raw[t] for t in team_ids if t in raw}
+        if len(known) < 8:
+            continue
+        norm = normalize_winner_probs(known)
+        for tid, p in norm.items():
+            accumulated[tid][slot_key] = p
+
+    slots = list(FANTASY_BOARD_SLOTS.keys())
+    complete = 0
+    out: dict[str, dict[str, float]] = {}
+    for tid in team_ids:
+        raw = {s: float(accumulated[tid].get(s, 0.0)) for s in slots}
+        total = sum(raw.values())
+        if total <= 0:
+            continue
+        out[tid] = {s: raw[s] / total for s in slots}
+        complete += 1
+    if complete < 16:
+        return None
+    return out
+
+
 def build_payload(
     *,
     n_sims: int,
@@ -237,12 +305,6 @@ def build_payload(
 
     raw_yes = {t: float(priced[t]["yes_price"]) for t in team_ids}
     p_norm = normalize_winner_probs(raw_yes)
-    teams = winner_probs_to_slot_priors(
-        raw_yes,
-        n_sims=n_sims,
-        seed=seed,
-        strength_power=strength_power,
-    )
 
     now = datetime.now(timezone.utc)
     related = search_related_events()
@@ -255,6 +317,45 @@ def build_payload(
         )
     ]
 
+    direct = try_direct_slot_priors(swiss_markets_found)
+    if direct is not None:
+        teams = direct
+        derivation = "direct_slot"
+        partial = False
+        note = (
+            "Swiss-slot markets found on Polymarket; teams{} ingested directly "
+            f"(n_slot_events≈{len(swiss_markets_found)}). "
+            "Winner BT projection skipped."
+        )
+        steps = [
+            "Discover TI2026 events with Swiss/slot keywords via Gamma search.",
+            "Map Yes prices per slot market → team slot probs; renormalize per team.",
+        ]
+    else:
+        teams = winner_probs_to_slot_priors(
+            raw_yes,
+            n_sims=n_sims,
+            seed=seed,
+            strength_power=strength_power,
+        )
+        derivation = "derived_from_winner_odds"
+        partial = True
+        note = (
+            "No public Swiss-slot markets on Polymarket/OddsPortal as of fetch. "
+            "teams{} are Swiss fantasy-slot probs derived from live tournament-WINNER "
+            "Yes prices via Bradley–Terry + project Swiss Monte Carlo "
+            f"(n_sims={n_sims}, strength_power={strength_power}). "
+            "Winner≠Swiss strength — treat as soft market prior."
+        )
+        steps = [
+            "Pull Yes outcomePrices for each active team market (skip A/B/C/Other).",
+            "Normalize Yes prices to sum=1 (independent markets de-vig).",
+            f"Strength s_i = p_i ** {strength_power}.",
+            "Bradley–Terry P(i>j) = s_i/(s_i+s_j), clipped to [0.02, 0.98].",
+            f"simulate_swiss_stage Monte Carlo n_sims={n_sims}, seed={seed}.",
+            "Map prob_4_0→undefeated, prob_4_1→one_loss, …; renormalize per team.",
+        ]
+
     return {
         "disclaimer": (
             "Research signal only. The author does not support or endorse gambling "
@@ -265,15 +366,9 @@ def build_payload(
         "fetched_at_utc": now.isoformat(timespec="seconds"),
         "seed_from_ranking": False,
         "is_real_market": True,
-        "derivation": "derived_from_winner_odds",
-        "partial": True,
-        "note": (
-            "No public Swiss-slot markets on Polymarket/OddsPortal as of fetch. "
-            "teams{} are Swiss fantasy-slot probs derived from live tournament-WINNER "
-            "Yes prices via Bradley–Terry + project Swiss Monte Carlo "
-            f"(n_sims={n_sims}, strength_power={strength_power}). "
-            "Winner≠Swiss strength — treat as soft market prior."
-        ),
+        "derivation": derivation,
+        "partial": partial,
+        "note": note,
         "method": {
             "api": f"{GAMMA}/events?slug={WINNER_SLUG}",
             "docs": "https://docs.polymarket.com/",
@@ -281,14 +376,7 @@ def build_payload(
             "winner_event_url": (
                 f"https://polymarket.com/event/{WINNER_SLUG}"
             ),
-            "steps": [
-                "Pull Yes outcomePrices for each active team market (skip A/B/C/Other).",
-                "Normalize Yes prices to sum=1 (independent markets de-vig).",
-                f"Strength s_i = p_i ** {strength_power}.",
-                "Bradley–Terry P(i>j) = s_i/(s_i+s_j), clipped to [0.02, 0.98].",
-                f"simulate_swiss_stage Monte Carlo n_sims={n_sims}, seed={seed}.",
-                "Map prob_4_0→undefeated, prob_4_1→one_loss, …; renormalize per team.",
-            ],
+            "steps": steps,
             "n_sims": n_sims,
             "rng_seed": seed,
             "strength_power": strength_power,
@@ -298,14 +386,15 @@ def build_payload(
         "how_to_enable_real_market": [
             "Run: python scripts/fetch_market_priors.py",
             "Or paste curated Swiss-slot implied probs into teams{} and set "
-            "seed_from_ranking=false, is_real_market=true.",
+            "seed_from_ranking=false, is_real_market=true, derivation=direct_slot.",
             "Re-run scripts/export_web_data.py — market_weight stays non-zero only "
             "when is_real_market and not seeded.",
         ],
         "tournament_winner_reference": {
             "note": (
                 "Live Polymarket winner Yes prices (pre-normalization). "
-                "NOT Swiss slot books — used only as derivation input."
+                "NOT Swiss slot books — used only as derivation input when "
+                "derivation=derived_from_winner_odds."
             ),
             "polymarket": {
                 "url": f"https://polymarket.com/event/{WINNER_SLUG}",
@@ -360,6 +449,43 @@ def build_payload(
     }
 
 
+def run_strength_power_sensitivity(
+    *,
+    powers: tuple[float, ...] = (0.4, 0.5, 0.6),
+    n_sims: int = 10_000,
+    seed: int = 42,
+) -> list[dict]:
+    """Sweep strength_power; report top-4 slot mass (research table)."""
+    event = fetch_winner_event()
+    priced = extract_winner_yes_prices(event)
+    team_ids = get_team_ids()
+    raw_yes = {t: float(priced[t]["yes_price"]) for t in team_ids if t in priced}
+    rows: list[dict] = []
+    base_mass: float | None = None
+    for p in powers:
+        teams = winner_probs_to_slot_priors(
+            raw_yes, n_sims=n_sims, seed=seed, strength_power=p
+        )
+        mass = top4_slot_mass(teams)
+        if base_mass is None:
+            base_mass = mass
+        rows.append(
+            {
+                "strength_power": p,
+                "top4_slot_mass": round(mass, 4),
+                "delta_vs_0.5": round(mass - (base_mass or mass), 4)
+                if p != 0.5
+                else 0.0,
+            }
+        )
+    # Recompute deltas vs power=0.5 explicitly.
+    mass_05 = next((r["top4_slot_mass"] for r in rows if r["strength_power"] == 0.5), None)
+    if mass_05 is not None:
+        for r in rows:
+            r["delta_vs_0.5"] = round(r["top4_slot_mass"] - mass_05, 4)
+    return rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -377,11 +503,52 @@ def main() -> int:
         help="Exponent on winner p when building BT strength (1=linear, 0.5=sqrt)",
     )
     parser.add_argument(
+        "--sensitivity",
+        action="store_true",
+        help="Sweep strength_power ∈ {0.4,0.5,0.6}; write outputs/market_strength_sensitivity.md",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print summary only; do not write file",
     )
     args = parser.parse_args()
+
+    if args.sensitivity:
+        rows = run_strength_power_sensitivity(
+            n_sims=min(args.n_sims, 10_000),
+            seed=args.seed,
+        )
+        lines = [
+            "# Market strength_power sensitivity",
+            "",
+            "Derived winner->Swiss slot priors; metric = sum of undefeated+one_loss+advance mass.",
+            "",
+            "| strength_power | top4_slot_mass | delta vs 0.5 |",
+            "|---:|---:|---:|",
+        ]
+        for r in rows:
+            lines.append(
+                f"| {r['strength_power']} | {r['top4_slot_mass']} | {r['delta_vs_0.5']} |"
+            )
+        lines.extend(
+            [
+                "",
+                "Default remains **0.5** (sqrt dampening). Re-run after GS if slot books appear.",
+                "",
+            ]
+        )
+        out_md = ROOT / "outputs" / "market_strength_sensitivity.md"
+        out_md.parent.mkdir(parents=True, exist_ok=True)
+        out_md.write_text("\n".join(lines), encoding="utf-8")
+        try:
+            print("\n".join(lines))
+        except UnicodeEncodeError:
+            print(out_md.read_text(encoding="utf-8").encode("ascii", "replace").decode("ascii"))
+        print(f"Wrote {out_md}")
+        if args.dry_run:
+            return 0
+        # Continue to also refresh priors with default power unless dry-run-only.
 
     payload = build_payload(
         n_sims=args.n_sims,
@@ -389,9 +556,11 @@ def main() -> int:
         strength_power=args.strength_power,
     )
     teams = payload["teams"]
+    found = (payload.get("method") or {}).get("swiss_slot_markets_found") or []
     print(
         f"Fetched {len(teams)}/16 teams from Polymarket; "
-        f"derivation={payload['derivation']}"
+        f"derivation={payload['derivation']}; "
+        f"swiss_slot_markets_found={len(found)}"
     )
     ref = payload["tournament_winner_reference"]["polymarket"]["normalized_implied"]
     top = sorted(ref.items(), key=lambda x: -x[1])[:5]

@@ -615,10 +615,28 @@ def export_predictions(
         if got != meta["capacity"]:
             print(f"WARNING: board[{key}] has {got}, expected {meta['capacity']}")
 
-    market_disclaimer = (
-        "Рыночные вероятности — только исследовательский сигнал. "
-        "Автор не рекламирует букмекеров. Не для ставок и не финансовый совет."
-    )
+    market_derivation = str(market_priors.get("derivation") or "")
+    market_partial = bool(market_priors.get("partial", False))
+    if market_priors.get("seeded_from_ranking") or not market_priors.get("is_real_market", True):
+        market_disclaimer = (
+            "Рыночные вероятности сейчас из нашего рейтинга команд, не из живых "
+            "котировок; доля рынка в смеси = 0, чтобы не считать рейтинг дважды."
+        )
+    elif market_derivation == "derived_from_winner_odds":
+        market_disclaimer = (
+            "Рынок: Polymarket winner → проекция Swiss-слотов (Bradley–Terry + MC). "
+            "Это не букмекерские линии 4-0 / вылет. Исследовательский сигнал, не для ставок."
+        )
+    elif market_derivation == "direct_slot":
+        market_disclaimer = (
+            "Рынок: прямые Swiss-slot котировки (Polymarket). "
+            "Исследовательский сигнал — автор не рекламирует букмекеров. Не для ставок."
+        )
+    else:
+        market_disclaimer = (
+            "Рыночные вероятности — только исследовательский сигнал. "
+            "Автор не рекламирует букмекеров. Не для ставок и не финансовый совет."
+        )
     if not is_fallback:
         disclaimer = (
             "Это исследовательский прогноз Swiss-доски и слотов компендиума TI 2026. "
@@ -640,11 +658,31 @@ def export_predictions(
             "Market prior seeded from POWER_RANKINGS (not live odds); "
             "fusion market_weight forced to 0 to avoid double-counting ranking."
         )
+    elif market_derivation == "derived_from_winner_odds":
+        meta_warnings.append(
+            "Market prior derived from Polymarket tournament-winner Yes prices "
+            "(not Swiss slot books); treat as soft / partial."
+        )
     if abs(float(tuned_w) - float(fusion_weight)) > 1e-9:
         meta_warnings.append(
             f"In-sample tune suggested model_weight={tuned_w:.2f}; "
             f"export uses production default {fusion_weight:.2f}."
         )
+
+    # Conditional Swiss: if live series results file exists, mark phase; full
+    # conditional MC hooks land when GS series are available.
+    swiss_results_path = BASE_DIR / "data" / "ti2026_swiss_results.json"
+    swiss_phase = "pre_gs_snapshot"
+    swiss_results_meta: dict | None = None
+    if swiss_results_path.exists():
+        try:
+            swiss_results_meta = json.loads(
+                swiss_results_path.read_text(encoding="utf-8")
+            )
+            if swiss_results_meta.get("series"):
+                swiss_phase = str(swiss_results_meta.get("phase") or "in_gs_partial")
+        except (OSError, json.JSONDecodeError):
+            swiss_results_meta = None
 
     payload = {
         "meta": {
@@ -665,7 +703,8 @@ def export_predictions(
             "board_format": "4-0×1, 4-1×2, advance×5, eliminate×5, 1-4×2, 0-4×1",
             "n_simulations": n_simulations,
             "sample_uncertainty": use_uncertainty,
-            "version": "0.3.2",
+            "version": "0.3.3",
+            "swiss_phase": swiss_phase,
             "board_strategy": "points_optimal",
             "expected_compendium_points": board_compare["points_optimal"]["expected_points"],
             "expected_correct_slots": board_compare["points_optimal"]["expected_correct"],
@@ -688,8 +727,15 @@ def export_predictions(
                 "source": market_priors.get("source", "anonymous_market"),
                 "seeded_from_ranking": market_priors.get("seeded_from_ranking"),
                 "is_real_market": market_priors.get("is_real_market"),
+                "derivation": market_priors.get("derivation"),
+                "partial": market_partial,
                 "updated_at": market_priors.get("updated_at"),
+                "fetched_at_utc": market_priors.get("fetched_at_utc"),
+                "note": market_priors.get("note"),
                 "disclaimer": market_priors.get("disclaimer"),
+                "swiss_slot_markets_found": (
+                    (market_priors.get("method") or {}).get("swiss_slot_markets_found")
+                ),
             },
             "expert_history_scores": expert_scores,
             "n_leagues": len(TOURNAMENTS),
@@ -698,9 +744,9 @@ def export_predictions(
             "patch_741_start_ts": PATCH_741_START_TS,
             "methodology": _human_methodology(model_metrics),
             "calibration_policy": (
-                "XGB pipeline: optional isotonic on final fit. "
-                "Blend production: isotonic when calibrate=True in train_compare. "
-                "Brier + log-loss reported in model_compare metrics."
+                "Production CatBoost-only: no isotonic. "
+                "Brier + ECE + log-loss in model_compare / calibration_report.md. "
+                "Isotonic is experiment-only; ship only on LOO gain."
             ),
             "swiss_bye_policy": (
                 "Odd leftover in a Swiss record bucket gets an implicit bye "

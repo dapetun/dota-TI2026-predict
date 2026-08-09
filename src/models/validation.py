@@ -29,6 +29,7 @@ class FoldResult:
     accuracy: float
     precision: float
     recall: float
+    ece: float = 0.0
 
 
 @dataclass
@@ -134,6 +135,7 @@ def evaluate_folds(
                 accuracy=m["accuracy"],
                 precision=m["precision"],
                 recall=m["recall"],
+                ece=float(m.get("ece", 0.0)),
             )
         )
     return results
