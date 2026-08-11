@@ -218,6 +218,45 @@ def fuse_weight_scenarios(
     }
 
 
+def build_slot_sources_for_ui(
+    predictions: list[dict],
+    *,
+    assignments: list[dict[str, str]] | None = None,
+    market_priors: dict | None = None,
+) -> dict[str, dict[str, dict[str, float]]]:
+    """Per-team slot priors for live client-side custom fusion.
+
+    Returns ``{team_id: {model|analyst|market|ranking|expert: {slot: p}}}``
+    with probabilities in [0, 1] that sum ≈1 per source.
+    """
+    assignments = assignments or analyst_assignments()
+    market_priors = market_priors if market_priors is not None else load_market_priors()
+    out: dict[str, dict[str, dict[str, float]]] = {}
+    for p in predictions:
+        tid = str(p["id"])
+        model: dict[str, float] = {}
+        analyst: dict[str, float] = {}
+        market: dict[str, float] = {}
+        ranking: dict[str, float] = {}
+        expert: dict[str, float] = {}
+        for slot, prob_key in SLOT_PROB_KEYS.items():
+            model[slot] = round(slot_probability(p, slot), 6)
+            analyst[slot] = round(analyst_slot_prior(tid, slot, assignments), 6)
+            rank_p = ranking_slot_prior(tid, slot)
+            ranking[slot] = round(rank_p, 6)
+            mkt = market_slot_prior(tid, slot, market_priors)
+            market[slot] = round(float(mkt if mkt is not None else rank_p), 6)
+            expert[slot] = round(historical_expert_slot_prior(tid, slot), 6)
+        out[tid] = {
+            "model": model,
+            "analyst": analyst,
+            "market": market,
+            "ranking": ranking,
+            "expert": expert,
+        }
+    return out
+
+
 def tune_fusion_weight_loo(
     predictions: list[dict],
     *,

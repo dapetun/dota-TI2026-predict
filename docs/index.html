@@ -4,34 +4,49 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title data-i18n="meta.title">TI 2026 · Прогноз Swiss</title>
-  <meta name="description" data-i18n="meta.description" content="Открытый прогноз групповой стадии The International 2026" />
+  <meta name="description" data-i18n="meta.description" content="Прогноз групповой стадии The International 2026" />
   <!-- CSP hint: GitHub Pages cannot set HTTP CSP headers from static HTML alone.
        Tighten via Pages/custom headers when available. Fonts: Google Fonts CDN
-       (Outfit + Source Sans 3); self-host to drop third-party if needed. -->
+       (IBM Plex Sans + Noto Sans + Roboto); self-host to drop third-party if needed. -->
   <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'"
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true">
-    <div class="noise"></div>
+    <!-- TI refs: darkened/blurred ambient only — not a Valve brand banner -->
+    <div class="atmosphere-photo atmosphere-photo--scene"></div>
+    <div class="atmosphere-photo atmosphere-photo--carpet"></div>
+    <div class="atmosphere-photo atmosphere-photo--gold"></div>
+    <div class="atmosphere-photo-veil"></div>
+    <div class="haze"></div>
+    <div class="mesh"></div>
     <div class="glow glow-a"></div>
     <div class="glow glow-b"></div>
+    <div class="glow glow-c"></div>
     <div class="embers"></div>
+    <div class="noise"></div>
+    <div class="vignette"></div>
   </div>
 
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <a class="sidebar-brand" href="#board">
-        <span class="brand-aegis" aria-hidden="true">TI</span>
-        <div>
-          <p class="brand-kicker" data-i18n="brand.kicker">Открытый прогноз</p>
-          <p class="brand-script">The International</p>
+        <img
+          class="brand-aegis"
+          src="assets/img/brand-mark.png"
+          alt=""
+          width="68"
+          height="68"
+          decoding="async"
+        />
+        <div class="brand-copy">
+          <p class="brand-kicker" data-i18n="brand.kicker">The International 2026</p>
           <h1 class="brand-title" data-i18n="brand.title">Прогноз Swiss</h1>
         </div>
       </a>
@@ -139,23 +154,26 @@
               <option value="points_optimal" data-i18n="strategy.points_optimal">Модель · максимум очков</option>
               <option value="qualify_rank" data-i18n="strategy.qualify_rank">Модель · по шансу пройти</option>
               <option value="analyst_consensus" data-i18n="strategy.analyst_consensus">Консенсус аналитиков</option>
-              <option value="fusion" data-i18n="strategy.fusion">Рекомендуемая смесь</option>
+              <option value="fusion" data-i18n="strategy.fusion">Рекомендуемый</option>
               <option value="fusion_model_heavy" data-i18n="strategy.fusion_model_heavy">Больше доверять модели</option>
               <option value="fusion_balanced" data-i18n="strategy.fusion_balanced">Баланс источников</option>
               <option value="fusion_market_lean" data-i18n="strategy.fusion_market_lean">Больше доверять рынку</option>
               <option value="fusion_analyst_lean" data-i18n="strategy.fusion_analyst_lean">Больше доверять аналитикам</option>
+              <option value="fusion_custom" data-i18n="strategy.fusion_custom">Собственные настройки</option>
             </select>
 
             <div class="fusion-weights" id="fusion-weights" hidden>
-              <p class="fusion-weights-label" data-i18n="fusion.weights_label">Веса источников</p>
+              <p class="fusion-weights-label" data-i18n="fusion.weights_label">Вариант прогноза</p>
               <p class="fusion-weights-help" id="fusion-weights-help" data-i18n="fusion.weights_help">
-                Готовые смеси и ползунки. Значения независимы и не обязаны давать в сумме 100 — при расчёте доли берутся пропорционально.
+                Выберите готовый вариант или задайте свои веса источников.
               </p>
               <div class="fusion-presets" id="fusion-presets"></div>
-              <details class="fusion-advanced">
-                <summary data-i18n="fusion.advanced">Тонкая настройка</summary>
+              <div class="fusion-custom-panel" id="fusion-custom-panel" hidden>
+                <p class="fusion-custom-hint" data-i18n="fusion.custom_help">
+                  Передвигайте ползунки — доска пересчитается сразу. Веса независимы и не обязаны давать 100%.
+                </p>
                 <div class="fusion-sliders" id="fusion-sliders"></div>
-              </details>
+              </div>
               <p class="fusion-score" id="fusion-score"></p>
               <p class="market-disclaimer" id="market-disclaimer"></p>
             </div>
@@ -213,7 +231,7 @@
         <section class="section" id="matchup">
           <div class="section-head">
             <h3 data-i18n="matchup.title">Кто кого</h3>
-            <p data-i18n="matchup.lead">Парная вероятность победы (смесь парных оценок или силовой рейтинг).</p>
+            <p data-i18n="matchup.lead">Парная вероятность победы между командами.</p>
           </div>
           <div class="matchup">
             <div class="matchup-pick">
@@ -232,7 +250,7 @@
         <section class="section" id="model">
           <div class="section-head">
             <h3 data-i18n="model.title">Состояние модели</h3>
-            <p id="methodology-text" data-i18n="model.methodology">Смесь XGBoost + CatBoost; проверка Leave-One-TI-Out; сила μ±σ.</p>
+            <p id="methodology-text" data-i18n="model.methodology">Модель по матчам и силе команд (μ±σ).</p>
           </div>
           <div class="metrics" id="metrics-grid"></div>
         </section>
@@ -270,7 +288,7 @@
             </article>
             <article class="how-card">
               <h4 data-i18n="how.card6.title">6. Числа в интерфейсе</h4>
-              <p data-i18n="how.card6.body">μ ± σ — сила ± неопределённость. Карта слотов — % слотов. Стратегии доски: модель / проход / аналитики / смешанный (разные веса источников). Не для ставок.</p>
+              <p data-i18n="how.card6.body">μ ± σ — сила команды и насколько мы в ней уверены. Карта слотов — шансы попасть в каждый слот. Можно выбрать готовый вариант прогноза или свои веса.</p>
             </article>
           </div>
           <details class="how-details">
@@ -279,7 +297,7 @@
               <li data-i18n="how.details_li1">Строка игрока: в деталях есть players[], account_id ≠ 0/None и известен team_id стороны.</li>
               <li data-i18n="how.details_li2">Покрытие составов: 100% (8709/8709). Детали докачаны по всем лигам корпуса (DLS28/29, EWC 2026, TI14, ESL Birmingham, Wallachia S8, BLAST VI/VII и др.). Need download=0.</li>
               <li data-i18n="how.details_li3">Полураспад выборки 210д × tier (TI/major/qual/online); форма ~40д; патч ≥7.41 ×1.25.</li>
-              <li data-i18n="how.details_li4">Смесь XGB+CatBoost с весами по LOO log-loss; в production может быть изотоническая калибровка.</li>
+              <li data-i18n="how.details_li4">Основная модель — CatBoost по парам команд.</li>
               <li data-i18n="how.details_li5">Нечётный остаток в корзине рекорда Swiss получает bye без авто-победы (упрощение симуляции).</li>
             </ul>
           </details>
@@ -412,8 +430,11 @@
           <a href="https://github.com/dapetun/dota-TI2026-predict" rel="noopener noreferrer" target="_blank" data-i18n="nav.repo">Репозиторий</a>
         </nav>
 
-        <p data-i18n="footer.open">Открытый проект. Данные — OpenDota.</p>
+        <p data-i18n="footer.open">Данные — OpenDota.</p>
         <p id="footer-stamp"></p>
+        <p class="footer-attribution" data-i18n="footer.visual_attribution">
+          Визуальный фон вдохновлён / использует материалы The International (© Valve Corporation). Фанатский исследовательский сайт, не аффилирован с Valve.
+        </p>
         <p class="license-line">
           <a href="https://github.com/dapetun/dota-TI2026-predict/blob/prod/LICENSE" rel="noopener noreferrer" target="_blank" data-i18n="footer.license">Лицензия MIT</a>
           · <span data-i18n="footer.copyright">Copyright © 2026 dapetun</span>

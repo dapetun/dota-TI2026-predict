@@ -2,7 +2,52 @@ import { t, initI18n, onLangChange, localeTag, localizeWarning, localizeSource }
 
 const DATA_URL = "data/predictions.json";
 const BOARD_STORAGE_KEY = "ti2026_board_strategy";
+const CUSTOM_WEIGHTS_KEY = "ti2026_custom_weights";
 const ANALYST_THRESHOLD = 5;
+
+const SLOT_KEYS = [
+  "undefeated",
+  "one_loss",
+  "advance",
+  "eliminate",
+  "one_win",
+  "winless",
+];
+
+const SLOT_CAPS = {
+  undefeated: 1,
+  one_loss: 2,
+  advance: 5,
+  eliminate: 5,
+  one_win: 2,
+  winless: 1,
+};
+
+const SLOT_RECORD = {
+  undefeated: "4–0",
+  one_loss: "4–1",
+  advance: "Проход",
+  eliminate: "Выбывание",
+  one_win: "1–4",
+  winless: "0–4",
+};
+
+const SLOT_TO_PROB = {
+  undefeated: "prob_4_0",
+  one_loss: "prob_4_1",
+  advance: "prob_advance",
+  eliminate: "prob_eliminate",
+  one_win: "prob_1_4",
+  winless: "prob_0_4",
+};
+
+const SOURCE_TO_WEIGHT = {
+  model: "model_weight",
+  analyst: "analyst_weight",
+  market: "market_weight",
+  ranking: "ranking_weight",
+  expert: "expert_weight",
+};
 
 const BOARD_COLUMN_KEYS = [
   { key: "undefeated", titleKey: "col.undefeated", tone: "ok" },
@@ -30,6 +75,7 @@ const MODE_GROUPS = [
       "fusion_balanced",
       "fusion_market_lean",
       "fusion_analyst_lean",
+      "fusion_custom",
     ],
   },
 ];
@@ -120,6 +166,9 @@ function getBoardStrategy() {
 
 function activeBoard(data) {
   const strategy = getBoardStrategy();
+  if (strategy === "fusion_custom") {
+    ensureCustomBoard(data);
+  }
   if (data.boards && data.boards[strategy]) return data.boards[strategy];
   return data.board;
 }
@@ -158,6 +207,7 @@ const FUSION_PRESET_KEYS = [
   "fusion_balanced",
   "fusion_market_lean",
   "fusion_analyst_lean",
+  "fusion_custom",
 ];
 
 /** Effective shares after renormalizing raw soft weights (matches server fuse). */
@@ -168,6 +218,37 @@ function effectiveWeightShares(weights) {
     return Object.fromEntries(FUSION_WEIGHT_KEYS.map((k) => [k, k === "model_weight" ? 1 : 0]));
   }
   return Object.fromEntries(FUSION_WEIGHT_KEYS.map((k, i) => [k, raw[i] / total]));
+}
+
+function defaultCustomWeights(meta) {
+  return {
+    model_weight: Number(meta?.fusion_model_weight ?? 0.65),
+    analyst_weight: Number(meta?.fusion_analyst_weight ?? 0.2),
+    market_weight: Number(meta?.fusion_market_weight ?? 0.1),
+    ranking_weight: Number(meta?.fusion_ranking_weight ?? 0.05),
+    expert_weight: 0,
+  };
+}
+
+function loadCustomWeights(meta) {
+  try {
+    const raw = localStorage.getItem(CUSTOM_WEIGHTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const out = defaultCustomWeights(meta);
+      for (const k of FUSION_WEIGHT_KEYS) {
+        if (parsed[k] != null) out[k] = Math.max(0, Math.min(1, Number(parsed[k]) || 0));
+      }
+      return out;
+    }
+  } catch {
+    /* ignore */
+  }
+  return defaultCustomWeights(meta);
+}
+
+function saveCustomWeights(weights) {
+  localStorage.setItem(CUSTOM_WEIGHTS_KEY, JSON.stringify(weights));
 }
 
 function scenarioWeightsMap(meta) {
@@ -204,38 +285,204 @@ function scenarioWeightsMap(meta) {
     ranking_weight: ranking,
     expert_weight: 0,
   };
+  out.fusion_custom = loadCustomWeights(meta);
   return out;
 }
 
-function weightsDistance(a, b) {
-  return FUSION_WEIGHT_KEYS.reduce(
-    (s, k) => s + Math.abs(Number(a[k] || 0) - Number(b[k] || 0)),
-    0
-  );
+/** Blend slot sources client-side (same renormalize as server fuse). */
+function fuseTeamSlotProbs(teamId, shares, slotSources) {
+  const src = slotSources?.[teamId];
+  if (!src) return null;
+  const out = {};
+  for (const slot of SLOT_KEYS) {
+    let p = 0;
+    for (const [source, weightKey] of Object.entries(SOURCE_TO_WEIGHT)) {
+      const w = Number(shares[weightKey] || 0);
+      if (w <= 0) continue;
+      p += w * Number(src[source]?.[slot] ?? 0);
+    }
+    out[slot] = p;
+  }
+  const sum = SLOT_KEYS.reduce((s, k) => s + out[k], 0);
+  if (sum > 0) {
+    for (const slot of SLOT_KEYS) out[slot] /= sum;
+  }
+  return out;
 }
 
-/** Pick precomputed fusion_* board closest to draft weights. */
-function nearestFusionStrategy(meta, draftWeights) {
-  const map = scenarioWeightsMap(meta);
-  let best = "fusion_balanced";
-  let bestDist = Infinity;
-  for (const [strategy, w] of Object.entries(map)) {
-    if (strategy === "fusion") continue;
-    const d = weightsDistance(draftWeights, w);
-    if (d < bestDist) {
-      bestDist = d;
-      best = strategy;
+function slotProbFromTeam(teamLike, slot) {
+  if (teamLike?.slots && teamLike.slots[slot] != null) return Number(teamLike.slots[slot]);
+  const key = SLOT_TO_PROB[slot];
+  const raw = Number(teamLike?.[key] ?? 0);
+  return raw > 1 ? raw / 100 : raw;
+}
+
+function expectedCorrectCount(assignment, fusedTeams) {
+  const byId = Object.fromEntries(fusedTeams.map((t) => [t.id, t]));
+  return assignment.reduce((s, { id, slot }) => s + slotProbFromTeam(byId[id], slot), 0);
+}
+
+function expectedValvePointsFromCorrectDist(assignment, fusedTeams) {
+  let dist = { 0: 1 };
+  for (const { id, slot } of assignment) {
+    const team = fusedTeams.find((t) => t.id === id);
+    const pHit = Math.max(0, Math.min(1, slotProbFromTeam(team, slot)));
+    const next = {};
+    for (const [kStr, pr] of Object.entries(dist)) {
+      const k = Number(kStr);
+      next[k] = (next[k] || 0) + pr * (1 - pHit);
+      next[k + 1] = (next[k + 1] || 0) + pr * pHit;
+    }
+    dist = next;
+  }
+  let pts = 0;
+  for (const [kStr, pr] of Object.entries(dist)) {
+    const k = Number(kStr);
+    const row = VALVE_POINTS_TABLE.find(([n]) => n === k);
+    pts += pr * (row ? row[1] : 0);
+  }
+  return pts;
+}
+
+function greedyAssignment(fusedTeams) {
+  const remaining = { ...SLOT_CAPS };
+  const assignment = new Map();
+  const edges = [];
+  for (const team of fusedTeams) {
+    for (const slot of SLOT_KEYS) {
+      edges.push({ p: slotProbFromTeam(team, slot), id: team.id, slot });
     }
   }
-  if (weightsDistance(draftWeights, map.fusion) <= bestDist + 0.02) {
-    return "fusion";
+  edges.sort((a, b) => b.p - a.p);
+  for (const e of edges) {
+    if (assignment.has(e.id) || remaining[e.slot] <= 0) continue;
+    assignment.set(e.id, e.slot);
+    remaining[e.slot] -= 1;
   }
-  return best;
+  for (const team of fusedTeams) {
+    if (assignment.has(team.id)) continue;
+    let best = null;
+    let bestP = -1;
+    for (const slot of SLOT_KEYS) {
+      if (remaining[slot] <= 0) continue;
+      const p = slotProbFromTeam(team, slot);
+      if (p > bestP) {
+        bestP = p;
+        best = slot;
+      }
+    }
+    if (best) {
+      assignment.set(team.id, best);
+      remaining[best] -= 1;
+    }
+  }
+  return assignment;
+}
+
+function improveAssignmentBySwaps(assignment, fusedTeams, maxRounds = 80) {
+  const ids = [...assignment.keys()];
+  const asList = () => ids.map((id) => ({ id, slot: assignment.get(id) }));
+  let bestScore = expectedValvePointsFromCorrectDist(asList(), fusedTeams);
+  for (let round = 0; round < maxRounds; round += 1) {
+    let improved = false;
+    for (let i = 0; i < ids.length; i += 1) {
+      for (let j = i + 1; j < ids.length; j += 1) {
+        const a = ids[i];
+        const b = ids[j];
+        if (assignment.get(a) === assignment.get(b)) continue;
+        const sa = assignment.get(a);
+        const sb = assignment.get(b);
+        assignment.set(a, sb);
+        assignment.set(b, sa);
+        const score = expectedValvePointsFromCorrectDist(asList(), fusedTeams);
+        if (score > bestScore + 1e-9) {
+          bestScore = score;
+          improved = true;
+        } else {
+          assignment.set(a, sa);
+          assignment.set(b, sb);
+        }
+      }
+    }
+    if (!improved) break;
+  }
+  return assignment;
+}
+
+function analystLookup(data) {
+  const map = {};
+  const board = data.boards?.points_optimal || data.board || {};
+  for (const slot of SLOT_KEYS) {
+    for (const row of board[slot] || []) {
+      map[row.id] = {
+        analyst_agreement: row.analyst_agreement,
+        analyst_names: row.analyst_names,
+      };
+    }
+  }
+  return map;
+}
+
+/** Build live custom fusion board + score into data.boards.fusion_custom. */
+function rebuildCustomFusionBoard(data, weights) {
+  const sources = data.slot_sources;
+  if (!sources || !data.teams?.length) return null;
+  const shares = effectiveWeightShares(weights);
+  const fusedTeams = data.teams.map((t) => {
+    const slots = fuseTeamSlotProbs(t.id, shares, sources);
+    if (!slots) return { ...t, slots: {} };
+    const row = { ...t, slots };
+    for (const [slot, probKey] of Object.entries(SLOT_TO_PROB)) {
+      row[probKey] = Math.round(slots[slot] * 10000) / 100;
+    }
+    return row;
+  });
+  let assignment = greedyAssignment(fusedTeams);
+  assignment = improveAssignmentBySwaps(assignment, fusedTeams);
+  const lookup = analystLookup(data);
+  const board = Object.fromEntries(SLOT_KEYS.map((s) => [s, []]));
+  const assignList = [];
+  for (const team of fusedTeams) {
+    const slot = assignment.get(team.id);
+    if (!slot) continue;
+    assignList.push({ id: team.id, slot });
+    const meta = lookup[team.id] || {};
+    board[slot].push({
+      id: team.id,
+      name: team.name,
+      short: team.short,
+      record: SLOT_RECORD[slot] || slot,
+      qualify_pct: team.qualify_pct,
+      slot_pct: Math.round(slotProbFromTeam(team, slot) * 1000) / 10,
+      analyst_agreement: meta.analyst_agreement,
+      analyst_names: meta.analyst_names,
+    });
+  }
+  const expected_correct = expectedCorrectCount(assignList, fusedTeams);
+  const expected_points = expectedValvePointsFromCorrectDist(assignList, fusedTeams);
+  if (!data.boards) data.boards = {};
+  data.boards.fusion_custom = board;
+  if (!data.meta) data.meta = {};
+  if (!data.meta.board_compare) data.meta.board_compare = {};
+  data.meta.board_compare.fusion_custom = {
+    expected_correct: Math.round(expected_correct * 1000) / 1000,
+    expected_points: Math.round(expected_points * 10) / 10,
+  };
+  return data.meta.board_compare.fusion_custom;
+}
+
+function ensureCustomBoard(data) {
+  if (!data?.slot_sources) return;
+  const weights = loadCustomWeights(data.meta || {});
+  rebuildCustomFusionBoard(data, weights);
 }
 
 function expectedPointsForStrategy(data, strategy) {
   const meta = data.meta || {};
   const compare = meta.board_compare || {};
+  if (strategy === "fusion_custom") {
+    ensureCustomBoard(data);
+  }
   if (compare[strategy]?.expected_points != null) {
     return Number(compare[strategy].expected_points);
   }
@@ -244,7 +491,7 @@ function expectedPointsForStrategy(data, strategy) {
   }
   const key = fusionScenarioKey(strategy);
   const scores = meta.fusion_scenario_scores || {};
-  if (key && scores[key]?.expected_points != null) {
+  if (key && key !== "custom" && scores[key]?.expected_points != null) {
     return Number(scores[key].expected_points);
   }
   if (strategy.startsWith("fusion") && meta.fusion_expected_points != null) {
@@ -257,10 +504,17 @@ function expectedPointsForStrategy(data, strategy) {
 
 function setBoardStrategy(strategy, data, { persist = true } = {}) {
   const sel = document.getElementById("board-strategy");
-  if (sel && sel.querySelector(`option[value="${strategy}"]`)) {
+  if (sel) {
+    if (!sel.querySelector(`option[value="${strategy}"]`)) {
+      const opt = document.createElement("option");
+      opt.value = strategy;
+      opt.textContent = t(`strategy.${strategy}`);
+      sel.appendChild(opt);
+    }
     sel.value = strategy;
   }
   if (persist) localStorage.setItem(BOARD_STORAGE_KEY, strategy);
+  if (strategy === "fusion_custom") ensureCustomBoard(data);
   renderHero(data);
   renderModePanel(data);
   renderFusionWeights(data);
@@ -301,12 +555,14 @@ function renderFusionWeights(data) {
   const root = document.getElementById("fusion-weights");
   const sliders = document.getElementById("fusion-sliders");
   const presets = document.getElementById("fusion-presets");
+  const customPanel = document.getElementById("fusion-custom-panel");
   const scoreEl = document.getElementById("fusion-score");
   const disc = document.getElementById("market-disclaimer");
   if (!root || !sliders) return;
   const meta = data.meta || {};
   const strategy = getBoardStrategy();
   const isFusion = strategy === "fusion" || strategy.startsWith("fusion_");
+  const isCustom = strategy === "fusion_custom";
   root.hidden = !isFusion;
   if (disc) {
     const mmeta = meta.market_priors_meta || {};
@@ -325,28 +581,26 @@ function renderFusionWeights(data) {
     sliders.innerHTML = "";
     if (presets) presets.innerHTML = "";
     if (scoreEl) scoreEl.textContent = "";
+    if (customPanel) customPanel.hidden = true;
     return;
   }
 
   const map = scenarioWeightsMap(meta);
-  const weights = map[strategy] || map.fusion;
+  const weights = isCustom ? loadCustomWeights(meta) : map[strategy] || map.fusion;
   const shares = effectiveWeightShares(weights);
   const rawSum = FUSION_WEIGHT_KEYS.reduce((s, k) => s + Math.max(0, Number(weights[k] || 0)), 0);
 
   if (presets) {
-    presets.innerHTML = FUSION_PRESET_KEYS.filter((k) => map[k] || k === "fusion")
-      .map((k) => {
-        const active = k === strategy ? " active" : "";
-        const hintKey = `strategy.${k}_hint`;
-        const hint = t(hintKey);
-        const titleAttr =
-          hint && !hint.startsWith("strategy.")
-            ? ` title="${escapeHtml(hint)}"`
-            : "";
-        // Same human labels as strategy.* (single mix chooser lives here)
-        return `<button type="button" class="fusion-preset${active}" data-strategy="${k}"${titleAttr}>${escapeHtml(t(`strategy.${k}`))}</button>`;
-      })
-      .join("");
+    presets.innerHTML = FUSION_PRESET_KEYS.map((k) => {
+      const active = k === strategy ? " active" : "";
+      const hintKey = `strategy.${k}_hint`;
+      const hint = t(hintKey);
+      const titleAttr =
+        hint && !hint.startsWith("strategy.")
+          ? ` title="${escapeHtml(hint)}"`
+          : "";
+      return `<button type="button" class="fusion-preset${active}" data-strategy="${k}"${titleAttr}>${escapeHtml(t(`strategy.${k}`))}</button>`;
+    }).join("");
     presets.querySelectorAll("[data-strategy]").forEach((btn) => {
       btn.addEventListener("click", () => {
         setBoardStrategy(btn.getAttribute("data-strategy"), data);
@@ -354,11 +608,16 @@ function renderFusionWeights(data) {
     });
   }
 
-  sliders.innerHTML =
-    FUSION_WEIGHT_KEYS.map((k) => {
-      const v = Math.round(Number(weights[k] ?? 0) * 100);
-      const eff = Math.round(Number(shares[k] || 0) * 100);
-      return `
+  if (customPanel) customPanel.hidden = !isCustom;
+
+  if (!isCustom) {
+    sliders.innerHTML = "";
+  } else {
+    sliders.innerHTML =
+      FUSION_WEIGHT_KEYS.map((k) => {
+        const v = Math.round(Number(weights[k] ?? 0) * 100);
+        const eff = Math.round(Number(shares[k] || 0) * 100);
+        return `
       <label class="fusion-slider-row">
         <span class="fusion-slider-head">
           <span>${escapeHtml(t(FUSION_WEIGHT_I18N[k]))}: <strong data-wlabel="${k}">${v}</strong></span>
@@ -366,55 +625,79 @@ function renderFusionWeights(data) {
         </span>
         <input type="range" min="0" max="100" step="5" value="${v}" data-weight="${k}" aria-valuetext="${v}" />
       </label>`;
-    }).join("") +
-    `<p class="fusion-weights-help" style="margin:0.35rem 0 0;grid-column:1/-1">${escapeHtml(
-      t("fusion.weights_raw_sum", { sum: Math.round(rawSum * 100) })
-    )}</p>`;
+      }).join("") +
+      `<p class="fusion-weights-help" style="margin:0.35rem 0 0;grid-column:1/-1">${escapeHtml(
+        t("fusion.weights_raw_sum", { sum: Math.round(rawSum * 100) })
+      )}</p>`;
 
-  const refreshEff = (draft) => {
-    const nextShares = effectiveWeightShares(draft);
-    const nextSum = FUSION_WEIGHT_KEYS.reduce(
-      (s, k) => s + Math.max(0, Number(draft[k] || 0)),
-      0
-    );
-    sliders.querySelectorAll("[data-weff]").forEach((el) => {
-      const key = el.getAttribute("data-weff");
-      const eff = Math.round(Number(nextShares[key] || 0) * 100);
-      el.textContent = `${t("fusion.weight_in_mix")}: ${eff}%`;
-    });
-    const sumEl = sliders.querySelector(".fusion-weights-help");
-    if (sumEl) {
-      sumEl.textContent = t("fusion.weights_raw_sum", { sum: Math.round(nextSum * 100) });
-    }
-  };
-
-  sliders.querySelectorAll("input[data-weight]").forEach((input) => {
-    input.addEventListener("input", () => {
-      const draft = { ...weights };
-      sliders.querySelectorAll("input[data-weight]").forEach((el) => {
-        draft[el.getAttribute("data-weight")] = Number(el.value) / 100;
-        const lab = sliders.querySelector(`[data-wlabel="${el.getAttribute("data-weight")}"]`);
-        if (lab) lab.textContent = `${el.value}`;
+    const refreshEff = (draft) => {
+      const nextShares = effectiveWeightShares(draft);
+      const nextSum = FUSION_WEIGHT_KEYS.reduce(
+        (s, k) => s + Math.max(0, Number(draft[k] || 0)),
+        0
+      );
+      sliders.querySelectorAll("[data-weff]").forEach((el) => {
+        const key = el.getAttribute("data-weff");
+        const eff = Math.round(Number(nextShares[key] || 0) * 100);
+        el.textContent = `${t("fusion.weight_in_mix")}: ${eff}%`;
       });
+      const sumEl = sliders.querySelector(".fusion-weights-help");
+      if (sumEl) {
+        sumEl.textContent = t("fusion.weights_raw_sum", { sum: Math.round(nextSum * 100) });
+      }
+    };
+
+    const applyDraft = (draft) => {
+      saveCustomWeights(draft);
+      rebuildCustomFusionBoard(data, draft);
       refreshEff(draft);
-      const next = nearestFusionStrategy(meta, draft);
-      if (next !== strategy) setBoardStrategy(next, data);
+      renderBoard(data);
+      renderModePanel(data);
+      renderHero(data);
+      const cmp = data.meta?.board_compare?.fusion_custom;
+      if (scoreEl && cmp) {
+        scoreEl.innerHTML =
+          `${escapeHtml(t("fusion.score"))}: <strong>${Math.round(cmp.expected_points).toLocaleString(localeTag())}</strong>` +
+          ` · ${escapeHtml(t("fusion.correct_slots"))} ${Number(cmp.expected_correct).toFixed(2)}`;
+      }
+    };
+
+    sliders.querySelectorAll("input[data-weight]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const draft = { ...weights };
+        sliders.querySelectorAll("input[data-weight]").forEach((el) => {
+          draft[el.getAttribute("data-weight")] = Number(el.value) / 100;
+          const lab = sliders.querySelector(`[data-wlabel="${el.getAttribute("data-weight")}"]`);
+          if (lab) lab.textContent = `${el.value}`;
+        });
+        applyDraft(draft);
+      });
     });
-  });
+  }
 
   if (scoreEl) {
-    const key = fusionScenarioKey(strategy);
-    const scores = meta.fusion_scenario_scores || {};
-    const pts =
-      (key && scores[key]?.expected_points) ?? meta.fusion_expected_points ?? null;
-    const correct = (key && scores[key]?.expected_correct) ?? null;
-    scoreEl.innerHTML =
-      pts != null
-        ? `${escapeHtml(t("fusion.score"))}: <strong>${Math.round(pts).toLocaleString(localeTag())}</strong>` +
-          (correct != null
-            ? ` · ${escapeHtml(t("fusion.correct_slots"))} ${Number(correct).toFixed(2)}`
-            : "")
-        : "";
+    if (isCustom) {
+      ensureCustomBoard(data);
+      const cmp = meta.board_compare?.fusion_custom;
+      scoreEl.innerHTML =
+        cmp?.expected_points != null
+          ? `${escapeHtml(t("fusion.score"))}: <strong>${Math.round(cmp.expected_points).toLocaleString(localeTag())}</strong>` +
+            ` · ${escapeHtml(t("fusion.correct_slots"))} ${Number(cmp.expected_correct).toFixed(2)}`
+          : `<span class="meta">${escapeHtml(t("fusion.custom_unavailable"))}</span>`;
+    } else {
+      const key = fusionScenarioKey(strategy);
+      const scores = meta.fusion_scenario_scores || {};
+      const pts =
+        (key && scores[key]?.expected_points) ?? meta.fusion_expected_points ?? null;
+      const correct = (key && scores[key]?.expected_correct) ?? null;
+      scoreEl.innerHTML =
+        pts != null
+          ? `${escapeHtml(t("fusion.score"))}: <strong>${Math.round(pts).toLocaleString(localeTag())}</strong>` +
+            (correct != null
+              ? ` · ${escapeHtml(t("fusion.correct_slots"))} ${Number(correct).toFixed(2)}`
+              : "")
+          : "";
+    }
   }
 }
 
@@ -440,8 +723,17 @@ function renderHero(data) {
   renderFallbackBanner(data);
   const warnEl = document.getElementById("meta-warnings");
   if (warnEl) {
+    // Hide internal/diagnostic export warnings from the product UI.
     const warnings = Array.isArray(meta.warnings) ? meta.warnings : [];
-    const localized = warnings.map(localizeWarning).filter(Boolean);
+    const localized = warnings
+      .filter(
+        (w) =>
+          !/In-sample tune|derived from Polymarket|seeded from POWER_RANKINGS/i.test(
+            String(w)
+          )
+      )
+      .map(localizeWarning)
+      .filter(Boolean);
     if (localized.length) {
       warnEl.hidden = false;
       warnEl.innerHTML = localized.map((w) => `<li>${escapeHtml(w)}</li>`).join("");
@@ -456,41 +748,11 @@ function renderHero(data) {
     ptsVal != null
       ? `<span class="chip" title="${escapeHtml(valvePointsTooltip())}">${escapeHtml(t("chip.points"))}: <strong>${Math.round(ptsVal).toLocaleString(localeTag())}</strong></span>`
       : "";
-  const modelPts = Math.round(Number(ptsVal));
-  const analystPts =
-    data.analyst?.expected_points != null
-      ? Math.round(Number(data.analyst.expected_points))
-      : null;
-  const fusionPts =
-    meta.fusion_expected_points != null
-      ? Math.round(Number(meta.fusion_expected_points))
-      : null;
-  let extraPts = "";
-  if (analystPts != null && analystPts !== modelPts) {
-    extraPts += `<span class="chip" title="${escapeHtml(t("title.analyst_pts"))}">${escapeHtml(t("chip.analysts"))}: <strong>${analystPts.toLocaleString(localeTag())}</strong></span>`;
-  }
-  if (
-    fusionPts != null &&
-    fusionPts !== modelPts &&
-    fusionPts !== analystPts
-  ) {
-    extraPts += `<span class="chip" title="${escapeHtml(t("title.fusion_pts"))}">${escapeHtml(t("chip.fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
-  } else if (fusionPts != null && fusionPts !== modelPts && analystPts == null) {
-    extraPts += `<span class="chip" title="${escapeHtml(t("title.fusion_pts"))}">${escapeHtml(t("chip.fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
-  } else if (
-    fusionPts != null &&
-    analystPts != null &&
-    fusionPts === analystPts &&
-    fusionPts !== modelPts &&
-    !extraPts
-  ) {
-    extraPts += `<span class="chip" title="${escapeHtml(t("title.both_pts"))}">${escapeHtml(t("chip.analysts_fusion"))}: <strong>${fusionPts.toLocaleString(localeTag())}</strong></span>`;
-  }
   const modelChipLabel = friendlyModelLabel(meta);
   const mmeta = meta.market_priors_meta || {};
   let marketChip = "";
   if (mmeta.seeded_from_ranking || mmeta.is_real_market === false) {
-    marketChip = `<span class="chip chip-warn" title="${escapeHtml(t("fusion.market_fallback"))}">${escapeHtml(t("chip.market_seeded"))}</span>`;
+    marketChip = "";
   } else if (String(mmeta.derivation || "") === "derived_from_winner_odds") {
     marketChip = `<span class="chip" title="${escapeHtml(t("fusion.market_derived"))}">${escapeHtml(t("chip.market_derived"))}</span>`;
   } else if (String(mmeta.derivation || "") === "direct_slot") {
@@ -498,20 +760,18 @@ function renderHero(data) {
   } else if (mmeta.is_real_market) {
     marketChip = `<span class="chip">${escapeHtml(t("chip.market_live"))}</span>`;
   }
-  const phase = String(meta.swiss_phase || "pre_gs_snapshot");
-  const phaseChip =
-    phase && phase !== "pre_gs_snapshot"
-      ? `<span class="chip">${escapeHtml(t("chip.swiss_phase_live"))}</span>`
-      : `<span class="chip">${escapeHtml(t("chip.swiss_phase_pre"))}</span>`;
+  const nAnalysts = data.analyst?.n_analysts;
+  const analystsChip =
+    nAnalysts != null
+      ? `<span class="chip">${escapeHtml(t("chip.analysts"))}: <strong>${fmtNum(nAnalysts)}</strong></span>`
+      : "";
   document.getElementById("hero-meta").innerHTML = `
     <span class="chip"><strong>${escapeHtml(modelChipLabel)}</strong></span>
+    ${analystsChip}
     <span class="chip">${escapeHtml(t("chip.sims"))}: <strong>${fmtNum(meta.n_simulations)}</strong></span>
     ${pts}
-    ${extraPts}
     ${marketChip}
-    ${phaseChip}
     <span class="chip">${escapeHtml(friendlyFormatLabel(meta.format))}</span>
-    <span class="chip">v${escapeHtml(meta.version)}</span>
   `;
   document.getElementById("footer-stamp").textContent =
     `${t("footer.updated")}: ${new Date(meta.generated_at).toLocaleString(localeTag())}`;
@@ -549,7 +809,7 @@ function renderTeamMark(tRow, nAnalysts) {
   return `
     <article class="team-mark" title="${title}">
       ${teamLogoHtml(teamId, tRow.short || tRow.name)}
-      <div class="name">${displayName}${chip}</div>
+      <div class="name"><span class="name-text">${displayName}</span>${chip}</div>
       <div class="meta">${escapeHtml(tRow.record)} · ${fmtPct(slotPct)}</div>
       <div class="prob">${fmtPct(tRow.qualify_pct)}</div>
     </article>`;

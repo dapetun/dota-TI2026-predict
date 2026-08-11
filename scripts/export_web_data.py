@@ -41,6 +41,7 @@ from src.ti2026.fusion import (
     DEFAULT_MARKET_WEIGHT,
     DEFAULT_MODEL_WEIGHT,
     DEFAULT_RANKING_WEIGHT,
+    build_slot_sources_for_ui,
     fuse_slot_probabilities,
     fuse_weight_scenarios,
     resolve_production_fusion_weight,
@@ -760,6 +761,10 @@ def export_predictions(
         },
         "analyst": analyst_meta,
         "boards": boards_payload,
+        "slot_sources": build_slot_sources_for_ui(
+            predictions,
+            market_priors=market_priors,
+        ),
         "slot_heatmap": heatmap,
         "model_metrics": model_metrics,
         "recent_results": TI2026_RECENT_RESULTS,

@@ -5109,5 +5109,679 @@
       "p_a": 0.612,
       "p_b": 0.388
     }
-  ]
+  ],
+  "slot_sources": {
+    "Vision": {
+      "model": {
+        "undefeated": 0.307,
+        "one_loss": 0.367,
+        "advance": 0.289,
+        "eliminate": 0.035,
+        "one_win": 0.002,
+        "winless": 0.0
+      },
+      "analyst": {
+        "undefeated": 0.5,
+        "one_loss": 0.323529,
+        "advance": 0.088235,
+        "eliminate": 0.029412,
+        "one_win": 0.029412,
+        "winless": 0.029412
+      },
+      "market": {
+        "undefeated": 0.244,
+        "one_loss": 0.339,
+        "advance": 0.374,
+        "eliminate": 0.039,
+        "one_win": 0.004,
+        "winless": 0.0
+      },
+      "ranking": {
+        "undefeated": 0.18,
+        "one_loss": 0.28,
+        "advance": 0.4,
+        "eliminate": 0.1,
+        "one_win": 0.03,
+        "winless": 0.01
+      },
+      "expert": {
+        "undefeated": 0.233333,
+        "one_loss": 0.633333,
+        "advance": 0.033333,
+        "eliminate": 0.033333,
+        "one_win": 0.033333,
+        "winless": 0.033333
+      }
+    },
+    "Aurora": {
+      "model": {
+        "undefeated": 0.289,
+        "one_loss": 0.369,
+        "advance": 0.301,
+        "eliminate": 0.039,
+        "one_win": 0.003,
+        "winless": 0.0
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.09375,
+        "advance": 0.53125,
+        "eliminate": 0.28125,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.065065,
+        "one_loss": 0.164164,
+        "advance": 0.498498,
+        "eliminate": 0.24024,
+        "one_win": 0.029029,
+        "winless": 0.003003
+      },
+      "ranking": {
+        "undefeated": 0.08,
+        "one_loss": 0.2,
+        "advance": 0.42,
+        "eliminate": 0.22,
+        "one_win": 0.06,
+        "winless": 0.02
+      },
+      "expert": {
+        "undefeated": 0.035714,
+        "one_loss": 0.035714,
+        "advance": 0.178571,
+        "eliminate": 0.678571,
+        "one_win": 0.035714,
+        "winless": 0.035714
+      }
+    },
+    "BetBoom": {
+      "model": {
+        "undefeated": 0.134,
+        "one_loss": 0.319,
+        "advance": 0.462,
+        "eliminate": 0.077,
+        "one_win": 0.006,
+        "winless": 0.001
+      },
+      "analyst": {
+        "undefeated": 0.09375,
+        "one_loss": 0.34375,
+        "advance": 0.46875,
+        "eliminate": 0.03125,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.103,
+        "one_loss": 0.229,
+        "advance": 0.531,
+        "eliminate": 0.123,
+        "one_win": 0.013,
+        "winless": 0.001
+      },
+      "ranking": {
+        "undefeated": 0.18,
+        "one_loss": 0.28,
+        "advance": 0.4,
+        "eliminate": 0.1,
+        "one_win": 0.03,
+        "winless": 0.01
+      },
+      "expert": {
+        "undefeated": 0.035714,
+        "one_loss": 0.107143,
+        "advance": 0.75,
+        "eliminate": 0.035714,
+        "one_win": 0.035714,
+        "winless": 0.035714
+      }
+    },
+    "Spirit": {
+      "model": {
+        "undefeated": 0.089,
+        "one_loss": 0.244,
+        "advance": 0.529,
+        "eliminate": 0.122,
+        "one_win": 0.014,
+        "winless": 0.003
+      },
+      "analyst": {
+        "undefeated": 0.15625,
+        "one_loss": 0.09375,
+        "advance": 0.65625,
+        "eliminate": 0.03125,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.085085,
+        "one_loss": 0.182182,
+        "advance": 0.511512,
+        "eliminate": 0.195195,
+        "one_win": 0.022022,
+        "winless": 0.004004
+      },
+      "ranking": {
+        "undefeated": 0.03,
+        "one_loss": 0.1,
+        "advance": 0.35,
+        "eliminate": 0.35,
+        "one_win": 0.12,
+        "winless": 0.05
+      },
+      "expert": {
+        "undefeated": 0.795455,
+        "one_loss": 0.022727,
+        "advance": 0.113636,
+        "eliminate": 0.022727,
+        "one_win": 0.022727,
+        "winless": 0.022727
+      }
+    },
+    "Falcons": {
+      "model": {
+        "undefeated": 0.065,
+        "one_loss": 0.206,
+        "advance": 0.571,
+        "eliminate": 0.138,
+        "one_win": 0.017,
+        "winless": 0.003
+      },
+      "analyst": {
+        "undefeated": 0.15625,
+        "one_loss": 0.09375,
+        "advance": 0.53125,
+        "eliminate": 0.15625,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.09009,
+        "one_loss": 0.216216,
+        "advance": 0.51952,
+        "eliminate": 0.156156,
+        "one_win": 0.017017,
+        "winless": 0.001001
+      },
+      "ranking": {
+        "undefeated": 0.08,
+        "one_loss": 0.2,
+        "advance": 0.42,
+        "eliminate": 0.22,
+        "one_win": 0.06,
+        "winless": 0.02
+      },
+      "expert": {
+        "undefeated": 0.035714,
+        "one_loss": 0.035714,
+        "advance": 0.821429,
+        "eliminate": 0.035714,
+        "one_win": 0.035714,
+        "winless": 0.035714
+      }
+    },
+    "Liquid": {
+      "model": {
+        "undefeated": 0.043,
+        "one_loss": 0.154,
+        "advance": 0.59,
+        "eliminate": 0.179,
+        "one_win": 0.028,
+        "winless": 0.006
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.65625,
+        "eliminate": 0.21875,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.065065,
+        "one_loss": 0.164164,
+        "advance": 0.489489,
+        "eliminate": 0.253253,
+        "one_win": 0.026026,
+        "winless": 0.002002
+      },
+      "ranking": {
+        "undefeated": 0.08,
+        "one_loss": 0.2,
+        "advance": 0.42,
+        "eliminate": 0.22,
+        "one_win": 0.06,
+        "winless": 0.02
+      },
+      "expert": {
+        "undefeated": 0.027778,
+        "one_loss": 0.25,
+        "advance": 0.638889,
+        "eliminate": 0.027778,
+        "one_win": 0.027778,
+        "winless": 0.027778
+      }
+    },
+    "1w": {
+      "model": {
+        "undefeated": 0.029,
+        "one_loss": 0.118,
+        "advance": 0.54,
+        "eliminate": 0.256,
+        "one_win": 0.046,
+        "winless": 0.01
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.09375,
+        "advance": 0.59375,
+        "eliminate": 0.21875,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.048,
+        "one_loss": 0.141,
+        "advance": 0.453,
+        "eliminate": 0.316,
+        "one_win": 0.038,
+        "winless": 0.004
+      },
+      "ranking": {
+        "undefeated": 0.03,
+        "one_loss": 0.1,
+        "advance": 0.35,
+        "eliminate": 0.35,
+        "one_win": 0.12,
+        "winless": 0.05
+      },
+      "expert": {
+        "undefeated": 0.1,
+        "one_loss": 0.3,
+        "advance": 0.3,
+        "eliminate": 0.1,
+        "one_win": 0.1,
+        "winless": 0.1
+      }
+    },
+    "Xtreme": {
+      "model": {
+        "undefeated": 0.012,
+        "one_loss": 0.052,
+        "advance": 0.385,
+        "eliminate": 0.428,
+        "one_win": 0.099,
+        "winless": 0.024
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.21875,
+        "eliminate": 0.65625,
+        "one_win": 0.03125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.022022,
+        "one_loss": 0.088088,
+        "advance": 0.335335,
+        "eliminate": 0.478478,
+        "one_win": 0.067067,
+        "winless": 0.009009
+      },
+      "ranking": {
+        "undefeated": 0.03,
+        "one_loss": 0.1,
+        "advance": 0.35,
+        "eliminate": 0.35,
+        "one_win": 0.12,
+        "winless": 0.05
+      },
+      "expert": {
+        "undefeated": 0.035714,
+        "one_loss": 0.035714,
+        "advance": 0.678571,
+        "eliminate": 0.178571,
+        "one_win": 0.035714,
+        "winless": 0.035714
+      }
+    },
+    "Yandex": {
+      "model": {
+        "undefeated": 0.008,
+        "one_loss": 0.048,
+        "advance": 0.378,
+        "eliminate": 0.44,
+        "one_win": 0.102,
+        "winless": 0.025
+      },
+      "analyst": {
+        "undefeated": 0.088235,
+        "one_loss": 0.735294,
+        "advance": 0.029412,
+        "eliminate": 0.088235,
+        "one_win": 0.029412,
+        "winless": 0.029412
+      },
+      "market": {
+        "undefeated": 0.237762,
+        "one_loss": 0.330669,
+        "advance": 0.391608,
+        "eliminate": 0.035964,
+        "one_win": 0.003996,
+        "winless": 0.0
+      },
+      "ranking": {
+        "undefeated": 0.18,
+        "one_loss": 0.28,
+        "advance": 0.4,
+        "eliminate": 0.1,
+        "one_win": 0.03,
+        "winless": 0.01
+      },
+      "expert": {
+        "undefeated": 0.083333,
+        "one_loss": 0.583333,
+        "advance": 0.083333,
+        "eliminate": 0.083333,
+        "one_win": 0.083333,
+        "winless": 0.083333
+      }
+    },
+    "Nigma": {
+      "model": {
+        "undefeated": 0.007,
+        "one_loss": 0.038,
+        "advance": 0.28,
+        "eliminate": 0.517,
+        "one_win": 0.123,
+        "winless": 0.035
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.09375,
+        "eliminate": 0.53125,
+        "one_win": 0.28125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.003,
+        "one_loss": 0.017,
+        "advance": 0.134,
+        "eliminate": 0.582,
+        "one_win": 0.217,
+        "winless": 0.047
+      },
+      "ranking": {
+        "undefeated": 0.01,
+        "one_loss": 0.05,
+        "advance": 0.2,
+        "eliminate": 0.4,
+        "one_win": 0.22,
+        "winless": 0.12
+      },
+      "expert": {
+        "undefeated": 0.035714,
+        "one_loss": 0.035714,
+        "advance": 0.035714,
+        "eliminate": 0.821429,
+        "one_win": 0.035714,
+        "winless": 0.035714
+      }
+    },
+    "OG": {
+      "model": {
+        "undefeated": 0.006,
+        "one_loss": 0.026,
+        "advance": 0.194,
+        "eliminate": 0.566,
+        "one_win": 0.162,
+        "winless": 0.046
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.03125,
+        "eliminate": 0.59375,
+        "one_win": 0.28125,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.0,
+        "one_loss": 0.004,
+        "advance": 0.044,
+        "eliminate": 0.419,
+        "one_win": 0.395,
+        "winless": 0.138
+      },
+      "ranking": {
+        "undefeated": 0.01,
+        "one_loss": 0.05,
+        "advance": 0.2,
+        "eliminate": 0.4,
+        "one_win": 0.22,
+        "winless": 0.12
+      },
+      "expert": {
+        "undefeated": 0.1,
+        "one_loss": 0.1,
+        "advance": 0.1,
+        "eliminate": 0.5,
+        "one_win": 0.1,
+        "winless": 0.1
+      }
+    },
+    "GamerLegion": {
+      "model": {
+        "undefeated": 0.004,
+        "one_loss": 0.021,
+        "advance": 0.159,
+        "eliminate": 0.598,
+        "one_win": 0.168,
+        "winless": 0.05
+      },
+      "analyst": {
+        "undefeated": 0.029412,
+        "one_loss": 0.029412,
+        "advance": 0.029412,
+        "eliminate": 0.205882,
+        "one_win": 0.558824,
+        "winless": 0.147059
+      },
+      "market": {
+        "undefeated": 0.0,
+        "one_loss": 0.001001,
+        "advance": 0.031031,
+        "eliminate": 0.363363,
+        "one_win": 0.436436,
+        "winless": 0.168168
+      },
+      "ranking": {
+        "undefeated": 0.01,
+        "one_loss": 0.05,
+        "advance": 0.2,
+        "eliminate": 0.4,
+        "one_win": 0.22,
+        "winless": 0.12
+      },
+      "expert": {
+        "undefeated": 0.083333,
+        "one_loss": 0.083333,
+        "advance": 0.083333,
+        "eliminate": 0.083333,
+        "one_win": 0.416667,
+        "winless": 0.25
+      }
+    },
+    "LGD": {
+      "model": {
+        "undefeated": 0.005,
+        "one_loss": 0.022,
+        "advance": 0.151,
+        "eliminate": 0.553,
+        "one_win": 0.201,
+        "winless": 0.068
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.09375,
+        "eliminate": 0.65625,
+        "one_win": 0.15625,
+        "winless": 0.03125
+      },
+      "market": {
+        "undefeated": 0.008,
+        "one_loss": 0.027,
+        "advance": 0.183,
+        "eliminate": 0.592,
+        "one_win": 0.163,
+        "winless": 0.027
+      },
+      "ranking": {
+        "undefeated": 0.005,
+        "one_loss": 0.02,
+        "advance": 0.1,
+        "eliminate": 0.35,
+        "one_win": 0.3,
+        "winless": 0.225
+      },
+      "expert": {
+        "undefeated": 0.1,
+        "one_loss": 0.1,
+        "advance": 0.1,
+        "eliminate": 0.5,
+        "one_win": 0.1,
+        "winless": 0.1
+      }
+    },
+    "HULIGANI": {
+      "model": {
+        "undefeated": 0.001,
+        "one_loss": 0.007,
+        "advance": 0.067,
+        "eliminate": 0.359,
+        "one_win": 0.34,
+        "winless": 0.225
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.03125,
+        "eliminate": 0.28125,
+        "one_win": 0.28125,
+        "winless": 0.34375
+      },
+      "market": {
+        "undefeated": 0.0,
+        "one_loss": 0.0,
+        "advance": 0.002,
+        "eliminate": 0.095,
+        "one_win": 0.34,
+        "winless": 0.563
+      },
+      "ranking": {
+        "undefeated": 0.005,
+        "one_loss": 0.02,
+        "advance": 0.1,
+        "eliminate": 0.35,
+        "one_win": 0.3,
+        "winless": 0.225
+      },
+      "expert": {
+        "undefeated": 0.1,
+        "one_loss": 0.1,
+        "advance": 0.1,
+        "eliminate": 0.1,
+        "one_win": 0.3,
+        "winless": 0.3
+      }
+    },
+    "Resilience": {
+      "model": {
+        "undefeated": 0.001,
+        "one_loss": 0.006,
+        "advance": 0.061,
+        "eliminate": 0.409,
+        "one_win": 0.347,
+        "winless": 0.176
+      },
+      "analyst": {
+        "undefeated": 0.03125,
+        "one_loss": 0.03125,
+        "advance": 0.03125,
+        "eliminate": 0.21875,
+        "one_win": 0.21875,
+        "winless": 0.46875
+      },
+      "market": {
+        "undefeated": 0.011,
+        "one_loss": 0.038,
+        "advance": 0.22,
+        "eliminate": 0.577,
+        "one_win": 0.133,
+        "winless": 0.021
+      },
+      "ranking": {
+        "undefeated": 0.005,
+        "one_loss": 0.02,
+        "advance": 0.1,
+        "eliminate": 0.35,
+        "one_win": 0.3,
+        "winless": 0.225
+      },
+      "expert": {
+        "undefeated": 0.1,
+        "one_loss": 0.1,
+        "advance": 0.1,
+        "eliminate": 0.1,
+        "one_win": 0.3,
+        "winless": 0.3
+      }
+    },
+    "Vici": {
+      "model": {
+        "undefeated": 0.001,
+        "one_loss": 0.004,
+        "advance": 0.042,
+        "eliminate": 0.282,
+        "one_win": 0.343,
+        "winless": 0.328
+      },
+      "analyst": {
+        "undefeated": 0.029412,
+        "one_loss": 0.147059,
+        "advance": 0.441176,
+        "eliminate": 0.323529,
+        "one_win": 0.029412,
+        "winless": 0.029412
+      },
+      "market": {
+        "undefeated": 0.016,
+        "one_loss": 0.059,
+        "advance": 0.284,
+        "eliminate": 0.535,
+        "one_win": 0.095,
+        "winless": 0.011
+      },
+      "ranking": {
+        "undefeated": 0.03,
+        "one_loss": 0.1,
+        "advance": 0.35,
+        "eliminate": 0.35,
+        "one_win": 0.12,
+        "winless": 0.05
+      },
+      "expert": {
+        "undefeated": 0.083333,
+        "one_loss": 0.25,
+        "advance": 0.083333,
+        "eliminate": 0.416667,
+        "one_win": 0.083333,
+        "winless": 0.083333
+      }
+    }
+  }
 }

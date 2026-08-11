@@ -1,28 +1,36 @@
 :root {
   --bg: #0d0b0a;
-  --bg-elev: rgba(22, 18, 14, 0.88);
-  --bg-soft: rgba(32, 26, 20, 0.92);
-  --bg-panel: rgba(18, 14, 11, 0.78);
-  --line: rgba(197, 160, 89, 0.28);
-  --line-strong: rgba(212, 175, 87, 0.55);
-  --text: #f3eee6;
-  --muted: #9a9084;
-  --muted-gold: #8e7c68;
-  --gold: #c5a059;
-  --gold-bright: #e8c878;
-  --gold-soft: #a67c2e;
-  --bronze: #7d653f;
+  --bg-elev: rgba(22, 18, 14, 0.9);
+  --bg-soft: rgba(32, 26, 20, 0.94);
+  --bg-panel: rgba(18, 14, 11, 0.84);
+  --line: rgba(212, 176, 94, 0.3);
+  --line-strong: rgba(232, 196, 106, 0.55);
+  --text: #f3e5c4;
+  /* Secondary copy: keep warm, but light enough to read on dark panels (was muddy #a39276). */
+  --muted: #c4b08a;
+  --muted-gold: #b8985e;
+  --gold: #d4b05e;
+  --gold-bright: #f0d089;
+  /* Headings lean gold vs body cream so titles separate from the field. */
+  --heading: #f6dfa0;
+  --heading-grad: linear-gradient(180deg, #fbe9c4 0%, #efd18a 48%, #d4b05e 100%);
+  --heading-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  --gold-soft: #b8893a;
+  --bronze: #9a7d4a;
   --teal: #6bad45;
   --cta: #4c782f;
   --cta-hi: #6bad45;
   --danger: #c45c48;
   --ok: #6bad45;
-  --warn: #c5a059;
+  --warn: #d4b05e;
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
   --radius: 4px;
-  --font: "Source Sans 3", "Segoe UI", sans-serif;
-  /* Clean geometric display — TI Predictions-style caps, not flared fantasy serif */
-  --display: "Outfit", "Segoe UI", sans-serif;
+  --font: "Noto Sans", "Segoe UI", sans-serif;
+  --display: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --stats: "Roboto", "Segoe UI", sans-serif;
+  --fw-body: 500;
+  --fw-ui: 600;
+  --fw-strong: 700;
   --sidebar-w: 15.5rem;
 }
 
@@ -32,11 +40,14 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font);
+  font-weight: var(--fw-body);
   color: var(--text);
   background:
-    radial-gradient(900px 520px at 42% 18%, rgba(197, 160, 89, 0.1), transparent 58%),
-    radial-gradient(700px 420px at 88% 80%, rgba(76, 120, 47, 0.07), transparent 50%),
-    linear-gradient(180deg, #15110e 0%, var(--bg) 42%, #090807 100%);
+    radial-gradient(1100px 640px at 38% 12%, rgba(197, 160, 89, 0.16), transparent 55%),
+    radial-gradient(820px 520px at 92% 28%, rgba(90, 61, 24, 0.22), transparent 52%),
+    radial-gradient(760px 480px at 78% 88%, rgba(76, 120, 47, 0.1), transparent 48%),
+    radial-gradient(640px 420px at 8% 72%, rgba(125, 101, 63, 0.14), transparent 50%),
+    linear-gradient(165deg, #1a1410 0%, #12100d 28%, var(--bg) 58%, #080706 100%);
   line-height: 1.5;
 }
 
@@ -45,32 +56,110 @@ body {
   position: fixed;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
+}
+/* Full-bleed TI ambient plane: mild blur + veil so photo texture reads, Valve marks stay non-brand */
+.atmosphere-photo {
+  position: absolute;
+  inset: -4%;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.atmosphere-photo--scene {
+  background-image: url("../img/ti2026-atmosphere.jpg");
+  background-position: 50% 42%;
+  opacity: 0.34;
+  filter: blur(4px) saturate(0.88) brightness(0.58);
+  transform: scale(1.06);
+}
+.atmosphere-photo--carpet {
+  background-image: url("../img/ti2026-carpet-texture.jpg");
+  background-position: 18% 88%;
+  background-size: cover;
+  opacity: 0.24;
+  filter: blur(3px) brightness(0.52) contrast(1.08);
+  mix-blend-mode: soft-light;
+}
+.atmosphere-photo--gold {
+  /* Embroidered gold as soft glow only; heavy blur keeps logo from reading as brand mark */
+  background-image: url("../img/ti2026-ref-aegis.jpg");
+  background-position: 72% 28%;
+  background-size: 78% auto;
+  opacity: 0.11;
+  filter: blur(32px) brightness(0.42) saturate(1.15);
+  mix-blend-mode: screen;
+  transform: scale(1.2);
+}
+.atmosphere-photo-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(165deg, rgba(10, 8, 6, 0.64) 0%, rgba(10, 8, 6, 0.36) 38%, rgba(8, 6, 5, 0.55) 100%),
+    radial-gradient(ellipse 78% 68% at 48% 36%, transparent 22%, rgba(8, 6, 5, 0.62) 100%);
+}
+.haze {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(232, 200, 120, 0.09), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 15% 85%, rgba(166, 124, 46, 0.08), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 60%, rgba(76, 120, 47, 0.05), transparent 68%);
+  animation: haze-breathe 22s ease-in-out infinite;
+}
+.mesh {
+  position: absolute;
+  inset: 0;
+  opacity: 0.045;
+  background-image:
+    linear-gradient(rgba(197, 160, 89, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(197, 160, 89, 0.28) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, #000 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, #000 20%, transparent 78%);
+}
+.vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 85% 75% at 50% 42%, transparent 35%, rgba(8, 6, 5, 0.55) 100%),
+    linear-gradient(180deg, rgba(8, 6, 5, 0.25) 0%, transparent 18%, transparent 78%, rgba(8, 6, 5, 0.45) 100%);
 }
 .noise {
   position: absolute;
   inset: 0;
-  opacity: 0.045;
+  opacity: 0.07;
+  mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .glow {
   position: absolute;
-  width: 42vw;
-  height: 42vw;
+  width: 46vw;
+  height: 46vw;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.16;
+  filter: blur(100px);
+  opacity: 0.2;
 }
-.glow-a { top: -12%; left: -10%; background: #c5a059; animation: drift 16s ease-in-out infinite; }
-.glow-b { bottom: 8%; right: -14%; background: #5a3d18; animation: drift 20s ease-in-out infinite reverse; }
+.glow-a { top: -14%; left: -12%; background: #c5a059; animation: drift 18s ease-in-out infinite; }
+.glow-b { bottom: 4%; right: -16%; width: 40vw; height: 40vw; background: #5a3d18; opacity: 0.24; animation: drift 24s ease-in-out infinite reverse; }
+.glow-c {
+  top: 42%;
+  left: 48%;
+  width: 28vw;
+  height: 28vw;
+  background: #3d5c28;
+  opacity: 0.12;
+  animation: drift 28s ease-in-out infinite;
+}
 .embers {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 20% 70%, rgba(232, 200, 120, 0.12) 0 1px, transparent 2px),
-    radial-gradient(circle at 70% 40%, rgba(232, 200, 120, 0.08) 0 1px, transparent 2px),
-    radial-gradient(circle at 85% 75%, rgba(232, 200, 120, 0.1) 0 1.5px, transparent 3px);
-  background-size: 180px 180px, 240px 240px, 140px 140px;
-  opacity: 0.55;
+    radial-gradient(circle at 18% 72%, rgba(232, 200, 120, 0.16) 0 1px, transparent 2px),
+    radial-gradient(circle at 62% 38%, rgba(232, 200, 120, 0.1) 0 1px, transparent 2px),
+    radial-gradient(circle at 84% 78%, rgba(232, 200, 120, 0.14) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 40% 22%, rgba(197, 160, 89, 0.1) 0 1px, transparent 2.5px);
+  background-size: 180px 180px, 240px 240px, 140px 140px, 200px 200px;
+  opacity: 0.7;
   animation: ember-drift 28s linear infinite;
 }
 
@@ -79,8 +168,20 @@ body {
   50% { transform: translate(3%, -2%) scale(1.06); }
 }
 @keyframes ember-drift {
-  from { background-position: 0 0, 0 0, 0 0; }
-  to { background-position: 40px -60px, -30px 50px, 20px -40px; }
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to { background-position: 40px -60px, -30px 50px, 20px -40px, -25px 35px; }
+}
+@keyframes haze-breathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .haze,
+  .glow-a,
+  .glow-b,
+  .glow-c,
+  .embers { animation: none; }
 }
 @keyframes rise {
   from { opacity: 0; transform: translateY(12px); }
@@ -124,51 +225,44 @@ body {
 }
 .brand-aegis {
   flex-shrink: 0;
-  width: 3.1rem;
-  height: 3.1rem;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  color: #1a1206;
-  background:
-    radial-gradient(circle at 35% 30%, #f0d78a, #c5a059 45%, #7a5618 100%);
-  border: 1px solid var(--gold-bright);
-  box-shadow: 0 0 20px rgba(197, 160, 89, 0.35);
+  width: 4.25rem;
+  height: 4.25rem;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+.brand-copy {
+  min-width: 0;
 }
 .brand-kicker {
   margin: 0;
   font-size: 0.68rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-gold);
-}
-.brand-script {
-  margin: 0.1rem 0 0;
-  font-family: var(--display);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--gold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  line-height: 1.25;
 }
 .brand-title {
-  margin: 0.12rem 0 0;
+  margin: 0.18rem 0 0;
   font-family: var(--display);
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--heading);
+  text-shadow: var(--heading-shadow);
   line-height: 1.2;
 }
 
 .nav-group-label {
   margin: 0.85rem 0 0.35rem;
   font-size: 0.68rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--bronze);
@@ -182,6 +276,7 @@ body {
   color: var(--muted-gold);
   text-decoration: none;
   font-size: 0.92rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 0.45rem 0.55rem;
@@ -196,7 +291,6 @@ body {
 .side-nav a[aria-current="page"] {
   color: var(--gold-bright);
   border-left-color: var(--gold);
-  text-shadow: 0 0 12px rgba(232, 200, 120, 0.35);
 }
 .nav-github { color: var(--gold) !important; }
 
@@ -296,14 +390,14 @@ body {
 
 .app-main {
   min-width: 0;
-  padding: 1.25rem clamp(1rem, 3vw, 2.25rem) 5rem;
+  padding: 1.5rem clamp(1rem, 3vw, 2.25rem) 5.5rem;
   animation: rise 0.55s ease both;
 }
 
 .topbar {
   display: block;
-  margin-bottom: 0.85rem;
-  padding-bottom: 0.85rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.15rem;
   border-bottom: 1px solid var(--line);
   max-width: 40rem;
 }
@@ -313,23 +407,34 @@ body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 .page-title {
   margin: 0 0 0.4rem;
   font-family: var(--display);
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  font-weight: 700;
+  font-size: clamp(2.2rem, 4.4vw, 3.05rem);
+  font-weight: var(--fw-strong);
   line-height: 1.05;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--heading);
+  text-shadow: var(--heading-shadow);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .page-title {
+    background-image: var(--heading-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: none;
+  }
 }
 .page-lead {
   margin: 0;
   color: var(--muted);
   font-size: 0.95rem;
-  line-height: 1.4;
+  font-weight: var(--fw-body);
+  line-height: 1.55;
 }
 
 .topbar-note {
@@ -384,7 +489,7 @@ body {
   position: relative;
   background: var(--bg-elev);
   border: 1px solid var(--line);
-  padding: 1.05rem 1.15rem;
+  padding: 1.35rem 1.4rem;
   box-shadow: var(--shadow);
 }
 .hero-card::before,
@@ -402,6 +507,7 @@ body {
 .card-label {
   margin: 0 0 0.45rem;
   font-size: 0.72rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gold);
@@ -420,10 +526,13 @@ body {
   padding: 0.35rem 0.7rem;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
+  font-family: var(--stats);
   font-size: 0.82rem;
+  font-weight: var(--fw-body);
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
-.chip strong { color: var(--text); font-weight: 600; }
+.chip strong { color: var(--text); font-weight: var(--fw-ui); }
 .chip.mini {
   font-size: 0.68rem;
   padding: 0.1rem 0.35rem;
@@ -432,36 +541,46 @@ body {
   border-color: rgba(197, 160, 89, 0.4);
 }
 .fallback-banner {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
+  margin: 0 0 1.35rem;
+  padding: 0.85rem 1.15rem;
   border: 1px solid rgba(197, 160, 89, 0.55);
   background: rgba(197, 160, 89, 0.1);
   color: var(--gold-bright);
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 
-.section { padding: 1.75rem 0 0.5rem; }
-.section-head { margin-bottom: 1rem; }
+.section { padding: 2.75rem 0 1rem; }
+.section-head { margin-bottom: 1.5rem; padding-bottom: 0.15rem; }
 .section-head.row {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: end;
   flex-wrap: wrap;
 }
 .section-head h3,
 .section-head h4 {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.5rem;
   font-family: var(--display);
-  font-size: clamp(1.2rem, 2.2vw, 1.45rem);
-  font-weight: 700;
+  font-size: clamp(1.35rem, 2.4vw, 1.6rem);
+  font-weight: var(--fw-strong);
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--heading);
+  text-shadow: var(--heading-shadow);
 }
-.section-head h4 { font-size: 1.05rem; font-weight: 600; color: var(--gold); }
-.section-head p { margin: 0; color: var(--muted); }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .section-head h3 {
+    background-image: var(--heading-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: none;
+  }
+}
+.section-head h4 { font-size: 1.15rem; font-weight: var(--fw-ui); }
+.section-head p { margin: 0; color: var(--muted); font-weight: var(--fw-body); line-height: 1.55; }
 .section-head a {
   color: var(--gold);
   text-decoration: underline;
@@ -470,21 +589,21 @@ body {
 
 /* Mode / strategy panel */
 .mode-panel {
-  margin: 0 0 1.25rem;
-  padding: 1rem 1.1rem 1.15rem;
+  margin: 0 0 1.85rem;
+  padding: 1.35rem 1.4rem 1.5rem;
   border: 1px solid var(--line-strong);
   background:
     linear-gradient(180deg, rgba(197, 160, 89, 0.08), transparent 42%),
     var(--bg-panel);
-  box-shadow: 0 0 28px rgba(197, 160, 89, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .mode-panel-head {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.15rem;
   flex-wrap: wrap;
   align-items: start;
-  margin-bottom: 0.9rem;
+  margin-bottom: 1.2rem;
 }
 .mode-panel-label {
   margin: 0 0 0.25rem;
@@ -505,7 +624,9 @@ body {
   border: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.28);
   color: var(--text);
+  font-family: var(--stats);
   font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
   max-width: 28rem;
 }
 .mode-current strong { color: var(--gold-bright); }
@@ -513,8 +634,8 @@ body {
 .mode-groups {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
-  margin-bottom: 0.75rem;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 .mode-group {
   appearance: none;
@@ -539,11 +660,12 @@ body {
 .mode-group .mode-group-title {
   display: block;
   font-family: var(--display);
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--heading);
+  text-shadow: var(--heading-shadow);
   margin-bottom: 0.25rem;
 }
 .mode-group.active .mode-group-title { color: var(--gold-bright); }
@@ -565,6 +687,7 @@ body {
   appearance: none;
   font: inherit;
   font-size: 0.82rem;
+  font-weight: var(--fw-ui);
   padding: 0.4rem 0.75rem;
   border: 1px solid rgba(197, 160, 89, 0.35);
   background: rgba(0, 0, 0, 0.25);
@@ -635,17 +758,16 @@ body {
   background: rgba(197, 160, 89, 0.14);
   box-shadow: 0 0 12px rgba(197, 160, 89, 0.22);
 }
-.fusion-advanced {
-  margin: 0.35rem 0 0;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 0.45rem 0.75rem 0.65rem;
+.fusion-custom-panel {
+  margin-top: 0.75rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(197, 160, 89, 0.18);
 }
-.fusion-advanced summary {
-  cursor: pointer;
-  color: var(--gold);
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
+.fusion-custom-hint {
+  margin: 0 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 .fusion-sliders {
   display: grid;
@@ -666,6 +788,8 @@ body {
 }
 .fusion-slider-eff {
   font-size: 0.75rem;
+  font-family: var(--stats);
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
 .fusion-slider-row input[type="range"] {
@@ -674,7 +798,9 @@ body {
 }
 .fusion-score {
   margin: 0.75rem 0 0;
+  font-family: var(--stats);
   font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
 .fusion-score strong { color: var(--gold-bright); }
 .market-disclaimer {
@@ -686,24 +812,26 @@ body {
 /* Swiss board — Predictions grid (emblem-first, large cards) */
 .swiss-board {
   display: grid;
-  gap: 0.75rem;
+  gap: 1.15rem;
 }
 .swiss-row {
   display: grid;
-  grid-template-columns: minmax(7.5rem, 0.82fr) minmax(10rem, 1.1fr) minmax(0, 2.35fr);
-  gap: 0.45rem;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.1fr) minmax(0, 2.35fr);
+  gap: 0.75rem;
   align-items: start;
 }
 .swiss-row.elim-row {
-  grid-template-columns: minmax(0, 2.35fr) minmax(10rem, 1.1fr) minmax(7.5rem, 0.82fr);
+  grid-template-columns: minmax(0, 2.35fr) minmax(0, 1.1fr) minmax(0, 0.82fr);
 }
 .board-col {
   position: relative;
   background: var(--bg-panel);
   border: 1px solid var(--line);
-  padding: 0.45rem 0.35rem 0.5rem;
+  padding: 0.7rem 0.55rem 0.8rem;
+  min-width: 0;
   min-height: 0;
   height: fit-content;
+  overflow: hidden;
 }
 .board-col::before,
 .board-col::after {
@@ -725,14 +853,19 @@ body {
   border-width: 0 1px 1px 0;
 }
 .board-col h4 {
-  margin: 0 0 0.45rem;
-  font-size: 0.72rem;
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted-gold);
+  color: var(--heading);
+  text-shadow: var(--heading-shadow);
   text-align: center;
   border-bottom: 1px solid rgba(197, 160, 89, 0.18);
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .board-col.ok { border-color: rgba(107, 173, 69, 0.35); }
 .board-col.warn { border-color: rgba(197, 160, 89, 0.4); }
@@ -741,23 +874,30 @@ body {
 .team-slots {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.4rem;
   justify-content: center;
+  align-content: flex-start;
 }
 .team-mark {
-  width: 6.55rem;
-  min-height: 0;
+  box-sizing: border-box;
+  /* Fixed width: TI roster labels up to ~"Xtreme Gaming" / "BetBoom Team". */
+  width: 10.5rem;
+  min-width: 10.5rem;
+  max-width: 10.5rem;
+  min-height: 8.75rem;
+  flex: 0 0 10.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   gap: 0.18rem;
-  padding: 0.35rem 0.28rem 0.4rem;
+  padding: 0.35rem 0.45rem 0.4rem;
   border: 1px solid rgba(197, 160, 89, 0.28);
   background:
     linear-gradient(180deg, rgba(40, 32, 24, 0.85), rgba(14, 11, 9, 0.92));
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: default;
+  overflow: hidden;
 }
 .team-mark:hover {
   transform: translateY(-2px);
@@ -780,32 +920,60 @@ body {
   place-items: center;
   font-family: var(--display);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--fw-strong);
   color: var(--gold-bright);
   background: rgba(197, 160, 89, 0.12);
   border: 1px solid var(--line);
 }
 .team-logo.sm.logo-fallback { font-size: 0.62rem; }
 .team-mark .name {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  min-width: 0;
   font-size: 0.74rem;
-  font-weight: 700;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.03em;
   text-transform: uppercase;
   text-align: center;
   line-height: 1.15;
   color: var(--text);
 }
+.team-mark .name-text {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-mark .name .chip {
+  flex-shrink: 0;
+  margin-left: 0;
+}
 .team-mark .meta {
+  width: 100%;
+  font-family: var(--stats);
   font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
   text-align: center;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .team-mark .prob {
+  font-family: var(--stats);
   font-size: 0.72rem;
   color: var(--gold-bright);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 
 .team-pill {
@@ -823,9 +991,9 @@ body {
   transform: translateY(-2px);
   border-color: var(--line);
 }
-.team-pill .name { font-weight: 600; }
+.team-pill .name { font-weight: var(--fw-ui); }
 .team-pill .meta { color: var(--muted); font-size: 0.8rem; }
-.team-pill .prob { color: var(--gold); font-variant-numeric: tabular-nums; font-weight: 600; }
+.team-pill .prob { font-family: var(--stats); color: var(--gold); font-variant-numeric: tabular-nums; font-weight: var(--fw-ui); }
 
 .team-cell-with-logo {
   display: flex;
@@ -875,6 +1043,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   min-width: 720px;
+  font-family: var(--stats);
 }
 .standings th,
 .standings td {
@@ -888,18 +1057,20 @@ body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-gold);
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 .standings tbody tr { transition: background 0.15s ease; }
 .standings tbody tr:hover { background: rgba(197, 160, 89, 0.05); }
-.standings .team-cell { font-weight: 600; }
-.standings .sub { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+.standings .team-cell { font-weight: var(--fw-ui); }
+.standings .sub { display: block; color: var(--muted); font-size: 0.8rem; font-weight: var(--fw-body); }
 
 .bar {
   display: grid;
   grid-template-columns: 52px 1fr;
   gap: 0.5rem;
   align-items: center;
+  font-family: var(--stats);
+  font-variant-numeric: tabular-nums;
 }
 .bar-track {
   height: 7px;
@@ -917,9 +1088,9 @@ body {
 .matchup {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  gap: 1rem;
+  gap: 1.15rem;
   align-items: end;
-  margin-bottom: 1rem;
+  margin-bottom: 1.35rem;
 }
 .matchup-pick label {
   display: block;
@@ -930,7 +1101,7 @@ body {
 .matchup-pick select { width: 100%; }
 .matchup-vs {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: var(--fw-strong);
   color: var(--gold);
   padding-bottom: 0.65rem;
   letter-spacing: 0.04em;
@@ -938,7 +1109,7 @@ body {
 .matchup-result {
   border: 1px solid var(--line);
   background: var(--bg-elev);
-  padding: 1.15rem;
+  padding: 1.4rem 1.35rem;
 }
 .duel {
   display: grid;
@@ -948,10 +1119,11 @@ body {
 }
 .duel-side { text-align: center; }
 .duel-side .pct {
-  font-family: var(--display);
+  font-family: var(--stats);
   font-size: clamp(1.8rem, 4vw, 2.7rem);
-  font-weight: 700;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .duel-bar {
   height: 12px;
@@ -966,20 +1138,21 @@ body {
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
-  gap: 0.75rem;
+  gap: 1.15rem;
 }
 .metric {
   background: var(--bg-elev);
   border: 1px solid var(--line);
-  padding: 1rem 1.05rem;
+  padding: 1.25rem 1.25rem;
 }
 .metric .label { color: var(--muted); font-size: 0.78rem; margin: 0 0 0.3rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .metric .value {
   margin: 0;
-  font-family: var(--display);
+  font-family: var(--stats);
   font-size: 1.45rem;
-  font-weight: 700;
+  font-weight: var(--fw-strong);
   color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
 }
 .metric .hint { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
 .metric .note {
@@ -991,21 +1164,22 @@ body {
 .how-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: 1.15rem;
 }
 .how-card {
   background: var(--bg-elev);
   border: 1px solid var(--line);
-  padding: 1rem 1.05rem;
+  padding: 1.3rem 1.25rem;
 }
 .how-card h4 {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.55rem;
   font-family: var(--display);
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--heading);
+  text-shadow: var(--heading-shadow);
 }
 .how-card p {
   margin: 0;
@@ -1013,16 +1187,16 @@ body {
   font-size: 0.9rem;
   line-height: 1.45;
 }
-.how-card strong { color: var(--text); font-weight: 600; }
+.how-card strong { color: var(--text); font-weight: var(--fw-ui); }
 .how-details {
-  margin-top: 1.1rem;
+  margin-top: 1.5rem;
   border: 1px solid var(--line);
   background: var(--bg-elev);
-  padding: 0.8rem 1.05rem;
+  padding: 1rem 1.25rem;
 }
 .how-details summary {
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--fw-ui);
   color: var(--text);
 }
 .how-details ul {
@@ -1037,16 +1211,18 @@ body {
 }
 
 .strength-cell {
+  font-family: var(--stats);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--gold);
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 
 .heatmap-wrap { overflow-x: auto; }
 .heatmap {
   width: 100%;
   border-collapse: collapse;
+  font-family: var(--stats);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
 }
@@ -1058,22 +1234,22 @@ body {
 .heatmap thead th {
   background: var(--bg-soft);
   color: var(--muted-gold);
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 .heatmap tbody th {
   text-align: left;
   background: rgba(14, 11, 9, 0.85);
-  font-weight: 600;
+  font-weight: var(--fw-ui);
 }
 .heatmap td { transition: background 0.2s ease; }
 
-.rules-page { padding-top: 2rem; }
-.rules-disclaimer-card { margin: 0 0 1.25rem; max-width: 42rem; }
-.rules-section { padding-top: 1.35rem; }
+.rules-page { padding-top: 2.5rem; }
+.rules-disclaimer-card { margin: 0 0 1.65rem; max-width: 42rem; }
+.rules-section { padding-top: 1.85rem; }
 .rules-official { margin: 0.75rem 0 0; }
 .rules-official a {
   color: var(--gold);
-  font-weight: 600;
+  font-weight: var(--fw-ui);
   text-decoration: none;
   border-bottom: 1px solid rgba(197, 160, 89, 0.35);
 }
@@ -1103,6 +1279,14 @@ body {
   border-top: 1px solid var(--line);
   margin-top: 2rem;
 }
+.footer-attribution {
+  margin: 0.65rem 0 0.35rem;
+  max-width: 62ch;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--muted);
+  opacity: 0.88;
+}
 .footer-nav {
   display: flex;
   flex-wrap: wrap;
@@ -1122,21 +1306,22 @@ body {
   margin: 0 0 1.1rem;
   width: 100%;
   max-width: none;
-  padding: 0.55rem 0 0.65rem;
+  padding: 0.65rem 0 0.75rem;
   border-bottom: 1px solid rgba(197, 160, 89, 0.22);
 }
 .other-projects-label {
-  margin: 0 0 0.4rem;
-  font-size: 0.78rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold);
-  font-weight: 600;
+  font-weight: var(--fw-ui);
+  line-height: 1.3;
 }
 .other-projects-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem 0.85rem;
+  gap: 0.65rem 0.85rem;
 }
 @media (max-width: 640px) {
   .other-projects-grid {
@@ -1146,9 +1331,9 @@ body {
 .project-banner {
   display: flex;
   flex-direction: column;
-  gap: 0.12rem;
+  gap: 0.18rem;
   min-width: 0;
-  padding: 0.45rem 0.65rem;
+  padding: 0.55rem 0.75rem;
   text-decoration: none;
   color: inherit;
   background: linear-gradient(135deg, rgba(32, 26, 20, 0.92), rgba(18, 14, 11, 0.82));
@@ -1169,17 +1354,18 @@ body {
 }
 .project-banner-name {
   font-family: var(--display);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: var(--fw-ui);
   letter-spacing: 0.03em;
+  line-height: 1.3;
   color: var(--gold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .project-banner-desc {
-  font-size: 0.72rem;
-  line-height: 1.35;
+  font-size: 0.82rem;
+  line-height: 1.4;
   color: var(--muted);
   white-space: normal;
   overflow: visible;
@@ -1205,7 +1391,7 @@ body {
   padding: 0.85rem 1.35rem;
   background: linear-gradient(180deg, var(--cta-hi), var(--cta));
   color: #f4fff0;
-  font-weight: 700;
+  font-weight: var(--fw-strong);
   font-size: 0.92rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1262,20 +1448,46 @@ body {
   .lang-switch { width: auto; min-width: 11rem; }
   .lang-switch-list { bottom: auto; top: calc(100% + 0.35rem); }
   .topbar { max-width: none; }
+  .section { padding: 2.15rem 0 0.85rem; }
+  .section-head { margin-bottom: 1.25rem; }
+  .mode-panel {
+    margin-bottom: 1.5rem;
+    padding: 1.2rem 1.15rem 1.3rem;
+  }
+  .swiss-board { gap: 1rem; }
+  .swiss-row { gap: 0.65rem; }
   .mode-groups { grid-template-columns: 1fr; }
-  .how-grid { grid-template-columns: 1fr 1fr; }
+  .how-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .metrics { gap: 1rem; }
   .rules-grid { grid-template-columns: 1fr; }
   .matchup { grid-template-columns: 1fr; }
   .matchup-vs { text-align: center; padding: 0; }
 }
 
 @media (max-width: 560px) {
+  .app-main { padding: 1.25rem 1rem 5rem; }
+  .section { padding: 1.85rem 0 0.7rem; }
+  .section-head { margin-bottom: 1.1rem; }
+  .mode-panel {
+    margin-bottom: 1.35rem;
+    padding: 1.1rem 1rem 1.2rem;
+  }
+  .hero-card { padding: 1.15rem 1.1rem; }
+  .board-col { padding: 0.6rem 0.45rem 0.7rem; }
   .swiss-row,
   .swiss-row.elim-row { grid-template-columns: 1fr; }
   .metrics,
-  .how-grid { grid-template-columns: 1fr; }
+  .how-grid { grid-template-columns: 1fr; gap: 0.9rem; }
+  .metric,
+  .how-card { padding: 1.15rem 1.1rem; }
   .other-projects-grid { grid-template-columns: 1fr; }
-  .team-mark { width: 5.7rem; }
+  .team-mark {
+    width: 9.5rem;
+    min-width: 9.5rem;
+    max-width: 9.5rem;
+    flex-basis: 9.5rem;
+    min-height: 8.25rem;
+  }
   .team-logo { width: 3.75rem; height: 3.75rem; }
   .team-logo.sm { width: 2.35rem; height: 2.35rem; }
   .team-mark .prob { font-size: 0.68rem; }
