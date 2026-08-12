@@ -69,6 +69,108 @@ def _series_winner(
     return team_a if wins_a > wins_b else team_b
 
 
+def _apply_series_result(
+    state: SwissState,
+    team_a: str,
+    team_b: str,
+    winner: str,
+    config: SwissConfig,
+) -> None:
+    """Update records / history / qualify-elim after one series."""
+    if winner not in (team_a, team_b):
+        raise ValueError(f"winner {winner!r} not in pair ({team_a}, {team_b})")
+    loser = team_b if winner == team_a else team_a
+    w_w, w_l = state.records[winner]
+    l_w, l_l = state.records[loser]
+    state.records[winner] = (w_w + 1, w_l)
+    state.records[loser] = (l_w, l_l + 1)
+    state.match_history.append((team_a, team_b, winner))
+    if state.records[winner][0] >= config.wins_to_qualify:
+        state.qualified.add(winner)
+    if state.records[loser][1] >= config.losses_to_eliminate:
+        state.eliminated.add(loser)
+
+
+def _refresh_qualify_elim(state: SwissState, config: SwissConfig) -> None:
+    """Recompute qualified / eliminated sets from records."""
+    for team in state.teams:
+        w, l = state.records[team]
+        if w >= config.wins_to_qualify:
+            state.qualified.add(team)
+        elif l >= config.losses_to_eliminate:
+            state.eliminated.add(team)
+
+
+def _pair_key(a: str, b: str) -> tuple[str, str]:
+    """Canonical unordered pair key for known winners."""
+    return (a, b) if a <= b else (b, a)
+
+
+def extract_fixed_round_inputs(
+    series: list[dict],
+) -> tuple[
+    dict[int, list[tuple[str, str]]],
+    dict[int, dict[tuple[str, str], str]],
+]:
+    """Parse ``ti2026_swiss_results`` series into MC fixed-round inputs.
+
+    Returns ``(pairings_by_round, winners_by_round)`` with 1-based rounds.
+    Scheduled series contribute pairings only; completed series also pin winners.
+    """
+    pairings: dict[int, list[tuple[str, str]]] = defaultdict(list)
+    winners: dict[int, dict[tuple[str, str], str]] = defaultdict(dict)
+    for row in series:
+        try:
+            round_num = int(row["round"])
+            team_a = str(row["team_a"])
+            team_b = str(row["team_b"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"invalid swiss series row: {row!r}") from exc
+        pairings[round_num].append((team_a, team_b))
+        winner = row.get("winner")
+        status = str(row.get("status") or "").lower()
+        if winner and status in {"completed", "final", "played"}:
+            winners[round_num][_pair_key(team_a, team_b)] = str(winner)
+        elif winner and status == "scheduled":
+            # Ignore premature winner on scheduled rows.
+            pass
+    return dict(pairings), dict(winners)
+
+
+def simulate_fixed_pairings_round(
+    state: SwissState,
+    win_matrix: pd.DataFrame,
+    rng: np.random.Generator,
+    config: SwissConfig,
+    pairings: list[tuple[str, str]],
+    known_winners: dict[tuple[str, str], str] | None = None,
+) -> SwissState:
+    """Resolve a round from explicit pairings (scheduled or completed).
+
+    ``known_winners`` keys are frozenset-normalized via sorted tuple
+    ``(min(a,b), max(a,b))`` → winner id. Missing entries are sampled from
+    the win matrix (Bo3).
+    """
+    known = known_winners or {}
+    seen: set[str] = set()
+    for team_a, team_b in pairings:
+        if team_a in seen or team_b in seen:
+            raise ValueError(f"team appears twice in fixed pairings: {team_a}/{team_b}")
+        if team_a not in state.teams or team_b not in state.teams:
+            raise ValueError(f"unknown team in pairing: {team_a} vs {team_b}")
+        seen.add(team_a)
+        seen.add(team_b)
+
+        key = (team_a, team_b) if team_a <= team_b else (team_b, team_a)
+        winner = known.get(key)
+        if winner is None:
+            winner = _series_winner(team_a, team_b, win_matrix, rng)
+        _apply_series_result(state, team_a, team_b, winner, config)
+
+    _refresh_qualify_elim(state, config)
+    return state
+
+
 def simulate_swiss_round(
     state: SwissState,
     win_matrix: pd.DataFrame,
@@ -105,13 +207,7 @@ def simulate_swiss_round(
             opponent = rng.choice(pool)
 
             winner = _series_winner(team_a, opponent, win_matrix, rng)
-            loser = opponent if winner == team_a else team_a
-
-            w_w, w_l = state.records[winner]
-            l_w, l_l = state.records[loser]
-            state.records[winner] = (w_w + 1, w_l)
-            state.records[loser] = (l_w, l_l + 1)
-            state.match_history.append((team_a, opponent, winner))
+            _apply_series_result(state, team_a, opponent, winner, config)
 
             paired_this_round.add(team_a)
             paired_this_round.add(opponent)
@@ -120,13 +216,7 @@ def simulate_swiss_round(
         # Odd leftover in a record bucket gets an implicit bye this round
         # (no auto-win recorded). Intentional MC simplification vs real Swiss.
 
-    for team in state.teams:
-        w, l = state.records[team]
-        if w >= config.wins_to_qualify:
-            state.qualified.add(team)
-        elif l >= config.losses_to_eliminate:
-            state.eliminated.add(team)
-
+    _refresh_qualify_elim(state, config)
     return state
 
 
@@ -245,11 +335,18 @@ def simulate_swiss_stage(
     *,
     team_strengths: dict[str, dict] | None = None,
     sample_uncertainty: bool = False,
+    fixed_round_pairings: dict[int, list[tuple[str, str]]] | None = None,
+    fixed_round_winners: dict[int, dict[tuple[str, str], str]] | None = None,
 ) -> pd.DataFrame:
     """Run Swiss + Elimination Round Monte Carlo.
 
     When ``sample_uncertainty`` and ``team_strengths`` are set, each simulation
     draws latent strengths (Glicko RD / σ) and adjusts P(win) before pairing.
+
+    ``fixed_round_pairings`` maps 1-based round index → explicit (team_a, team_b)
+    list. Those rounds skip same-record shuffle; unresolved winners are sampled
+    from the (possibly uncertainty-adjusted) win matrix. Optional
+    ``fixed_round_winners`` pins completed series outcomes.
     """
     if config is None:
         config = SwissConfig()
@@ -261,6 +358,8 @@ def simulate_swiss_stage(
     eliminated_counts: dict[str, int] = defaultdict(int)
     er_advance_counts: dict[str, int] = defaultdict(int)
     er_elim_counts: dict[str, int] = defaultdict(int)
+    fixed_pairings = fixed_round_pairings or {}
+    fixed_winners = fixed_round_winners or {}
 
     for _ in range(n_simulations):
         state = SwissState(teams=list(team_ids))
@@ -268,7 +367,7 @@ def simulate_swiss_stage(
         if sample_uncertainty and team_strengths:
             matrix = sample_strength_adjusted_matrix(win_matrix, team_strengths, rng)
 
-        for _round in range(config.n_rounds):
+        for round_i in range(config.n_rounds):
             active = [
                 t
                 for t in state.teams
@@ -276,7 +375,18 @@ def simulate_swiss_stage(
             ]
             if len(active) < 2:
                 break
-            state = simulate_swiss_round(state, matrix, rng, config)
+            round_num = round_i + 1
+            if round_num in fixed_pairings:
+                state = simulate_fixed_pairings_round(
+                    state,
+                    matrix,
+                    rng,
+                    config,
+                    fixed_pairings[round_num],
+                    known_winners=fixed_winners.get(round_num),
+                )
+            else:
+                state = simulate_swiss_round(state, matrix, rng, config)
 
         er_pool = [
             t

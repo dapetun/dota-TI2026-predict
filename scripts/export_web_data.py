@@ -24,6 +24,7 @@ from src.simulation.tournament_sim import (
     FANTASY_BOARD_SLOTS,
     SwissConfig,
     assign_fantasy_board,
+    extract_fixed_round_inputs,
     simulate_swiss_stage,
 )
 from src.ti2026.analyst_consensus import (
@@ -458,6 +459,49 @@ def _meta_warnings(model_metrics: dict, *, is_fallback: bool) -> list[str]:
     return warnings
 
 
+def load_swiss_live_inputs(
+    path: Path | None = None,
+    *,
+    team_ids: list[str] | None = None,
+) -> tuple[str, dict | None, dict[int, list[tuple[str, str]]], dict[int, dict[tuple[str, str], str]]]:
+    """Load GS live file → phase, raw meta, fixed pairings, known winners."""
+    swiss_path = path or (BASE_DIR / "data" / "ti2026_swiss_results.json")
+    phase = "pre_gs_snapshot"
+    meta: dict | None = None
+    pairings: dict[int, list[tuple[str, str]]] = {}
+    winners: dict[int, dict[tuple[str, str], str]] = {}
+    if not swiss_path.exists():
+        return phase, meta, pairings, winners
+    try:
+        meta = json.loads(swiss_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return phase, None, pairings, winners
+
+    series = meta.get("series") or []
+    if not series:
+        return phase, meta, pairings, winners
+
+    phase = str(meta.get("phase") or "in_gs_partial")
+    pairings, winners = extract_fixed_round_inputs(series)
+
+    # R1 must cover every team exactly once when present.
+    if 1 in pairings and team_ids is not None:
+        seen: list[str] = []
+        for a, b in pairings[1]:
+            seen.extend([a, b])
+        expected = set(team_ids)
+        got = set(seen)
+        if len(seen) != len(got):
+            raise ValueError(f"duplicate teams in R1 pairings: {seen}")
+        if got != expected:
+            missing = sorted(expected - got)
+            extra = sorted(got - expected)
+            raise ValueError(
+                f"R1 pairings must cover all teams; missing={missing} extra={extra}"
+            )
+    return phase, meta, pairings, winners
+
+
 def build_matchups(win_matrix: pd.DataFrame, teams: list[str]) -> list[dict]:
     rows = []
     for i, a in enumerate(teams):
@@ -503,6 +547,17 @@ def export_predictions(
         f"{config.n_rounds} rounds, ER->{config.elimination_round_advance}) "
         f"x {n_simulations:,} [{model_label}]..."
     )
+    swiss_phase, swiss_results_meta, fixed_pairings, fixed_winners = (
+        load_swiss_live_inputs(team_ids=teams)
+    )
+    if fixed_pairings:
+        rounds = ",".join(str(r) for r in sorted(fixed_pairings))
+        n_fixed = sum(len(v) for v in fixed_pairings.values())
+        n_pinned = sum(len(v) for v in fixed_winners.values())
+        print(
+            f"Conditional Swiss: phase={swiss_phase}, "
+            f"fixed rounds [{rounds}] ({n_fixed} series, {n_pinned} pinned winners)"
+        )
     use_uncertainty = bool(strengths) and any(
         (s or {}).get("sigma") or (s or {}).get("glicko_rd") for s in strengths.values()
     )
@@ -514,6 +569,8 @@ def export_predictions(
         rng_seed=42,
         team_strengths=strengths if use_uncertainty else None,
         sample_uncertainty=use_uncertainty,
+        fixed_round_pairings=fixed_pairings or None,
+        fixed_round_winners=fixed_winners or None,
     )
 
     predictions = [
@@ -669,21 +726,16 @@ def export_predictions(
             f"In-sample tune suggested model_weight={tuned_w:.2f}; "
             f"export uses production default {fusion_weight:.2f}."
         )
+    if fixed_pairings:
+        meta_warnings.append(
+            "Swiss MC uses fixed scheduled pairings from "
+            "data/ti2026_swiss_results.json; unresolved series sampled from model."
+        )
 
-    # Conditional Swiss: if live series results file exists, mark phase; full
-    # conditional MC hooks land when GS series are available.
-    swiss_results_path = BASE_DIR / "data" / "ti2026_swiss_results.json"
-    swiss_phase = "pre_gs_snapshot"
-    swiss_results_meta: dict | None = None
-    if swiss_results_path.exists():
-        try:
-            swiss_results_meta = json.loads(
-                swiss_results_path.read_text(encoding="utf-8")
-            )
-            if swiss_results_meta.get("series"):
-                swiss_phase = str(swiss_results_meta.get("phase") or "in_gs_partial")
-        except (OSError, json.JSONDecodeError):
-            swiss_results_meta = None
+    # Conditional Swiss: live pairings / results from data/ti2026_swiss_results.json
+    # are applied inside simulate_swiss_stage (fixed rounds + optional pinned winners).
+    if swiss_results_meta is None:
+        swiss_phase = "pre_gs_snapshot"
 
     payload = {
         "meta": {
@@ -706,6 +758,9 @@ def export_predictions(
             "sample_uncertainty": use_uncertainty,
             "version": "0.3.3",
             "swiss_phase": swiss_phase,
+            "swiss_fixed_rounds": sorted(fixed_pairings.keys()),
+            "swiss_series_count": sum(len(v) for v in fixed_pairings.values()),
+            "swiss_pinned_winners": sum(len(v) for v in fixed_winners.values()),
             "board_strategy": "points_optimal",
             "expected_compendium_points": board_compare["points_optimal"]["expected_points"],
             "expected_correct_slots": board_compare["points_optimal"]["expected_correct"],

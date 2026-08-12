@@ -1,6 +1,79 @@
 {
-  "phase": "pre_gs_snapshot",
-  "note": "Fill series[] during Group Stage (13–16 Aug). Export sets meta.swiss_phase from this file when series are present.",
-  "updated_at": null,
-  "series": []
+  "phase": "r1_scheduled",
+  "note": "Round 1 pairings fixed (13 Aug). Series still scheduled — MC samples winners from model win matrix, then continues Swiss with same-record pairing.",
+  "updated_at": "2026-08-12T16:20:00+00:00",
+  "series": [
+    {
+      "round": 1,
+      "team_a": "Falcons",
+      "team_b": "LGD",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T05:00:00+03:00",
+      "odds": {"team_a": 1.2, "team_b": 4.6},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "1w",
+      "team_b": "Nigma",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T05:00:00+03:00",
+      "odds": {"team_a": 1.33, "team_b": 3.27},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "BetBoom",
+      "team_b": "OG",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T05:00:00+03:00",
+      "odds": {"team_a": 1.26, "team_b": 3.9},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "Vision",
+      "team_b": "Resilience",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T05:00:00+03:00",
+      "odds": {"team_a": 1.05, "team_b": 9.22},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "Spirit",
+      "team_b": "Xtreme",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T08:00:00+03:00",
+      "odds": {"team_a": 1.4, "team_b": 2.95},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "Liquid",
+      "team_b": "Vici",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T08:00:00+03:00",
+      "odds": {"team_a": 1.27, "team_b": 3.8},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "Aurora",
+      "team_b": "GamerLegion",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T08:00:00+03:00",
+      "odds": {"team_a": 1.17, "team_b": 4.74},
+      "winner": null
+    },
+    {
+      "round": 1,
+      "team_a": "Yandex",
+      "team_b": "HULIGANI",
+      "status": "scheduled",
+      "scheduled_at": "2026-08-13T08:00:00+03:00",
+      "odds": {"team_a": 1.05, "team_b": 10.0},
+      "winner": null
+    }
+  ]
 }

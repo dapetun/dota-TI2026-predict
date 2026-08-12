@@ -42,7 +42,12 @@ Open http://localhost:8080 (`file://` will not work — `fetch` needs a server).
 
 Group Stage **13–16 Aug**. Во время групп — свежий export, не retrain.
 
+Расписание / результаты серий: `data/ti2026_swiss_results.json`  
+(`phase`, `series[]` с `round` / `team_a` / `team_b` / `status` / опц. `winner`).  
+Export фиксирует известные пары в Swiss MC (R1 и дальше), несыгранные серии сэмплируются из win matrix.
+
 ```powershell
+# при новых парах / результатах — правим data/ti2026_swiss_results.json
 python scripts/fetch_market_priors.py
 python scripts/fetch_battlepass_experts.py
 python scripts/export_web_data.py

@@ -9,6 +9,7 @@ from src.simulation.tournament_sim import (
     FANTASY_BOARD_SLOTS,
     SwissConfig,
     assign_fantasy_board,
+    extract_fixed_round_inputs,
     simulate_elimination_round,
     simulate_swiss_stage,
 )
@@ -47,12 +48,69 @@ def test_swiss_records_are_first_to_four():
         assert abs(row["direct_qualification_pct"] + row["eliminated_pct"] - 100) < 1.5
 
 
+def test_fixed_r1_pairings_change_slot_probs():
+    """Known R1 bracket must shift slot probs vs open Swiss pairing."""
+    teams = get_team_ids()
+    matrix = _toy_matrix(teams)
+    # Strongest vs strongest in R1 → harder path to 4-0 for favorites.
+    ranked = sorted(teams, key=lambda t: POWER_RANKINGS[t])
+    pairings = {
+        1: [
+            (ranked[0], ranked[1]),
+            (ranked[2], ranked[3]),
+            (ranked[4], ranked[5]),
+            (ranked[6], ranked[7]),
+            (ranked[8], ranked[9]),
+            (ranked[10], ranked[11]),
+            (ranked[12], ranked[13]),
+            (ranked[14], ranked[15]),
+        ]
+    }
+    open_df = simulate_swiss_stage(
+        matrix, teams, n_simulations=800, rng_seed=2
+    )
+    fixed_df = simulate_swiss_stage(
+        matrix,
+        teams,
+        n_simulations=800,
+        rng_seed=2,
+        fixed_round_pairings=pairings,
+    )
+    fav = ranked[0]
+    open_40 = float(open_df.loc[open_df["team"] == fav, "prob_4_0"].iloc[0])
+    fixed_40 = float(fixed_df.loc[fixed_df["team"] == fav, "prob_4_0"].iloc[0])
+    assert fixed_40 < open_40
+    for _, row in fixed_df.iterrows():
+        assert abs(row["direct_qualification_pct"] + row["eliminated_pct"] - 100) < 1.5
+
+
+def test_extract_fixed_round_inputs_pins_completed():
+    series = [
+        {
+            "round": 1,
+            "team_a": "A",
+            "team_b": "B",
+            "status": "scheduled",
+            "winner": None,
+        },
+        {
+            "round": 1,
+            "team_a": "C",
+            "team_b": "D",
+            "status": "completed",
+            "winner": "C",
+        },
+    ]
+    pairings, winners = extract_fixed_round_inputs(series)
+    assert pairings[1] == [("A", "B"), ("C", "D")]
+    assert winners[1] == {("C", "D"): "C"}
+
+
 def test_elimination_round_pairs_3_2_vs_2_3():
     """Official ER: each 3-2 plays a 2-3; five winners advance."""
     three_two = ["A", "B", "C", "D", "E"]
     two_three = ["F", "G", "H", "I", "J"]
     teams = three_two + two_three
-    # Stronger teams first in matrix order → A..E beat F..J.
     strengths = {t: 10 - i for i, t in enumerate(teams)}
     m = np.full((10, 10), 0.5)
     for i, a in enumerate(teams):
@@ -70,7 +128,6 @@ def test_elimination_round_pairs_3_2_vs_2_3():
         records=records,
     )
     assert len(winners) == 5
-    # Strong 3-2 side should win most/all vs weaker 2-3 under this matrix.
     assert set(winners).issubset(set(three_two) | set(two_three))
     assert len(set(winners)) == 5
 
@@ -97,7 +154,6 @@ def test_fantasy_board_capacities():
     board = assign_fantasy_board(fake)
     for key, meta in FANTASY_BOARD_SLOTS.items():
         assert len(board[key]) == meta["capacity"], key
-    # Best team in 4-0, worst in 0-4
     best = min(fake, key=lambda x: x["power_rank"])
     worst = max(fake, key=lambda x: x["power_rank"])
     assert board["undefeated"][0]["id"] == best["id"]
