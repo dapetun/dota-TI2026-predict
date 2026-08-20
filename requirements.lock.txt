@@ -1,4 +1,4 @@
-﻿# Pinned from a working Windows env (pip freeze subset).
+# Pinned from a working Windows env (pip freeze subset).
 # Install loose: pip install -r requirements.txt
 # Reproducible approx: pip install -r requirements.lock.txt
 catboost==1.2.10
@@ -12,4 +12,4 @@ requests==2.34.2
 scikit-learn==1.9.0
 scipy==1.18.0
 tqdm==4.70.0
-xgboost==3.4.0
+xgboost==3.4.1
