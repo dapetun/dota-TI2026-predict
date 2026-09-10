@@ -1,8 +1,8 @@
-﻿# Pinned from a working Windows env (pip freeze subset).
+# Pinned from a working Windows env (pip freeze subset).
 # Install loose: pip install -r requirements.txt
 # Reproducible approx: pip install -r requirements.lock.txt
 catboost==1.2.10
-joblib==1.5.3
+joblib==1.6.0
 matplotlib==3.11.1
 numpy==2.5.1
 pandas==3.0.5
